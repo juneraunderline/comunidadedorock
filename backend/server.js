@@ -465,12 +465,15 @@ async function autoImportRss() {
         }
 
         const items = xml.match(/<item[\s\S]*?<\/item>/gi) || xml.match(/<entry[\s\S]*?<\/entry>/gi) || [];
-        
-        for (let i = 0; i < Math.min(items.length, 3); i++) {
+        let importedOne = false;
+
+        for (let i = 0; i < items.length; i++) {
+          if (importedOne) break;
+
           try {
             const item = items[i];
             if (!item) continue;
-            
+
             const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/i);
             let title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, "").trim() : null;
             let content = extractContentFromItem(item);
@@ -483,7 +486,7 @@ async function autoImportRss() {
               }
               continue;
             }
-            
+
             let link = extractLinkFromItem(item);
             let source = feed.name || "Desconhecida";
             
@@ -526,6 +529,7 @@ async function autoImportRss() {
                         console.warn(`⚠️ Erro ao inserir item "${title}":`, err.message);
                       } else {
                         console.log(`✅ Post importado: "${title.substring(0, 50)}..."`);
+                        importedOne = true;
                       }
                       resolve();
                     }
@@ -538,6 +542,8 @@ async function autoImportRss() {
                     (err) => {
                       if (err) {
                         console.warn(`⚠️ Erro ao inserir item "${title}":`, err.message);
+                      } else {
+                        importedOne = true;
                       }
                       resolve();
                     }
@@ -560,11 +566,9 @@ async function autoImportRss() {
   }
 }
 
-// Iniciar auto-atualização de RSS a cada 10 segundos
-// ⚠️ DESABILITADO TEMPORARIAMENTE PARA EVITAR POSTS COM URLs EXTERNAS
-// setInterval(autoImportRss, 10000);
-// console.log("✅ Auto-atualização de RSS iniciada (a cada 10 segundos)");
-console.log("⚠️ Auto-atualização de RSS DESABILITADA (prevenir URLs externas)");
+// Iniciar auto-atualização de RSS a cada 5 segundos (1 notícia por portal em cada ciclo)
+setInterval(autoImportRss, 5000);
+console.log("✅ Auto-atualização de RSS iniciada (a cada 5 segundos)");
 
 app.post("/api/login", (req, res) => {
   const { user, pass } = req.body;

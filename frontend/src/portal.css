@@ -3,7 +3,7 @@
   width: 220px;
   padding: 20px;
   background: #0a0a0a;
-  border-right: 1px solid #333;
+  border-right: none;
   height: calc(100vh - 80px);
   position: fixed;
   left: 0;

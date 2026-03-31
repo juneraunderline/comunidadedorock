@@ -64,7 +64,7 @@ function Portal() {
   return (
     <aside className="portal">
       <div className="portal-content">
-        <h3 className="portal-title">PORTAL</h3>
+        <h3 className="portal-title">PORTAIS</h3>
         <ul className="portal-list">
           {feeds && feeds.length > 0 ? (
             feeds.map((feed, idx) => (

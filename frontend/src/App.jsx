@@ -13,6 +13,7 @@ import BandaDetail from "./BandaDetail";
 import Entrevistas from "./Entrevistas";
 import EntrevistaDetail from "./EntrevistaDetail";
 import Eventos from "./Eventos";
+import EventDetail from "./EventDetail";
 import Contato from "./Contato";
 import CadastrarBanda from "./CadastrarBanda";
 import Admin from "./Admin";
@@ -69,6 +70,7 @@ function App() {
           <Route path="/entrevistas" element={<Entrevistas />} />
           <Route path="/entrevistas/:id" element={<EntrevistaDetail />} />
           <Route path="/eventos" element={<Eventos />} />
+          <Route path="/eventos/:id" element={<EventDetail />} />
           <Route path="/contato" element={<Contato />} />
           <Route path="/cadastrar-banda" element={<CadastrarBanda />} />
           <Route path="/admin" element={<Admin />} />

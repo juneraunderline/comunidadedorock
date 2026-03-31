@@ -7,7 +7,7 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   color: #fff;
-  background: #1a1a1a;
+  background: #0a0a0e;
   line-height: 1.6;
 }
 
@@ -15,15 +15,24 @@ body {
   width: 100%;
   max-width: 100%;
   min-height: 100svh;
+  background: #0a0a0e;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
+/* mantém topo e menu lateral com cor própria */
+.header,
+.portal {
+  background: #0a0a0a !important;
+}
+
+
 /* HEADER */
 .header {
   background: #0a0a0a;
-  border-bottom: 1px solid #333;
+  border-bottom: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
   padding: 12px 30px;
   display: flex;
   justify-content: space-between;
@@ -104,15 +113,23 @@ body {
 .hero {
   height: 550px;
   background-size: cover;
-  background-position: center;
+  background-position: center 45%;
   background-attachment: scroll;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
-  margin-bottom: 40px;
+  margin-bottom: 16px;
   width: 100%;
+  transition: background-position 12s ease-in-out;
+  animation: hero-pan 20s ease-in-out infinite;
+}
+
+.home-main > .section:first-of-type {
+  margin-top: -20px;
+  padding-top: 14px;
+  padding-top: 22px;
 }
 
 .hero::before {
@@ -122,8 +139,25 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0.5) 100%);
+  background: linear-gradient(180deg, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.65) 35%, rgba(0,0,0,0.82) 68%, rgba(0,0,0,0.95) 100%);
   z-index: 1;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.75) 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+@keyframes hero-pan {
+  0%, 100% { background-position: center 45%; }
+  50% { background-position: center 55%; }
 }
 
 .hero-content {
@@ -228,13 +262,32 @@ body {
 }
 
 /* SECTIONS */
+.section,
+.section-dark,
+.home-main,
+.app,
+body {
+  background: #0a0a0e;
+}
+
 .section {
   padding: 50px 30px;
   width: 100%;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  position: relative;
+  background: #0a0a0e;
+}
+
+.section::before {
+  display: none;
 }
 
 .section-dark {
-  background: #0a0a0a;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .section-header {
@@ -258,11 +311,7 @@ body {
 }
 
 .section-header h2::before {
-  content: "|";
-  color: #e91e63;
-  font-size: 40px;
-  line-height: 1;
-  margin-right: 10px;
+  content: none;
 }
 
 .section-header h2::after {
@@ -317,29 +366,45 @@ body {
 
 /* CARDS */
 .card {
-  background: #1a1a1a;
+  background: #16161b;
   border-radius: 3px;
   overflow: hidden;
   transition: all 0.3s;
   cursor: pointer;
-  border: 1px solid #333;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 8px 22px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+}
+
+.section.section-dark .grid-2 {
+  justify-content: center;
+}
+
+.section.section-dark .card {
+  max-width: 380px;
+  width: 100%;
 }
 
 .card:hover {
   transform: translateY(-5px);
   border-color: #e91e63;
 }
-
 .card-image {
   width: 100%;
   height: 300px;
   overflow: hidden;
   position: relative;
-  background: linear-gradient(135deg, #333 0%, #111 100%);
+  background: #16161b;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: row;
+  padding: 8px;
+}
+
+/* Ajuste específico: cards de "Bandas Novas" para não ficarem gigantes */
+.section.section-dark .card-image {
+  height: 210px;
 }
 
 .card-image img {
@@ -372,7 +437,9 @@ body {
 }
 
 .card-content {
-  padding: 20px;
+  padding: 8px;
+  background: #16161b;
+  border-top: none;
 }
 
 .card-date {
@@ -381,16 +448,17 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  margin-bottom: 25px;
 }
 
 .card-content h3 {
   font-size: 16px;
-  margin: 10px 0;
+  margin: 0 0 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 700;
   color: #fff;
-  line-height: 1.3;
+  line-height: ;
 }
 
 .card-content p {
@@ -612,7 +680,7 @@ body {
 /* FOOTER */
 .footer {
   background: #0a0a0a;
-  border-top: 1px solid #333;
+  border-top: none;
   padding: 40px 30px;
   text-align: center;
   width: 100%;

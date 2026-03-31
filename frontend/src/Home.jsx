@@ -136,7 +136,6 @@ function Home({ posts }) {
                   </div>
                   <div className="card-content">
                     <small className="card-date">{formatDatePT(p.created_at)}</small>
-                    {p.source && <small className="card-source-label" style={{display: "block", color: "#999", fontSize: "12px", marginBottom: "8px"}}>Fonte: {p.source}</small>}
                     <h3>{p.title}</h3>
                     <p>{(p.content || "").slice(0, 100)}...</p>
                   </div>
