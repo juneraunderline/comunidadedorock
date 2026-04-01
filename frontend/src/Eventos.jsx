@@ -6,7 +6,7 @@ function Eventos() {
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:3000/api/events")
+    axios.get("http://https://comunidadedorock.onrender.com/api/events")
       .then(res => setEvents(res.data))
       .catch(err => console.error("Erro ao carregar eventos:", err));
   }, []);

@@ -39,7 +39,7 @@ function CadastrarBanda() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:3000/api/bands/submit", form);
+      const res = await axios.post("http://https://comunidadedorock.onrender.com/api/bands/submit", form);
       setMessage(res.data.message);
       setForm({
         name: "",

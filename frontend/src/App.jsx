@@ -27,7 +27,7 @@ function App() {
     axios.get("https://comunidadedorock.onrender.app/api/posts")
       .then(res => {
         console.log("🔄 App.jsx - Posts carregados:", res.data.length);
-        console.log("   Imagens esperadas de:", "http://localhost:3000/images/...");
+        console.log("   Imagens esperadas de:", "http://https://comunidadedorock.onrender.com/images/...");
         setPosts(res.data);
       })
       .catch(err => console.error("❌ Erro ao carregar posts:", err));

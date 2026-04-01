@@ -32,7 +32,7 @@ function Portal() {
   useEffect(() => {
     // Forçar refetch dos feeds a cada 5 segundos
     const interval = setInterval(() => {
-      axios.get("http://localhost:3000/api/rss-feeds")
+      axios.get("http://https://comunidadedorock.onrender.com/api/rss-feeds")
         .then(res => {
           setFeeds(res.data);
           setLoading(false);
@@ -44,7 +44,7 @@ function Portal() {
     }, 5000);
     
     // Carregamento inicial
-    axios.get("http://localhost:3000/api/rss-feeds")
+    axios.get("http://https://comunidadedorock.onrender.com/api/rss-feeds")
       .then(res => {
         setFeeds(res.data);
         setLoading(false);

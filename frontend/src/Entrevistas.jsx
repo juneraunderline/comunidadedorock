@@ -8,7 +8,7 @@ function Entrevistas() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get("http://localhost:3000/api/interviews")
+    axios.get("http://https://comunidadedorock.onrender.com/api/interviews")
       .then(res => {
         setInterviews(res.data);
         setLoading(false);

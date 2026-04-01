@@ -38,7 +38,7 @@ function News() {
 
   useEffect(() => {
     // Construir URL com filtro se necessário
-    let url = "http://localhost:3000/api/posts";
+    let url = "http://https://comunidadedorock.onrender.com/api/posts";
     if (portalFilter) {
       url += `?source=${encodeURIComponent(portalFilter)}`;
     }

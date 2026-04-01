@@ -15,7 +15,7 @@
     <div class="test">
         <h2>1️⃣ Testando imagem direto do backend</h2>
         <p>Backend: <span id="backend"></span></p>
-        <img id="img1" src="http://localhost:3000/images/392c04cc30dc91bc83f3503a1028af99.jpg" alt="Test">
+        <img id="img1" src="http://https://comunidadedorock.onrender.com/images/392c04cc30dc91bc83f3503a1028af99.jpg" alt="Test">
         <p id="status1">Carregando...</p>
     </div>
 
@@ -32,7 +32,7 @@
             document.getElementById('status1').innerHTML = '<span class="fail">❌ Erro ao carregar imagem</span>';
         };
 
-        fetch('http://localhost:3000/images/392c04cc30dc91bc83f3503a1028af99.jpg')
+        fetch('http://https://comunidadedorock.onrender.com/images/392c04cc30dc91bc83f3503a1028af99.jpg')
             .then(res => {
                 console.log('Status:', res.status);
                 console.log('Headers:', res.headers);
@@ -42,7 +42,7 @@
                 document.getElementById('status2').innerHTML = `<span class="fail">❌ ${err.message}</span>`;
             });
 
-        fetch('http://localhost:3000/api/posts')
+        fetch('http://https://comunidadedorock.onrender.com/api/posts')
             .then(res => res.json())
             .then(data => {
                 document.getElementById('backend').innerHTML = `<span class="ok">✅ ${data.length} posts</span>`;

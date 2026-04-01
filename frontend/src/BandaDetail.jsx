@@ -9,7 +9,7 @@ function BandaDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("http://localhost:3000/api/bands")
+    axios.get("http://https://comunidadedorock.onrender.com/api/bands")
       .then(res => {
         const selectedBand = res.data.find(b => b.id === parseInt(id));
         setBand(selectedBand);

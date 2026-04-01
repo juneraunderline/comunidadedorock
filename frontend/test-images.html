@@ -21,7 +21,7 @@
 
   <div class="test">
     <h2>2. Teste via IMG tag</h2>
-    <img id="img1" src="http://localhost:3000/images/392c04cc30dc91bc83f3503a1028af99.jpg" alt="Test Image" onload="updateTest2('✅ Imagem carregada!', 'ok')" onerror="updateTest2('❌ Falha ao carregar', 'error')" />
+    <img id="img1" src="http://https://comunidadedorock.onrender.com/images/392c04cc30dc91bc83f3503a1028af99.jpg" alt="Test Image" onload="updateTest2('✅ Imagem carregada!', 'ok')" onerror="updateTest2('❌ Falha ao carregar', 'error')" />
     <p id="test2" class="status">Aguardando...</p>
   </div>
 
@@ -32,7 +32,7 @@
 
   <script>
     // Teste 1: HTTP HEAD
-    fetch('http://localhost:3000/images/392c04cc30dc91bc83f3503a1028af99.jpg', { method: 'HEAD' })
+    fetch('http://https://comunidadedorock.onrender.com/images/392c04cc30dc91bc83f3503a1028af99.jpg', { method: 'HEAD' })
       .then(res => {
         document.getElementById('test1').innerHTML = `✅ Status HTTP ${res.status} - CORS: ${res.headers.get('access-control-allow-origin')}`;
         document.getElementById('test1').className = 'status ok';
@@ -43,7 +43,7 @@
       });
 
     // Teste 3: API
-    fetch('http://localhost:3000/api/posts')
+    fetch('http://https://comunidadedorock.onrender.com/api/posts')
       .then(res => res.json())
       .then(data => {
         document.getElementById('test3').innerHTML = `✅ ${data.length} posts carregados<br>Primeira imagem: ${data[0]?.image || 'N/A'}`;

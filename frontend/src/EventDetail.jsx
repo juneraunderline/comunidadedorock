@@ -9,7 +9,7 @@ function EventDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("http://localhost:3000/api/events")
+    axios.get("http://https://comunidadedorock.onrender.com/api/events")
       .then(res => {
         const selected = res.data.find(it => String(it.id) === String(id));
         setEvent(selected);

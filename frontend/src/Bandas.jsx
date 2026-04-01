@@ -8,12 +8,12 @@ function Bandas() {
 
   useEffect(() => {
     // Buscar bandas na primeira montagem
-    axios.get("http://localhost:3000/api/bands")
+    axios.get("http://https://comunidadedorock.onrender.com/api/bands")
       .then(res => setBands(res.data));
 
     // Atualizar a cada 5 segundos
     const interval = setInterval(() => {
-      axios.get("http://localhost:3000/api/bands")
+      axios.get("http://https://comunidadedorock.onrender.com/api/bands")
         .then(res => setBands(res.data));
     }, 5000);
 

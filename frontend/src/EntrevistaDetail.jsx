@@ -50,7 +50,7 @@ function EntrevistaDetail() {
   };
 
   useEffect(() => {
-    axios.get("http://localhost:3000/api/interviews")
+    axios.get("http://https://comunidadedorock.onrender.com/api/interviews")
       .then(res => {
         const selectedInterview = res.data.find(i => i.id === parseInt(id));
         setInterview(selectedInterview);

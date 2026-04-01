@@ -7,7 +7,7 @@ export default function TestImages() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/posts")
+      .get("http://https://comunidadedorock.onrender.com/api/posts")
       .then((res) => {
         console.log("✅ Posts carregados:", res.data.length);
         setPosts(res.data);
