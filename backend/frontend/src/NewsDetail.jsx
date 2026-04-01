@@ -33,7 +33,7 @@ function NewsDetail() {
   };
 
   useEffect(() => {
-    axios.get("https://comunidadedorock.onrender.app/api/posts")
+    axios.get("http://localhost:3000/api/posts")
       .then(res => {
         const selectedPost = res.data.find(p => p.id === parseInt(id));
         setPost(selectedPost);

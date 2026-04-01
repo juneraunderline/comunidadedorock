@@ -24,7 +24,7 @@ function App() {
 
   useEffect(() => {
     // Buscar posts na montagem
-    axios.get("https://comunidadedorock.onrender.app/api/posts")
+    axios.get("http://localhost:3000/api/posts")
       .then(res => {
         console.log("🔄 App.jsx - Posts carregados:", res.data.length);
         console.log("   Imagens esperadas de:", "http://localhost:3000/images/...");
@@ -34,7 +34,7 @@ function App() {
 
     // Atualizar posts a cada 10 segundos para pegar novos que foram importados
     const interval = setInterval(() => {
-      axios.get("https://comunidadedorock.onrender.app/api/posts")
+      axios.get("http://localhost:3000/api/posts")
         .then(res => setPosts(res.data))
         .catch(err => console.error("❌ Erro ao atualizar posts:", err));
     }, 10000);

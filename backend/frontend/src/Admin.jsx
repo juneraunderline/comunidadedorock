@@ -64,7 +64,7 @@ export default function Admin() {
   };
 
   const fetchData = () => {
-    axios.get("https://comunidadedorock.onrender.app/api/posts").then(res => setPosts(res.data));
+    axios.get("http://localhost:3000/api/posts").then(res => setPosts(res.data));
     axios.get("http://localhost:3000/api/bands").then(res => setBands(res.data));
     axios.get("http://localhost:3000/api/pending-bands").then(res => setPendingBands(res.data));
     axios.get("http://localhost:3000/api/interviews").then(res => setInterviews(res.data));

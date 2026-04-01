@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teste de Imagens</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #1a1a1a; color: #fff; }
+    .test { margin: 20px 0; padding: 20px; border: 1px solid #444; }
+    img { max-width: 300px; margin: 10px 0; border: 2px solid #e91e63; }
+    .status { font-weight: bold; margin: 5px 0; }
+    .ok { color: #4caf50; }
+    .error { color: #f44336; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Teste de Carregamento de Imagens</h1>
+  
+  <div class="test">
+    <h2>1. Teste direto via HTTP</h2>
+    <p id="test1" class="status">Testando...</p>
+  </div>
+
+  <div class="test">
+    <h2>2. Teste via IMG tag</h2>
+    <img id="img1" src="http://localhost:3000/images/392c04cc30dc91bc83f3503a1028af99.jpg" alt="Test Image" onload="updateTest2('✅ Imagem carregada!', 'ok')" onerror="updateTest2('❌ Falha ao carregar', 'error')" />
+    <p id="test2" class="status">Aguardando...</p>
+  </div>
+
+  <div class="test">
+    <h2>3. API Response Check</h2>
+    <p id="test3" class="status">Testando...</p>
+  </div>
+
+  <script>
+    // Teste 1: HTTP HEAD
+    fetch('http://localhost:3000/images/392c04cc30dc91bc83f3503a1028af99.jpg', { method: 'HEAD' })
+      .then(res => {
+        document.getElementById('test1').innerHTML = `✅ Status HTTP ${res.status} - CORS: ${res.headers.get('access-control-allow-origin')}`;
+        document.getElementById('test1').className = 'status ok';
+      })
+      .catch(err => {
+        document.getElementById('test1').innerHTML = `❌ Erro: ${err.message}`;
+        document.getElementById('test1').className = 'status error';
+      });
+
+    // Teste 3: API
+    fetch('http://localhost:3000/api/posts')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('test3').innerHTML = `✅ ${data.length} posts carregados<br>Primeira imagem: ${data[0]?.image || 'N/A'}`;
+        document.getElementById('test3').className = 'status ok';
+      })
+      .catch(err => {
+        document.getElementById('test3').innerHTML = `❌ Erro ao carregar API: ${err.message}`;
+        document.getElementById('test3').className = 'status error';
+      });
+
+    function updateTest2(msg, cls) {
+      document.getElementById('test2').innerHTML = msg;
+      document.getElementById('test2').className = `status ${cls}`;
+    }
+  </script>
+</body>
+</html>
