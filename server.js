@@ -15,20 +15,20 @@ if (typeof fetch !== "undefined") {
   }
 }
 
-import express from "express";
-import path from "path";
+
 
 const app = express();
 
-// SERVIR A PASTA PUBLIC
-app.use(express.static("public"));
 
-const app = express();
+// Middlewares
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Servir imagens locais como arquivos estáticos COM CORS explícito
+// Servir pasta public
+app.use(express.static("public"));
+
+// Servir imagens com CORS
 app.use('/images', (req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');

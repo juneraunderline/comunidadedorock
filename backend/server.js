@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const sqlite3 = require("sqlite3").verbose();
+const Database = require("better-sqlite3");
 const path = require("path");
 const { downloadImage, imagesDir } = require("./image-downloader");
 
@@ -32,7 +32,7 @@ app.use('/images', (req, res, next) => {
 // FEEDS RSS PADRÃO (será carregado do banco de dados na inicialização)
 
 // BANCO SQLITE
-const db = new sqlite3.Database("./database.db");
+const db = new Database("./database.db");
 
 db.serialize(() => {
   db.run(`

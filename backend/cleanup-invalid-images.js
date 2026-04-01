@@ -1,50 +1,47 @@
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 
-const db = new sqlite3.Database('./database.db');
+const db = new Database('./database.db');
 
 console.log('🧹 Limpando posts COM IMAGEM INVÁLIDA...\n');
 
-db.serialize(() => {
-  // 1. Deletar posts com imagem NULL, vazio ou que não começa com http
-  db.run(`DELETE FROM posts WHERE 
-    image IS NULL OR 
-    image = '' OR
-    image NOT LIKE 'http%'`, function(err) {
-    if (err) {
-      console.error('❌ Erro ao deletar posts:', err);
-    } else {
-      console.log(`✅ ${this.changes} posts com imagem inválida foram deletados`);
-    }
-  });
+try {
+  // 1. Deletar posts com imagem inválida
+  const deleteStmt = db.prepare(`
+    DELETE FROM posts WHERE 
+      image IS NULL OR 
+      image = '' OR
+      image NOT LIKE 'http%'
+  `);
+
+  const result = deleteStmt.run();
+  console.log(`✅ ${result.changes} posts com imagem inválida foram deletados`);
 
   // 2. Contar posts restantes
-  setTimeout(() => {
-    db.all("SELECT COUNT(*) as total FROM posts", [], (err, rows) => {
-      if (err) {
-        console.error('❌ Erro ao contar posts:', err);
-      } else {
-        console.log(`\n📊 Total de posts COM IMAGEM VÁLIDA: ${rows[0].total}`);
-      }
-      
-      // 3. Listar posts restantes
-      db.all(`SELECT id, title, 
-              CASE 
-                WHEN image LIKE 'http%' THEN '✅ VÁLIDA'
-                ELSE '❌ INVÁLIDA'
-              END as image_status
-              FROM posts ORDER BY id DESC LIMIT 20`, [], (err, rows) => {
-        if (err) {
-          console.error('❌ Erro ao listar posts:', err);
-        } else {
-          console.log('\n📋 Posts com status de imagem:');
-          rows.forEach(row => {
-            console.log(`  ${row.image_status} ID ${row.id}: "${row.title.substring(0, 40)}..."`);
-          });
-        }
-        
-        console.log('\n✅ Limpeza concluída!');
-        db.close();
-      });
-    });
-  }, 500);
-});
+  const total = db.prepare("SELECT COUNT(*) as total FROM posts").get();
+  console.log(`\n📊 Total de posts COM IMAGEM VÁLIDA: ${total.total}`);
+
+  // 3. Listar posts restantes
+  const rows = db.prepare(`
+    SELECT id, title, 
+      CASE 
+        WHEN image LIKE 'http%' THEN '✅ VÁLIDA'
+        ELSE '❌ INVÁLIDA'
+      END as image_status
+    FROM posts 
+    ORDER BY id DESC 
+    LIMIT 20
+  `).all();
+
+  console.log('\n📋 Posts com status de imagem:');
+
+  rows.forEach(row => {
+    console.log(`  ${row.image_status} ID ${row.id}: "${row.title.substring(0, 40)}..."`);
+  });
+
+  console.log('\n✅ Limpeza concluída!');
+
+} catch (err) {
+  console.error('❌ Erro:', err.message);
+} finally {
+  db.close();
+}

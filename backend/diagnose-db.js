@@ -1,22 +1,23 @@
-const sqlite3 = require("sqlite3").verbose();
+const Database = require("better-sqlite3");
 const path = require("path");
 
 const dbPath = path.join(__dirname, "database.db");
-const db = new sqlite3.Database(dbPath);
+const db = new Database(dbPath);
 
 console.log("📋 DIAGNÓSTICO FINAL - Estado atual do banco de dados\n");
 console.log("==================================================\n");
 
-db.all("SELECT id, title, image, source FROM posts ORDER BY id DESC", [], (err, rows) => {
-  if (err) {
-    console.error("Erro:", err.message);
-    db.close();
-    return;
-  }
+try {
+  const rows = db.prepare(`
+    SELECT id, title, image, source 
+    FROM posts 
+    ORDER BY id DESC
+  `).all();
 
   console.log(`Total de posts: ${rows.length}\n`);
 
   console.log("📊 Distribuição de imagens:\n");
+
   const localCount = rows.filter(r => r.image && r.image.startsWith('/images')).length;
   const externalCount = rows.filter(r => r.image && r.image.startsWith('http')).length;
   const nullCount = rows.filter(r => !r.image).length;
@@ -34,6 +35,7 @@ db.all("SELECT id, title, image, source FROM posts ORDER BY id DESC", [], (err, 
   });
 
   console.log(`\n🔍 Posts por fonte:\n`);
+
   const grouped = {};
   rows.forEach(r => {
     const source = r.source || "Desconhecida";
@@ -46,5 +48,8 @@ db.all("SELECT id, title, image, source FROM posts ORDER BY id DESC", [], (err, 
     console.log(`  ${source}: ${posts.length} posts (${withImage} com imagem)`);
   });
 
+} catch (err) {
+  console.error("❌ Erro:", err.message);
+} finally {
   db.close();
-});
+}
