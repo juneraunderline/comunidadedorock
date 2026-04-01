@@ -1,0 +1,33 @@
+🔍 DIAGNÓSTICO COMPLETO - 29/03/2026, 10:25:12
+============================================================
+
+1️⃣ TESTE API - /api/posts
+✅ Status: 200
+✅ Total de posts: 20
+✅ Primeiro post:
+   ID: 75
+   Título: Letrux lança o disco “SadSexySillySongs” em novo c
+   Fonte: TMDQA!
+   Imagem: https://www.tenhomaisdiscosqueamigos.com/uploads/2026/03/rael-daniela-toviansky-180x180.jpeg
+
+2️⃣ TESTE IMAGEM - GET https://www.tenhomaisdiscosqueamigos.com/uploads/2026/03/rael-daniela-toviansky-180x180.jpeg
+❌ Erro ao buscar imagem: Invalid URL
+
+3️⃣ ARQUIVO DE IMAGENS - /backend/public/images
+✅ Diretório existe
+✅ Total de arquivos: 20
+Primeiros 3 arquivos:
+   - 37e2716ad399496f5527d1b484d16b5d.jpg (21.47KB)
+   - 392c04cc30dc91bc83f3503a1028af99.jpg (123.62KB)
+   - 3b181e846282366983d0db98de7b8625.jpg (17.01KB)
+
+4️⃣ STATUS DAS IMAGENS NA BASE DE DADOS
+✅ Com imagens locais: 18/20
+🌐 Com URLs externas: 2/20
+❌ Sem imagem: 0/20
+
+============================================================
+📊 CONCLUSÃO
+============================================================
+❌ PROBLEMA DETECTADO
+❌ há posts com URLs externas
