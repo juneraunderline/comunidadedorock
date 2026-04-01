@@ -15,14 +15,6 @@ if (typeof fetch !== "undefined") {
   }
 }
 
-import express from "express";
-import path from "path";
-
-const app = express();
-
-// SERVIR A PASTA PUBLIC
-app.use(express.static("public"));
-
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -40,7 +32,7 @@ app.use('/images', (req, res, next) => {
 // FEEDS RSS PADRÃO (será carregado do banco de dados na inicialização)
 
 // BANCO SQLITE
-const db = new sqlite3.Database("/tmp/database.db");
+const db = new sqlite3.Database("./database.db");
 
 db.serialize(() => {
   db.run(`
@@ -746,16 +738,16 @@ app.get("/api/posts", (req, res) => {
     if (err) return res.status(500).json(err);
     
     // Converter caminhos de imagem relativos para URLs absolutas
-   const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-
-const postsWithFullImageUrls = rows.map(post => ({
-  ...post,
-  image: post.image && post.image.startsWith('http') 
-    ? post.image 
-    : post.image 
-      ? `${baseUrl}${post.image}` 
-      : null
-}));
+    const postsWithFullImageUrls = rows.map(post => ({
+      ...post,
+      image: post.image && post.image.startsWith('http') 
+        ? post.image 
+        : post.image ? `http://localhost:3000${post.image}` : null
+    }));
+    
+    res.json(postsWithFullImageUrls);
+  });
+});
 
 // CREATE POST
 app.post("/api/posts", async (req, res) => {
