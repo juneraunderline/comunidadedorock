@@ -518,7 +518,7 @@ async function autoImportRss() {
             }
 
             // Verificar se já existe
-            await new Promise((resolve) => {
+             new Promise((resolve) => {
               db.get("SELECT id FROM posts WHERE title = ?", [title], (err, row) => {
                 if (err) {
                   console.warn(`⚠️ Erro ao verificar item "${title}":`, err.message);
@@ -1172,7 +1172,7 @@ app.post("/api/import-rss-single", async (req, res) => {
           createdAt = new Date().toISOString();
         }
 
-        await new Promise((resolve) => {
+         new Promise((resolve) => {
           db.get("SELECT id FROM posts WHERE title = ?", [title], (err, row) => {
             if (err) {
               console.warn(`⚠️ POST /api/import-rss-single - Erro ao verificar item:`, err.message);
