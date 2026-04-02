@@ -1924,6 +1924,8 @@ app.delete("/api/events/:id", (req, res) => {
 
 // ===== INTERVIEWS =====
 
+// ===== INTERVIEWS =====
+
 // GET INTERVIEWS
 app.get("/api/interviews", (req, res) => {
   try {
@@ -1986,8 +1988,10 @@ app.delete("/api/interviews/:id", (req, res) => {
 });
 
 
-// SERVER
+// ===== SERVER =====
+
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
   console.log(`Backend com SQLite ON 🔥 (Porta ${PORT})`);
 });
