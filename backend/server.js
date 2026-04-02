@@ -34,101 +34,99 @@ app.use('/images', (req, res, next) => {
 // BANCO SQLITE
 const db = new Database("./database.db");
 
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS posts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT,
-      content TEXT,
-      image TEXT,
-      link TEXT,
-      source TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    content TEXT,
+    image TEXT,
+    link TEXT,
+    source TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`).run();
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS bands (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      genre TEXT,
-      city TEXT,
-      state TEXT,
-      year TEXT,
-      members TEXT,
-      biography TEXT,
-      contact TEXT,
-      image TEXT,
-      instagram TEXT,
-      facebook TEXT,
-      youtube TEXT,
-      spotify TEXT,
-      bandcamp TEXT,
-      site TEXT
-    )
-  `);
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS bands (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    genre TEXT,
+    city TEXT,
+    state TEXT,
+    year TEXT,
+    members TEXT,
+    biography TEXT,
+    contact TEXT,
+    image TEXT,
+    instagram TEXT,
+    facebook TEXT,
+    youtube TEXT,
+    spotify TEXT,
+    bandcamp TEXT,
+    site TEXT
+  )
+`).run();
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS pending_bands (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      genre TEXT,
-      city TEXT,
-      state TEXT,
-      year TEXT,
-      members TEXT,
-      biography TEXT,
-      contact TEXT,
-      image TEXT,
-      instagram TEXT,
-      facebook TEXT,
-      youtube TEXT,
-      spotify TEXT,
-      bandcamp TEXT,
-      site TEXT,
-      submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS pending_bands (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    genre TEXT,
+    city TEXT,
+    state TEXT,
+    year TEXT,
+    members TEXT,
+    biography TEXT,
+    contact TEXT,
+    image TEXT,
+    instagram TEXT,
+    facebook TEXT,
+    youtube TEXT,
+    spotify TEXT,
+    bandcamp TEXT,
+    site TEXT,
+    submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`).run();
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS rss_feeds (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      url TEXT NOT NULL UNIQUE,
-      logo TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS rss_feeds (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL UNIQUE,
+    logo TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`).run();
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT,
-      artist TEXT,
-      date TEXT,
-      time TEXT,
-      location TEXT,
-      city TEXT,
-      state TEXT,
-      image TEXT,
-      ticket_link TEXT,
-      description TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    artist TEXT,
+    date TEXT,
+    time TEXT,
+    location TEXT,
+    city TEXT,
+    state TEXT,
+    image TEXT,
+    ticket_link TEXT,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`).run();
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS interviews (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      artist TEXT NOT NULL,
-      content TEXT,
-      image TEXT,
-      date TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-});
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS interviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    artist TEXT NOT NULL,
+    content TEXT,
+    image TEXT,
+    date TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`).run();
 
 // Carregar feeds RSS do banco de dados
 let rssFeeds = [];
