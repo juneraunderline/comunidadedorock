@@ -130,39 +130,42 @@ db.prepare(`
 
 // Carregar feeds RSS do banco de dados
 let rssFeeds = [];
+
 try {
   const rows = db
     .prepare("SELECT id, name, url, logo FROM rss_feeds")
     .all();
 
-  // usa rows normalmente aqui
   console.log(rows);
 
-} catch (err) {
-  console.error("Erro:", err.message);
-}  if (rows && rows.length > 0) {
+  if (rows && rows.length > 0) {
     rssFeeds = rows;
   } else {
-    // Se não houver feeds no banco, usar os padrão (SEM LOGOS - usará favicon como fallback)
     rssFeeds = [
-      { 
-        name: "Rolling Stone Brasil", 
+      {
+        name: "Rolling Stone Brasil",
         url: "https://rollingstone.com.br/feed/",
         logo: null
       },
-      { 
+      {
         name: "Rock in Rio News",
         url: "https://www.rockinrio.com/pt-br/feed/",
         logo: null
       }
     ];
-    // E salvar na tabela
+
     rssFeeds.forEach(feed => {
-      db.run("INSERT INTO rss_feeds (name, url, logo) VALUES (?, ?, ?)", [feed.name, feed.url, feed.logo]);
+      db.prepare(
+        "INSERT INTO rss_feeds (name, url, logo) VALUES (?, ?, ?)"
+      ).run(feed.name, feed.url, feed.logo);
     });
   }
+
   console.log("✅ Feeds RSS carregados do banco de dados");
 
+} catch (err) {
+  console.error("Erro:", err.message);
+}
 
 // LOGIN ADMIN
 const admin = {
