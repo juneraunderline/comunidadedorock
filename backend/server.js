@@ -1141,54 +1141,55 @@ app.post("/api/import-rss-single", async (req, res) => {
         }
 
         await new Promise((resolve) => {
-          try {
-  const row = db
-    .prepare("SELECT id FROM posts WHERE title = ?")
-    .get(title);
+  try {
+    const row = db
+      .prepare("SELECT id FROM posts WHERE title = ?")
+      .get(title);
 
-  if (row) {
+    if (row) {
+      return resolve();
+    }
+
+    // DOWNLOAD DA IMAGEM
+    downloadImage(image)
+      .then(localImageUrl => {
+        const finalImageUrl = localImageUrl || image;
+
+        db.run(
+          "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
+          [title, content, finalImageUrl, link, source],
+          function (err) {
+            if (err) {
+              console.warn(`⚠️ Erro ao inserir item:`, err.message);
+            } else {
+              imported += 1;
+              console.log(`✅ Item importado: "${title.substring(0, 50)}..."`);
+            }
+            resolve();
+          }
+        );
+      })
+      .catch(() => {
+        // fallback
+        db.run(
+          "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
+          [title, content, image, link, source],
+          function (err) {
+            if (err) {
+              console.warn(`⚠️ Erro ao inserir item:`, err.message);
+            } else {
+              imported += 1;
+            }
+            resolve();
+          }
+        );
+      });
+
+  } catch (err) {
+    console.warn(`⚠️ Erro ao verificar item:`, err.message);
     return resolve();
   }
-
-} catch (err) {
-  console.warn(`⚠️ POST /api/import-rss-single - Erro ao verificar item:`, err.message);
-  return resolve();
-}
-            
-            // DOWNLOAD DA IMAGEM
-            downloadImage(image).then(localImageUrl => {
-              const finalImageUrl = localImageUrl || image;
-              
-              db.run(
-                "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
-                [title, content, finalImageUrl, link, source],
-                function(err) {
-                  if (err) {
-                    console.warn(`⚠️ POST /api/import-rss-single - Erro ao inserir item:`, err.message);
-                  } else {
-                    imported += 1;
-                    console.log(`✅ Feed "${feed.name}" - Item ${imported} importado: "${title.substring(0, 50)}..."`);
-                  }
-                  resolve();
-                }
-              );
-            }).catch(() => {
-              // Se falhar o download, tenta com URL original
-              db.run(
-                "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
-                [title, content, image, link, source],
-                function(err) {
-                  if (err) {
-                    console.warn(`⚠️ POST /api/import-rss-single - Erro ao inserir item:`, err.message);
-                  } else {
-                    imported += 1;
-                  }
-                  resolve();
-                }
-              );
-            });
-          });
-        });
+});
       } catch (itemErr) {
         console.warn(`⚠️ POST /api/import-rss-single - Erro ao processar item ${i + 1}:`, itemErr.message);
         continue;
