@@ -1081,7 +1081,7 @@ app.post("/api/import-rss", async (req, res) => {
         }
       );
     });
-});
+
 
 // IMPORT RSS SINGLE (Importar um feed individual)
 app.post("/api/import-rss-single", async (req, res) => {
