@@ -1071,7 +1071,7 @@ app.post("/api/import-rss", async (req, res) => {
                   return resolve();
                 }
                 
-                await new Promise((resolve) => {
+                
   downloadImage(image)
     .then((localImageUrl) => {
       const finalImageUrl = localImageUrl || image;
@@ -1087,7 +1087,7 @@ app.post("/api/import-rss", async (req, res) => {
             feedImported += 1;
             console.log(`✅ Feed "${feed.name}" - Item ${feedImported} importado`);
           }
-          resolve();
+          
         }
       );
     })
