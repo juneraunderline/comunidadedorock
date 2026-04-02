@@ -521,53 +521,53 @@ async function autoImportRss() {
   return resolve();
 }
                 
-                // VALIDAÇÃO FINAL ANTES DE INSERIR
-                // Não insere se imagem for inválida
-                if (!image || !image.startsWith('http')) {
-                  console.warn(`⚠️ Post rejeitado - imagem inválida: "${title.substring(0, 40)}..."`);
-                  return resolve();
-                }
-                
-                // DOWNLOAD DA IMAGEM
-                downloadImage(image).then(localImageUrl => {
-                  const finalImageUrl = localImageUrl || image; // Usa local ou URL original
+                  // VALIDAÇÃO FINAL ANTES DE INSERIR
+                  // Não insere se imagem for inválida
+                  if (!image || !image.startsWith('http')) {
+                    console.warn(`⚠️ Post rejeitado - imagem inválida: "${title.substring(0, 40)}..."`);
+                    return resolve();
+                  }
                   
-                  // Se não existe, insere
-                  db.run(
-                    "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
-                    [title, content, finalImageUrl, link, source],
-                    (err) => {
-                      if (err) {
-                        console.warn(`⚠️ Erro ao inserir item "${title}":`, err.message);
-                      } else {
-                        console.log(`✅ Post importado: "${title.substring(0, 50)}..."`);
-                        importedOne = true;
+                  // DOWNLOAD DA IMAGEM
+                  downloadImage(image).then(localImageUrl => {
+                    const finalImageUrl = localImageUrl || image; // Usa local ou URL original
+                    
+                    // Se não existe, insere
+                    db.run(
+                      "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
+                      [title, content, finalImageUrl, link, source],
+                      (err) => {
+                        if (err) {
+                          console.warn(`⚠️ Erro ao inserir item "${title}":`, err.message);
+                        } else {
+                          console.log(`✅ Post importado: "${title.substring(0, 50)}..."`);
+                          importedOne = true;
+                        }
+                        resolve();
                       }
-                      resolve();
-                    }
-                  );
-                }).catch(() => {
-                  // Se falhar o download, tenta inserir com URL original
-                  db.run(
-                    "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
-                    [title, content, image, link, source],
-                    (err) => {
-                      if (err) {
-                        console.warn(`⚠️ Erro ao inserir item "${title}":`, err.message);
-                      } else {
-                        importedOne = true;
+                    );
+                  }).catch(() => {
+                    // Se falhar o download, tenta inserir com URL original
+                    db.run(
+                      "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
+                      [title, content, image, link, source],
+                      (err) => {
+                        if (err) {
+                          console.warn(`⚠️ Erro ao inserir item "${title}":`, err.message);
+                        } else {
+                          importedOne = true;
+                        }
+                        resolve();
                       }
-                      resolve();
-                    }
-                  );
-                });
-              });
-            });
-          } catch (itemErr) {
-            console.warn(`⚠️ Erro ao processar item ${i + 1} do feed ${feed.name}:`, itemErr.message);
-            continue;
+                    );
+                  });
+                
+              
+            } catch (itemErr) {
+              console.warn(`⚠️ Erro ao processar item ${i + 1} do feed ${feed.name}:`, itemErr.message);
+              continue;
+            }
           }
-        }
       } catch (feedErr) {
         console.warn(`⚠️ Erro ao processar feed ${feed.name}:`, feedErr.message);
         continue;
