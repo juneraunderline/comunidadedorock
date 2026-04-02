@@ -25,6 +25,10 @@ try {
     console.log("");
   });
 
+} catch (err) {
+  console.error("❌ Erro ao buscar posts:", err.message);
+}
+
   const total = db.prepare("SELECT COUNT(*) as total FROM posts").get();
   console.log(`Total de posts no banco: ${total.total}`);
 
