@@ -1089,7 +1089,7 @@ app.post("/api/import-rss-single", async (req, res) => {
 
   if (!feed || !feed.url) {
     return res.status(400).json({ error: "Feed inválido" });
-  }
+  });
 
   let imported = 0;
 
