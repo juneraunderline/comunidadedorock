@@ -20,7 +20,7 @@ try {
     console.log(`    Título: ${post.title.substring(0, 60)}...`);
     console.log(`    Imagem: ${post.image}`);
     console.log(`    Data: ${post.created_at}\n`);
-  });
+  
 
 } catch (err) {
   console.error('❌ Erro ao buscar posts:', err.message);

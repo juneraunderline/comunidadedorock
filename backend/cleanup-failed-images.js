@@ -22,7 +22,7 @@ try {
     } else {
       console.log(`⚠️ Post ID ${id} não encontrado`);
     }
-  });
+  
 
   console.log(`\n✅ Deletados ${deleted} posts com imagens inválidas`);
 

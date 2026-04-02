@@ -16,7 +16,7 @@ try {
     console.log(`ID ${row.id}: ${row.title.substring(0, 40)}...`);
     console.log(`  Imagem: ${row.image.substring(0, 100)}...`);
     console.log();
-  });
+  
 
 } catch (err) {
   console.error('Erro:', err);

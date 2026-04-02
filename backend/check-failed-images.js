@@ -20,7 +20,7 @@ try {
     console.log(`Título: ${row.title.substring(0, 60)}...`);
     console.log(`URL: ${row.image}`);
     console.log("");
-  });
+  
 
   console.log(`Total: ${rows.length} posts`);
 

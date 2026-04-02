@@ -164,10 +164,10 @@ try {
 
     // salvar no banco
     rssFeeds.forEach(feed => {
-      db.prepare(
-        "INSERT INTO rss_feeds (name, url, logo) VALUES (?, ?, ?)"
-      ).run(feed.name, feed.url, feed.logo);
-    
+  db.prepare(
+    "INSERT INTO rss_feeds (name, url, logo) VALUES (?, ?, ?)"
+  ).run(feed.name, feed.url, feed.logo);
+});
   }
 
   console.log("✅ Feeds RSS carregados do banco de dados");

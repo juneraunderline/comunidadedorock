@@ -23,7 +23,7 @@ try {
     console.log(`Source: ${row.source || "NULL"}`);
     console.log(`Image: ${row.image || "NULL"}`);
     console.log("");
-  });
+  
 
 } catch (err) {
   console.error("❌ Erro ao buscar posts:", err.message);
