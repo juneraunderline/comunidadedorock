@@ -1,5 +1,5 @@
 // API Configuration - Detecta automaticamente o ambiente
-const API_URL = import.meta.env.VITE_API_URL || "http://https://comunidadedorock.onrender.com";
+const API_URL = import.meta.env.VITE_API_URL || "https://comunidadedorock.onrender.com";
 
 export default API_URL;
 
