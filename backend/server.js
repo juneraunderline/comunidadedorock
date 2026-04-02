@@ -162,7 +162,7 @@ try {
     });
   }
   console.log("✅ Feeds RSS carregados do banco de dados");
-});
+
 
 // LOGIN ADMIN
 const admin = {
