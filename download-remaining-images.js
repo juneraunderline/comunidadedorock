@@ -22,32 +22,27 @@ async function downloadMissingImages() {
         return resolve();
       }
 
-      console.log(`📊 Encontrados ${rows.length} posts com imagens externas\n`);
+     for (const row of rows) {
+  try {
+    const localImageUrl = await downloadImage(row.image);
 
-      let updated = 0;
-      let failed = 0;
+    if (localImageUrl) {
+      try {
+        db.prepare("UPDATE posts SET image = ? WHERE id = ?")
+          .run(localImageUrl, row.id);
 
-      for (const row of rows) {
-        try {
-          const localImageUrl = await downloadImage(row.image);
-          
-          if (localImageUrl) {
-            await new Promise((resolveUpdate) => {
-              db.run(
-                "UPDATE posts SET image = ? WHERE id = ?",
-                [localImageUrl, row.id],
-                (err) => {
-                  if (err) {
-                    console.error(`❌ Post ID ${row.id}: Erro ao atualizar -`, err.message);
-                    failed++;
-                  } else {
-                    console.log(`✅ Post ID ${row.id}: "${row.title.substring(0, 40)}..." -> ${localImageUrl}`);
-                    updated++;
-                  }
-                  resolveUpdate();
-                }
-              );
-            });
+        console.log(`✅ Post ID ${row.id}: "${row.title.substring(0, 40)}..." -> ${localImageUrl}`);
+        updated++;
+      } catch (err) {
+        console.error(`❌ Post ID ${row.id}: Erro ao atualizar -`, err.message);
+        failed++;
+      }
+    }
+  } catch (err) {
+    console.error(`❌ Post ID ${row.id}: Erro geral -`, err.message);
+    failed++;
+  }
+}
           } else {
             console.warn(`⚠️ Post ID ${row.id}: Falha ao baixar imagem (será deletado)`);
             
