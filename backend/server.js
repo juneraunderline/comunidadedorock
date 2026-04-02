@@ -130,8 +130,17 @@ db.prepare(`
 
 // Carregar feeds RSS do banco de dados
 let rssFeeds = [];
-db.all("SELECT id, name, url, logo FROM rss_feeds", [], (err, rows) => {
-  if (rows && rows.length > 0) {
+try {
+  const rows = db
+    .prepare("SELECT id, name, url, logo FROM rss_feeds")
+    .all();
+
+  // usa rows normalmente aqui
+  console.log(rows);
+
+} catch (err) {
+  console.error("Erro:", err.message);
+}  if (rows && rows.length > 0) {
     rssFeeds = rows;
   } else {
     // Se não houver feeds no banco, usar os padrão (SEM LOGOS - usará favicon como fallback)
@@ -498,14 +507,19 @@ async function autoImportRss() {
 
             // Verificar se já existe
             await new Promise((resolve) => {
-              db.get("SELECT id FROM posts WHERE title = ?", [title], (err, row) => {
-                if (err) {
-                  console.warn(`⚠️ Erro ao verificar item "${title}":`, err.message);
-                  return resolve();
-                }
-                if (row) {
-                  return resolve();
-                }
+              try {
+  const row = db
+    .prepare("SELECT id FROM posts WHERE title = ?")
+    .get(title);
+
+  if (row) {
+    return resolve();
+  }
+
+} catch (err) {
+  console.warn(`⚠️ Erro ao verificar item "${title}":`, err.message);
+  return resolve();
+}
                 
                 // VALIDAÇÃO FINAL ANTES DE INSERIR
                 // Não insere se imagem for inválida
@@ -732,20 +746,24 @@ app.get("/api/posts", (req, res) => {
   
   query += " ORDER BY id DESC";
   
-  db.all(query, params, (err, rows) => {
-    if (err) return res.status(500).json(err);
-    
-    // Converter caminhos de imagem relativos para URLs absolutas
-    const postsWithFullImageUrls = rows.map(post => ({
-      ...post,
-      image: post.image && post.image.startsWith('http') 
-        ? post.image 
-        : post.image ? `http://localhost:3000${post.image}` : null
-    }));
-    
-    res.json(postsWithFullImageUrls);
-  });
-});
+  try {
+  const rows = db.prepare(query).all(params);
+
+  // Converter caminhos de imagem relativos para URLs absolutas
+  const postsWithFullImageUrls = rows.map(post => ({
+    ...post,
+    image: post.image && post.image.startsWith('http') 
+      ? post.image 
+      : post.image 
+        ? `${process.env.BASE_URL || 'http://localhost:3000'}${post.image}` 
+        : null
+  }));
+
+  res.json(postsWithFullImageUrls);
+
+} catch (err) {
+  res.status(500).json({ error: err.message });
+}
 
 // CREATE POST
 app.post("/api/posts", async (req, res) => {
@@ -846,11 +864,16 @@ app.post("/api/bands/submit", (req, res) => {
 
 // GET APPROVED BANDS
 app.get("/api/bands", (req, res) => {
-  db.all("SELECT * FROM bands ORDER BY id DESC", [], (err, rows) => {
-    if (err) return res.status(500).json(err);
-    res.json(rows);
-  });
-});
+ try {
+  const rows = db
+    .prepare("SELECT * FROM bands ORDER BY id DESC")
+    .all();
+
+  res.json(rows);
+
+} catch (err) {
+  res.status(500).json({ error: err.message });
+}
 
 // CREATE BAND (ADMIN)
 app.post("/api/bands", (req, res) => {
@@ -872,11 +895,16 @@ app.post("/api/bands", (req, res) => {
 
 // GET PENDING BANDS (ADMIN)
 app.get("/api/pending-bands", (req, res) => {
-  db.all("SELECT * FROM pending_bands ORDER BY submitted_at DESC", [], (err, rows) => {
-    if (err) return res.status(500).json(err);
-    res.json(rows);
-  });
-});
+  try {
+  const rows = db
+    .prepare("SELECT * FROM bands ORDER BY id DESC")
+    .all();
+
+  res.json(rows);
+
+} catch (err) {
+  res.status(500).json({ error: err.message });
+}
 
 // SEED BANDS (Popular banco com bandas de exemplo)
 app.post("/api/seed-bands", (req, res) => {
@@ -1024,9 +1052,12 @@ app.post("/api/import-rss", async (req, res) => {
             }
 
             await new Promise((resolve) => {
-              db.get("SELECT id FROM posts WHERE title = ?", [title], (err, row) => {
-                if (err) {
-                  console.warn(`⚠️ POST /api/import-rss - Erro ao verificar item:`, err.message);
+              try {
+                const row = db
+                  .prepare("SELECT id FROM posts WHERE title = ?")
+                  .get(title);
+
+                if (row) {
                   return resolve();
                 }
                 
@@ -1160,15 +1191,19 @@ app.post("/api/import-rss-single", async (req, res) => {
         }
 
         await new Promise((resolve) => {
-          db.get("SELECT id FROM posts WHERE title = ?", [title], (err, row) => {
-            if (err) {
-              console.warn(`⚠️ POST /api/import-rss-single - Erro ao verificar item:`, err.message);
-              return resolve();
-            }
-            
-            if (row) {
-              return resolve();
-            }
+          try {
+  const row = db
+    .prepare("SELECT id FROM posts WHERE title = ?")
+    .get(title);
+
+  if (row) {
+    return resolve();
+  }
+
+} catch (err) {
+  console.warn(`⚠️ POST /api/import-rss-single - Erro ao verificar item:`, err.message);
+  return resolve();
+}
             
             // DOWNLOAD DA IMAGEM
             downloadImage(image).then(localImageUrl => {
@@ -1282,11 +1317,15 @@ app.post("/api/reimport-rss", async (req, res) => {
             }
 
             await new Promise((resolve) => {
-              db.get("SELECT id, image FROM posts WHERE title = ?", [title], (err, existingPost) => {
-                if (err) {
-                  console.warn(`⚠️ POST /api/reimport-rss - Erro ao verificar item:`, err.message);
-                  return resolve();
-                }
+              try {
+  const existingPost = db
+    .prepare("SELECT id, image FROM posts WHERE title = ?")
+    .get(title);
+
+} catch (err) {
+  console.warn(`⚠️ POST /api/reimport-rss - Erro ao verificar item:`, err.message);
+  return resolve();
+}
 
                 if (existingPost) {
                   if (!existingPost.image && image) {
@@ -1377,11 +1416,20 @@ app.post("/api/fix-missing-images", async (req, res) => {
     console.log("🔧 POST /api/fix-missing-images - Iniciando correção de imagens ausentes...");
     
     // Buscar todas as notícias sem imagem
-    db.all("SELECT * FROM posts WHERE image IS NULL OR image = ''", async (err, posts) => {
-      if (err) {
-        console.error("❌ Erro ao buscar posts sem imagem:", err.message);
-        return res.status(500).json({ error: "Erro ao buscar posts" });
-      }
+    try {
+  const posts = db
+    .prepare("SELECT * FROM posts WHERE image IS NULL OR image = ''")
+    .all();
+
+  // se você usa async depois, pode manter aqui fora
+  // exemplo: baixar imagens, processar etc
+
+  res.json(posts);
+
+} catch (err) {
+  console.error("❌ Erro ao buscar posts sem imagem:", err.message);
+  res.status(500).json({ error: "Erro ao buscar posts" });
+}
 
       if (!posts || posts.length === 0) {
         console.log("✅ Nenhuma notícia sem imagem para corrigir");
@@ -1391,11 +1439,23 @@ app.post("/api/fix-missing-images", async (req, res) => {
       console.log(`📝 Encontradas ${posts.length} notícias sem imagem`);
 
       // Buscar todos os feeds RSS
-      db.all("SELECT id, url FROM rss_feeds", async (err, feeds) => {
-        if (err) {
-          console.error("❌ Erro ao buscar feeds:", err.message);
-          return res.status(500).json({ error: "Erro ao buscar feeds" });
-        }
+      try {
+  const feeds = db
+    .prepare("SELECT id, url FROM rss_feeds")
+    .all();
+
+  // aqui você pode usar async normalmente
+  for (const feed of feeds) {
+    // exemplo:
+    // await processFeed(feed.url);
+  }
+
+  res.json(feeds);
+
+} catch (err) {
+  console.error("❌ Erro ao buscar feeds:", err.message);
+  res.status(500).json({ error: "Erro ao buscar feeds" });
+}
 
         let fixed = 0;
         const feedUrls = {};
@@ -1513,11 +1573,17 @@ app.post("/api/fix-image-urls", async (req, res) => {
   try {
     console.log(`🔧 POST /api/fix-image-urls - Corrigindo URLs de imagens...`);
     
-    db.all("SELECT id, image FROM posts WHERE image IS NOT NULL AND image != ''", (err, posts) => {
-      if (err) {
-        console.error("❌ Erro ao buscar posts:", err.message);
-        return res.status(500).json({ error: "Erro ao buscar posts" });
-      }
+    try {
+  const posts = db
+    .prepare("SELECT id, image FROM posts WHERE image IS NOT NULL AND image != ''")
+    .all();
+
+  res.json(posts);
+
+} catch (err) {
+  console.error("❌ Erro ao buscar posts:", err.message);
+  res.status(500).json({ error: "Erro ao buscar posts" });
+}
 
       let fixed = 0;
       
@@ -1653,9 +1719,21 @@ app.post("/api/approve-band/:id", (req, res) => {
   const id = req.params.id;
 
   // Get pending band
-  db.get("SELECT * FROM pending_bands WHERE id = ?", id, (err, band) => {
-    if (err) return res.status(500).json(err);
-    if (!band) return res.status(404).json({ error: "Banda não encontrada" });
+  try {
+  const band = db
+    .prepare("SELECT * FROM pending_bands WHERE id = ?")
+    .get(id);
+
+  if (!band) {
+    return res.status(404).json({ error: "Banda não encontrada" });
+  }
+
+  // continua o fluxo normal aqui 👇
+  res.json(band);
+
+} catch (err) {
+  res.status(500).json({ error: err.message });
+}
 
     // Insert into bands
     db.run(
@@ -1725,11 +1803,16 @@ db.run(`ALTER TABLE rss_feeds ADD COLUMN logo TEXT`, (err) => {
 // ====== EVENTOS ======
 // GET EVENTS
 app.get("/api/events", (req, res) => {
-  db.all("SELECT * FROM events ORDER BY date ASC", [], (err, rows) => {
-    if (err) return res.status(500).json(err);
-    res.json(rows || []);
-  });
-});
+  try {
+  const rows = db
+    .prepare("SELECT * FROM events ORDER BY date ASC")
+    .all();
+
+  res.json(rows || []);
+
+} catch (err) {
+  res.status(500).json({ error: err.message });
+}
 
 // CREATE EVENT
 app.post("/api/events", (req, res) => {
@@ -1780,11 +1863,17 @@ app.delete("/api/events/:id", (req, res) => {
 });
 
 // GET INTERVIEWS
-app.get("/api/interviews", (req, res) => {
-  db.all("SELECT * FROM interviews ORDER BY id DESC", [], (err, rows) => {
-    if (err) return res.status(500).json(err);
+app.get("/api/events", (req, res) => {
+  try {
+    const rows = db
+      .prepare("SELECT * FROM events ORDER BY date ASC")
+      .all();
+
     res.json(rows || []);
-  });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // CREATE INTERVIEW
