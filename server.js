@@ -1045,57 +1045,49 @@ app.post("/api/import-rss", async (req, res) => {
             }
 
             await new Promise((resolve) => {
-              db.get("SELECT id FROM posts WHERE title = ?", [title], (err, row) => {
-                if (err) {
-                  console.warn(`⚠️ POST /api/import-rss - Erro ao verificar item:`, err.message);
-                  return resolve();
-                }
-                
-                if (row) {
-                  return resolve();
-                }
-                
-                // DOWNLOAD DA IMAGEM se válida
-                if (!image || !image.startsWith('http')) {
-                  console.warn(`⚠️ POST /api/import-rss - Item rejeitado (imagem inválida): "${title.substring(0, 40)}..."`);
-                  return resolve();
-                }
-                
-                downloadImage(image).then(localImageUrl => {
-                  const finalImageUrl = localImageUrl || image;
-                  
-                  db.run(
-                    "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
-                    [title, content, finalImageUrl, link, source],
-                    function(err) {
-                      if (err) {
-                        console.warn(`⚠️ POST /api/import-rss - Erro ao inserir item:`, err.message);
-                      } else {
-                        imported += 1;
-                        feedImported += 1;
-                        console.log(`✅ Feed "${feed.name}" - Item ${feedImported} importado: "${title.substring(0, 50)}..."`);
-                      }
-                      resolve();
-                    }
-                  );
-                }).catch(() => {
-                  // Se falhar o download, tenta com URL original
-                  db.run(
-                    "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
-                    [title, content, image, link, source],
-                    function(err) {
-                      if (err) {
-                        console.warn(`⚠️ POST /api/import-rss - Erro ao inserir item:`, err.message);
-                      } else {
-                        imported += 1;
-                        feedImported += 1;
-                      }
-                      resolve();
-                    }
-                  );
-                });
-              });
-            });
+  db.get("SELECT id FROM posts WHERE title = ?", [title], async (err, row) => {
+    if (err) {
+      console.warn("⚠️ Erro ao verificar item:", err.message);
+      return resolve();
+    }
+
+    if (row) {
+      return resolve();
+    }
+
+    // valida imagem
+    if (!image || !image.startsWith("http")) {
+      console.warn(`⚠️ Item rejeitado (imagem inválida)`);
+      return resolve();
+    }
+
+    let finalImageUrl = image;
+
+    try {
+      const localImageUrl = await downloadImage(image);
+      if (localImageUrl) {
+        finalImageUrl = localImageUrl;
+      }
+    } catch (e) {
+      console.warn("⚠️ Falha no download, usando URL original");
+    }
+
+    db.run(
+      "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
+      [title, content, finalImageUrl, link, source],
+      function (err) {
+        if (err) {
+          console.warn("⚠️ Erro ao inserir item:", err.message);
+        } else {
+          imported++;
+          feedImported++;
+          console.log(`✅ ${title.substring(0, 50)}...`);
+        }
+        resolve();
+      }
+    );
+  });
+});
           } catch (itemErr) {
             console.warn(`⚠️ POST /api/import-rss - Erro ao processar item ${i + 1}:`, itemErr.message);
             continue;

@@ -1071,65 +1071,42 @@ app.post("/api/import-rss", async (req, res) => {
                   return resolve();
                 }
                 
-                downloadImage(image).then(localImageUrl => {
-                  const finalImageUrl = localImageUrl || image;
-                  
-                  db.run(
-                    "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
-                    [title, content, finalImageUrl, link, source],
-                    function(err) {
-                      if (err) {
-                        console.warn(`⚠️ POST /api/import-rss - Erro ao inserir item:`, err.message);
-                      } else {
-                        imported += 1;
-                        feedImported += 1;
-                        console.log(`✅ Feed "${feed.name}" - Item ${feedImported} importado: "${title.substring(0, 50)}..."`);
-                      }
-                      resolve();
-                    }
-                  );
-                }).catch(() => {
-                  // Se falhar o download, tenta com URL original
-                  db.run(
-                    "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
-                    [title, content, image, link, source],
-                    function(err) {
-                      if (err) {
-                        console.warn(`⚠️ POST /api/import-rss - Erro ao inserir item:`, err.message);
-                      } else {
-                        imported += 1;
-                        feedImported += 1;
-                      }
-                      resolve();
-                    }
-                  );
-                });
-              });
-            });
-          } catch (itemErr) {
-            console.warn(`⚠️ POST /api/import-rss - Erro ao processar item ${i + 1}:`, itemErr.message);
-            continue;
-          }
-        }
-        
-        feedStats.push({ feed: feed.name, imported: feedImported, status: feedImported > 0 ? "sucesso" : "nenhum" });
-        if (feedImported > 0) {
-          console.log(`📊 Feed "${feed.name}" - ${feedImported} notícia(s) importada(s)`);
-        } else {
-          console.warn(`⚠️ Feed "${feed.name}" - Nenhuma notícia foi importada`);
-        }
-      } catch (feedErr) {
-        console.warn(`⚠️ POST /api/import-rss - Erro ao processar feed ${feed.name}:`, feedErr.message);
-        feedStats.push({ feed: feed.name, imported: 0, status: "erro_geral" });
-        continue;
-      }
-    }
+                await new Promise((resolve) => {
+  downloadImage(image)
+    .then((localImageUrl) => {
+      const finalImageUrl = localImageUrl || image;
 
-    res.json({ success: true, imported, feedStats });
-  } catch (err) {
-    console.error("❌ POST /api/import-rss - Erro geral:", err.message);
-    res.status(500).json({ error: "Erro ao importar feeds" });
-  }
+      db.run(
+        "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
+        [title, content, finalImageUrl, link, source],
+        function (err) {
+          if (err) {
+            console.warn(`⚠️ POST /api/import-rss - Erro ao inserir item:`, err.message);
+          } else {
+            imported += 1;
+            feedImported += 1;
+            console.log(`✅ Feed "${feed.name}" - Item ${feedImported} importado`);
+          }
+          resolve();
+        }
+      );
+    })
+    .catch(() => {
+      // fallback com URL original
+      db.run(
+        "INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)",
+        [title, content, image, link, source],
+        function (err) {
+          if (err) {
+            console.warn(`⚠️ POST /api/import-rss - Erro ao inserir item:`, err.message);
+          } else {
+            imported += 1;
+            feedImported += 1;
+          }
+          resolve();
+        }
+      );
+    });
 });
 
 // IMPORT RSS SINGLE (Importar um feed individual)
