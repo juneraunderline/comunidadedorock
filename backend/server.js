@@ -1025,33 +1025,7 @@ app.post("/api/import-rss", async (req, res) => {
           // Porém vamos colocar um máximo para não processar demais
           if (feedImported > 0 && i > 5) break;
           
-          try {
-            const item = items[i];
-            if (!item) continue;
-            
-            const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/i);
-            let title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, "").trim() : null;
-            let content = extractContentFromItem(item);
-
-            // VALIDAÇÃO: Não importar posts sem título ou conteúdo válido
-            if (!title || !content) {
-              console.warn(`⚠️ Feed "${feed.name}" - Ignorando item sem título ou conteúdo válido`);
-              continue;
-            }
-
-            let image = extractImageFromItem(item, content);
-            let link = extractLinkFromItem(item);
-            let source = feed.name || "Desconhecida";
-            
-            let createdAt;
-            try {
-              createdAt = extractDateFromItem(item);
-            } catch (dateErr) {
-              console.warn(`⚠️ POST /api/import-rss - Erro ao extrair data:`, dateErr.message);
-              createdAt = new Date().toISOString();
-            }
-
-            await new Promise((resolve) => {
+          
               try {
                 const row = db
                   .prepare("SELECT id FROM posts WHERE title = ?")
