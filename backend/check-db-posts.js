@@ -23,11 +23,7 @@ try {
     console.log(`Source: ${row.source || "NULL"}`);
     console.log(`Image: ${row.image || "NULL"}`);
     console.log("");
-  
-
-} catch (err) {
-  console.error("❌ Erro ao buscar posts:", err.message);
-}
+  });
 
   const total = db.prepare("SELECT COUNT(*) as total FROM posts").get();
   console.log(`Total de posts no banco: ${total.total}`);
@@ -39,7 +35,7 @@ try {
   console.log(`Posts com imagens externas: ${external.external}`);
 
 } catch (err) {
-  console.error("Erro:", err.message);
+  console.error("❌ Erro ao buscar posts:", err.message);
 } finally {
   db.close();
 }
