@@ -140,11 +140,15 @@ db.serialize(() => {
 
 // Carregar feeds RSS do banco de dados
 let rssFeeds = [];
-db.all("SELECT id, name, url, logo FROM rss_feeds", [], (err, rows) => {
+try {
+  const rows = db
+    .prepare("SELECT id, name, url, logo FROM rss_feeds")
+    .all();
+
   if (rows && rows.length > 0) {
     rssFeeds = rows;
   } else {
-    // Se não houver feeds no banco, usar os padrão (SEM LOGOS - usará favicon como fallback)
+    // Se não houver feeds no banco
     rssFeeds = [
       { 
         name: "Rolling Stone Brasil", 
@@ -157,13 +161,20 @@ db.all("SELECT id, name, url, logo FROM rss_feeds", [], (err, rows) => {
         logo: null
       }
     ];
-    // E salvar na tabela
+
+    // salvar no banco
     rssFeeds.forEach(feed => {
-      db.run("INSERT INTO rss_feeds (name, url, logo) VALUES (?, ?, ?)", [feed.name, feed.url, feed.logo]);
+      db.prepare(
+        "INSERT INTO rss_feeds (name, url, logo) VALUES (?, ?, ?)"
+      ).run(feed.name, feed.url, feed.logo);
     });
   }
+
   console.log("✅ Feeds RSS carregados do banco de dados");
-});
+
+} catch (err) {
+  console.error("❌ Erro ao carregar feeds:", err.message);
+}
 
 // LOGIN ADMIN
 const admin = {
