@@ -561,7 +561,7 @@ async function autoImportRss() {
                       }
                     );
                   });
-                
+                });
               
             } catch (itemErr) {
               console.warn(`⚠️ Erro ao processar item ${i + 1} do feed ${feed.name}:`, itemErr.message);
