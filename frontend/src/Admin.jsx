@@ -49,13 +49,13 @@ export default function Admin() {
   }, []);
 
   useEffect(() => {
-    axios.get("http://https://comunidadedorock.onrender.com/api/rss-feeds")
+    axios.get("https://comunidadedorock.onrender.com/api/rss-feeds")
       .then(res => setRssFeeds(res.data))
       .catch(() => setRssFeeds([]));
   }, []);
 
   const login = () => {
-    axios.post("http://https://comunidadedorock.onrender.com/api/login", { user, pass })
+    axios.post("https://comunidadedorock.onrender.com/api/login", { user, pass })
       .then(() => {
         setLogged(true);
         fetchData();
@@ -65,12 +65,12 @@ export default function Admin() {
 
   const fetchData = () => {
     axios.get("https://comunidadedorock.onrender.app/api/posts").then(res => setPosts(res.data));
-    axios.get("http://https://comunidadedorock.onrender.com/api/bands").then(res => setBands(res.data));
-    axios.get("http://https://comunidadedorock.onrender.com/api/pending-bands").then(res => setPendingBands(res.data));
-    axios.get("http://https://comunidadedorock.onrender.com/api/interviews").then(res => setInterviews(res.data));
-    axios.get("http://https://comunidadedorock.onrender.com/api/events").then(res => setEvents(res.data));
+    axios.get("https://comunidadedorock.onrender.com/api/bands").then(res => setBands(res.data));
+    axios.get("https://comunidadedorock.onrender.com/api/pending-bands").then(res => setPendingBands(res.data));
+    axios.get("https://comunidadedorock.onrender.com/api/interviews").then(res => setInterviews(res.data));
+    axios.get("https://comunidadedorock.onrender.com/api/events").then(res => setEvents(res.data));
     // Buscar feeds RSS do backend
-    axios.get("http://https://comunidadedorock.onrender.com/api/rss-feeds").then(res => setRssFeeds(res.data));
+    axios.get("https://comunidadedorock.onrender.com/api/rss-feeds").then(res => setRssFeeds(res.data));
   };
 
   // Função para comprimir imagem
@@ -180,7 +180,7 @@ export default function Admin() {
       return;
     }
 
-    axios.post("http://https://comunidadedorock.onrender.com/api/posts", { ...newPost, content: finalContent })
+    axios.post("https://comunidadedorock.onrender.com/api/posts", { ...newPost, content: finalContent })
       .then(() => {
         setNewPost({ title: "", content: "", image: "", link: "" });
         if (newContentRef.current) {
@@ -193,7 +193,7 @@ export default function Admin() {
   };
 
   const deletePost = (id) => {
-    axios.delete(`http://https://comunidadedorock.onrender.com/api/posts/${id}`)
+    axios.delete(`https://comunidadedorock.onrender.com/api/posts/${id}`)
       .then(() => {
         alert("Notícia deletada com sucesso!");
         fetchData();
@@ -217,7 +217,7 @@ export default function Admin() {
       return;
     }
 
-    axios.put(`http://https://comunidadedorock.onrender.com/api/posts/${editingPost.id}`, {
+    axios.put(`https://comunidadedorock.onrender.com/api/posts/${editingPost.id}`, {
       title: editingPost.title,
       content: finalContent,
       image: editingPost.image,
@@ -245,7 +245,7 @@ export default function Admin() {
       return;
     }
 
-    axios.put(`http://https://comunidadedorock.onrender.com/api/bands/${editingBand.id}`, {
+    axios.put(`https://comunidadedorock.onrender.com/api/bands/${editingBand.id}`, {
       name: editingBand.name,
       genre: editingBand.genre,
       city: editingBand.city,
@@ -275,7 +275,7 @@ export default function Admin() {
   };
 
   const deleteBand = (id) => {
-    axios.delete(`http://https://comunidadedorock.onrender.com/api/bands/${id}`)
+    axios.delete(`https://comunidadedorock.onrender.com/api/bands/${id}`)
       .then(() => fetchData());
   };
 
@@ -285,7 +285,7 @@ export default function Admin() {
       return;
     }
 
-    axios.post("http://https://comunidadedorock.onrender.com/api/bands", newBand)
+    axios.post("https://comunidadedorock.onrender.com/api/bands", newBand)
       .then(() => {
         setNewBand({ name: "", genre: "", city: "", state: "", year: "", members: "", biography: "", contact: "", image: "", instagram: "", facebook: "", youtube: "", spotify: "", bandcamp: "", site: "" });
         fetchData();
@@ -299,7 +299,7 @@ export default function Admin() {
   };
 
   const approveBand = (id) => {
-    axios.post(`http://https://comunidadedorock.onrender.com/api/approve-band/${id}`)
+    axios.post(`https://comunidadedorock.onrender.com/api/approve-band/${id}`)
       .then(() => fetchData());
   };
 
@@ -309,7 +309,7 @@ export default function Admin() {
       return;
     }
 
-    axios.post("http://https://comunidadedorock.onrender.com/api/interviews", newInterview)
+    axios.post("https://comunidadedorock.onrender.com/api/interviews", newInterview)
       .then(() => {
         setNewInterview({ title: "", artist: "", content: "", image: "", date: "" });
         fetchData();
@@ -328,7 +328,7 @@ export default function Admin() {
       return;
     }
 
-    axios.put(`http://https://comunidadedorock.onrender.com/api/interviews/${editingInterview.id}`, {
+    axios.put(`https://comunidadedorock.onrender.com/api/interviews/${editingInterview.id}`, {
       title: editingInterview.title,
       artist: editingInterview.artist,
       content: editingInterview.content,
@@ -348,7 +348,7 @@ export default function Admin() {
   };
 
   const deleteInterview = (id) => {
-    axios.delete(`http://https://comunidadedorock.onrender.com/api/interviews/${id}`)
+    axios.delete(`https://comunidadedorock.onrender.com/api/interviews/${id}`)
       .then(() => {
         alert("Entrevista deletada com sucesso!");
         fetchData();
@@ -363,7 +363,7 @@ export default function Admin() {
       return;
     }
 
-    axios.post("http://https://comunidadedorock.onrender.com/api/events", newEvent)
+    axios.post("https://comunidadedorock.onrender.com/api/events", newEvent)
       .then(() => {
         setNewEvent({ title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", description: "" });
         fetchData();
@@ -382,7 +382,7 @@ export default function Admin() {
       return;
     }
 
-    axios.put(`http://https://comunidadedorock.onrender.com/api/events/${editingEvent.id}`, {
+    axios.put(`https://comunidadedorock.onrender.com/api/events/${editingEvent.id}`, {
       title: editingEvent.title,
       artist: editingEvent.artist,
       date: editingEvent.date,
@@ -407,7 +407,7 @@ export default function Admin() {
   };
 
   const deleteEvent = (id) => {
-    axios.delete(`http://https://comunidadedorock.onrender.com/api/events/${id}`)
+    axios.delete(`https://comunidadedorock.onrender.com/api/events/${id}`)
       .then(() => {
         alert("Evento deletado com sucesso!");
         fetchData();
@@ -422,7 +422,7 @@ export default function Admin() {
     }
 
     try {
-      const res = await axios.post("http://https://comunidadedorock.onrender.com/api/rss-feeds", { 
+      const res = await axios.post("https://comunidadedorock.onrender.com/api/rss-feeds", { 
         name: feedName.trim(), 
         url: feedUrl.trim(),
         logo: feedLogo.trim() || null
@@ -442,7 +442,7 @@ export default function Admin() {
 
   const removeRssFeed = async (index) => {
     try {
-      const res = await axios.delete(`http://https://comunidadedorock.onrender.com/api/rss-feeds/${index}`);
+      const res = await axios.delete(`https://comunidadedorock.onrender.com/api/rss-feeds/${index}`);
       
       if (res.data.success) {
         setRssFeeds(res.data.feeds);
@@ -460,7 +460,7 @@ export default function Admin() {
     }
 
     try {
-      const res = await axios.put(`http://https://comunidadedorock.onrender.com/api/rss-feeds/${index}/logo`, {
+      const res = await axios.put(`https://comunidadedorock.onrender.com/api/rss-feeds/${index}/logo`, {
         logo: editingLogoUrl.trim()
       });
       
@@ -489,7 +489,7 @@ export default function Admin() {
     }
 
     try {
-      const res = await axios.put(`http://https://comunidadedorock.onrender.com/api/rss-feeds/${editingFeedId}`, {
+      const res = await axios.put(`https://comunidadedorock.onrender.com/api/rss-feeds/${editingFeedId}`, {
         name: editingFeedName.trim(),
         url: editingFeedUrl.trim()
       });
@@ -519,7 +519,7 @@ export default function Admin() {
     }
 
     try {
-      const res = await axios.post("http://https://comunidadedorock.onrender.com/api/import-rss", { feeds: rssFeeds });
+      const res = await axios.post("https://comunidadedorock.onrender.com/api/import-rss", { feeds: rssFeeds });
 
       if (res.data && res.data.success) {
         alert(`Importado(s) ${res.data.imported} notícia(s)`);
@@ -539,7 +539,7 @@ export default function Admin() {
     }
 
     try {
-      const res = await axios.post("http://https://comunidadedorock.onrender.com/api/reimport-rss", { feeds: rssFeeds });
+      const res = await axios.post("https://comunidadedorock.onrender.com/api/reimport-rss", { feeds: rssFeeds });
 
       if (res.data && res.data.success) {
         alert(`Imagens atualizadas em ${res.data.updated} notícia(s) e ${res.data.created} novas criadas!`);
@@ -557,7 +557,7 @@ export default function Admin() {
     setLoadingFeeds([...loadingFeeds, index]);
 
     try {
-      const res = await axios.post("http://https://comunidadedorock.onrender.com/api/import-rss-single", { feed });
+      const res = await axios.post("https://comunidadedorock.onrender.com/api/import-rss-single", { feed });
 
       if (res.data && res.data.success) {
         alert(`Importado(s) ${res.data.imported} notícia(s) de ${feed.name}`);
@@ -578,7 +578,7 @@ export default function Admin() {
     }
 
     try {
-      const res = await axios.post("http://https://comunidadedorock.onrender.com/api/fix-missing-images");
+      const res = await axios.post("https://comunidadedorock.onrender.com/api/fix-missing-images");
 
       if (res.data && res.data.success) {
         alert(`✅ ${res.data.fixed} de ${res.data.total} imagens foram corrigidas!\n\n${res.data.message}`);
@@ -593,7 +593,7 @@ export default function Admin() {
 
   const testRssFeedImages = async (feedUrl) => {
     try {
-      const res = await axios.post("http://https://comunidadedorock.onrender.com/api/test-rss-images", { feedUrl });
+      const res = await axios.post("https://comunidadedorock.onrender.com/api/test-rss-images", { feedUrl });
 
       if (res.data && res.data.success) {
         alert(`📊 Teste de ${res.data.feedUrl}\n\n` +
