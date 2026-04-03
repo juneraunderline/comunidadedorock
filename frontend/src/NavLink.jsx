@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 
-function NavLink({ to, children }) {
+function NavLink({ to, children, onClick }) {
   const location = useLocation();
   
   // Comparar a rota atual com o destino
@@ -18,6 +18,7 @@ function NavLink({ to, children }) {
     <Link 
       to={to} 
       className={`nav-link ${finalIsActive ? "active" : ""}`}
+      onClick={onClick}
     >
       {children}
     </Link>
