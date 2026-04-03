@@ -574,32 +574,38 @@ app.get("/og/noticias/:id", async (req, res) => {
         image = "https://comunidadedorock.onrender.com" + post.image;
       }
     }
+    const ogUrl = `https://comunidadedorock.onrender.com/og/noticias/${post.id}`;
     const siteUrl = `https://comunidadedorock.vercel.app/noticias/${post.id}`;
     const ua = (req.headers["user-agent"] || "").toLowerCase();
-    const isBot = ua.includes("facebookexternalhit") || ua.includes("twitterbot") || ua.includes("whatsapp") || ua.includes("telegrambot") || ua.includes("linkedinbot") || ua.includes("slackbot");
+    const isBot = ua.includes("facebookexternalhit") || ua.includes("twitterbot") || ua.includes("whatsapp") || ua.includes("telegrambot") || ua.includes("linkedinbot") || ua.includes("slackbot") || ua.includes("bot") || ua.includes("crawl") || ua.includes("spider");
     if (!isBot) {
       return res.redirect(siteUrl);
     }
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
     res.status(200).send(`<!DOCTYPE html>
-<html>
+<html prefix="og: http://ogp.me/ns#">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8" />
 <title>${title} - Comunidade do Rock</title>
 <meta property="og:title" content="${title}" />
 <meta property="og:description" content="${description}" />
 <meta property="og:image" content="${image}" />
+<meta property="og:image:url" content="${image}" />
+<meta property="og:image:secure_url" content="${image}" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:url" content="${siteUrl}" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:url" content="${ogUrl}" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="Comunidade do Rock" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${title}" />
 <meta name="twitter:description" content="${description}" />
 <meta name="twitter:image" content="${image}" />
+<link rel="canonical" href="${ogUrl}" />
 </head>
-<body><p>${title}</p><p>${description}</p><img src="${image}" /></body>
+<body><h1>${title}</h1><p>${description}</p><img src="${image}" alt="${title}" /></body>
 </html>`);
   } catch (err) {
     res.redirect("https://comunidadedorock.vercel.app");
