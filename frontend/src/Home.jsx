@@ -205,7 +205,7 @@ function Home({ posts }) {
       </section>
 
       {/* BANDAS NOVAS */}
-      <section className="section section-dark">
+      <section className="section">
         <div className="section-header">
           <h2>BANDAS <span className="highlight">NOVAS</span></h2>
           <button onClick={() => navigate("/bandas")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
