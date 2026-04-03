@@ -108,6 +108,10 @@ function extractDateFromItem(item) {
 // --- LOGICA RSS AUTOMÁTICA ---
 
 async function autoImportRss() {
+  // Recarregar feeds do banco para pegar novos feeds adicionados
+  try {
+    rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
+  } catch (e) { console.warn("Erro ao recarregar feeds:", e.message); }
   for (const feed of rssFeeds) {
     try {
       const res = await fetchFunc(feed.url);
@@ -132,7 +136,7 @@ async function autoImportRss() {
     } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
   }
 }
-setInterval(autoImportRss, 60000);
+setInterval(autoImportRss, 5000);
 
 // --- ROTAS DA API ---
 
