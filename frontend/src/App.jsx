@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import API_URL from "./config/api";
 import "./style.css";
@@ -22,6 +22,7 @@ import TestImages from "./TestImages";
 
 function App() {
   const [posts, setPosts] = useState([]);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     // Buscar posts na montagem
@@ -50,15 +51,17 @@ function App() {
           <Link to="/" className="header-logo-link">
             <img src={logo} alt="Comunidade do Rock Logo" className="header-logo" />
           </Link>
-          <nav className="nav-menu">
-            <NavLink to="/">HOME</NavLink>
-            <NavLink to="/noticias">NOTÍCIAS</NavLink>
-            <NavLink to="/bandas">BANDAS NOVAS</NavLink>
-            <NavLink to="/entrevistas">ENTREVISTAS</NavLink>
-            <NavLink to="/eventos">EVENTOS</NavLink>
-            <NavLink to="/contato">CONTATO</NavLink>
+          <nav className={`nav-menu${menuOpen ? " open" : ""}`}>
+            <NavLink to="/" onClick={() => setMenuOpen(false)}>HOME</NavLink>
+            <NavLink to="/noticias" onClick={() => setMenuOpen(false)}>NOTÍCIAS</NavLink>
+            <NavLink to="/bandas" onClick={() => setMenuOpen(false)}>BANDAS NOVAS</NavLink>
+            <NavLink to="/entrevistas" onClick={() => setMenuOpen(false)}>ENTREVISTAS</NavLink>
+            <NavLink to="/eventos" onClick={() => setMenuOpen(false)}>EVENTOS</NavLink>
+            <NavLink to="/contato" onClick={() => setMenuOpen(false)}>CONTATO</NavLink>
           </nav>
-          <button className="menu-toggle">☰</button>
+          <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+            {menuOpen ? "✕" : "☰"}
+          </button>
         </header>
 
         <Routes>

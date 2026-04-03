@@ -78,41 +78,43 @@ function BandaDetail() {
               </div>
             )}
 
+            {(band.instagram || band.facebook || band.youtube || band.spotify || band.bandcamp || band.site) && (
             <div className="band-detail-social">
               <h3>Redes Sociais</h3>
               <div className="social-links">
                 {band.instagram && (
                   <a href={band.instagram} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-                    Instagram
+                    📷 Instagram
                   </a>
                 )}
                 {band.facebook && (
                   <a href={band.facebook} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-                    Facebook
+                    📘 Facebook
                   </a>
                 )}
                 {band.youtube && (
                   <a href={band.youtube} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-                    YouTube
+                    ▶️ YouTube
                   </a>
                 )}
                 {band.spotify && (
                   <a href={band.spotify} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-                    Spotify
+                    🎵 Spotify
                   </a>
                 )}
                 {band.bandcamp && (
                   <a href={band.bandcamp} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-                    Bandcamp
+                    🎶 Bandcamp
                   </a>
                 )}
                 {band.site && (
                   <a href={band.site} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-                    Site Oficial
+                    🌐 Site Oficial
                   </a>
                 )}
               </div>
             </div>
+            )}
 
             {band.contact && (
               <div className="band-detail-section-box">

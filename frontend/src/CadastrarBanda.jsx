@@ -41,7 +41,7 @@ function CadastrarBanda() {
     e.preventDefault();
     try {
       const res = await axios.post(`${API_URL}/api/bands/submit`, form);
-      setMessage(res.data.message);
+      setMessage(res.data.message || "Banda cadastrada com sucesso! Aguarde a aprovação.");
       setForm({
         name: "",
         genre: "",
@@ -60,7 +60,7 @@ function CadastrarBanda() {
         image: ""
       });
     } catch (err) {
-      setMessage("Erro ao cadastrar banda.");
+      setMessage("Erro ao cadastrar banda: " + (err.response?.data?.error || err.message));
     }
   };
 

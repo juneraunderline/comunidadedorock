@@ -98,8 +98,32 @@ body {
 @media (max-width: 768px) {
   .nav-menu {
     display: none;
+    flex-direction: column;
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 10, 10, 0.98);
+    z-index: 999;
+    padding: 30px;
+    gap: 0;
+    justify-content: flex-start;
+    align-items: stretch;
+    overflow-y: auto;
   }
-  
+
+  .nav-menu.open {
+    display: flex;
+  }
+
+  .nav-menu .nav-link {
+    font-size: 18px;
+    padding: 16px 0;
+    border-bottom: 1px solid #222;
+    text-align: left;
+  }
+
   .menu-toggle {
     display: block;
   }
@@ -176,7 +200,11 @@ body {
   letter-spacing: 5px;
   line-height: 1;
   text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9);
+
   white-space: normal;
+=======
+  white-space: nowrap;
+  color: #fff;
 }
 
 .hero h2 span {
@@ -308,6 +336,7 @@ body {
   gap: 10px;
   position: relative;
   padding-left: 0;
+  color: #fff;
 }
 
 .section-header h2::before {
@@ -457,8 +486,8 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 700;
-  color: #fff;
-  line-height: ;
+  color: #fff !important;
+  line-height: 1.3;
 }
 
 .card-content p {
@@ -706,12 +735,12 @@ body {
   }
 
   .hero {
-    height: 350px;
+    height: 420px;
     margin-bottom: 30px;
   }
 
   .hero h2 {
-    font-size: 50px;
+    font-size: 36px !important;
     letter-spacing: 2px;
     white-space: normal;
   }
@@ -723,7 +752,13 @@ body {
   }
 
   .hero p {
-    font-size: 14px;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .hero-content {
+    padding: 0 16px;
+    padding-top: 20px;
   }
 
   .section-header h2 {
@@ -751,23 +786,17 @@ body {
   }
 }
 
+
 .hero h2 {
   font-size: 60px;
 }
 
 .hero h2 span {
   color: #e91e63;
-}
+=======
+.hero span {
+  color: #ff1744;
 
-.hero p {
-  color: #ccc;
-}
-
-.hero button {
-  margin: 10px;
-  padding: 12px 20px;
-  border: none;
-  cursor: pointer;
 }
 
 .btn-red {
@@ -862,6 +891,7 @@ body {
   font-size: 36px;
   letter-spacing: 2px;
   margin: 0 0 8px;
+  color: #fff;
 }
 
 .admin-header h1 span {
@@ -1212,6 +1242,7 @@ body {
   font-size: 36px;
   margin: 0 0 16px;
   letter-spacing: 1px;
+  color: #fff !important;
 }
 
 .news-detail-meta {
@@ -1530,7 +1561,7 @@ body {
 .band-detail-content h1 {
   font-size: 36px;
   margin: 0 0 20px;
-  color: #e91e63;
+  color: #e91e63 !important;
   text-transform: uppercase;
   letter-spacing: 2px;
 }
@@ -1646,7 +1677,7 @@ body {
 .interview-detail-header h1 {
   font-size: 32px;
   margin: 0 0 15px;
-  color: #fff;
+  color: #fff !important;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
