@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/og/:path*", "destination": "https://comunidadedorock.onrender.com/og/:path*" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }

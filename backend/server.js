@@ -574,7 +574,7 @@ app.get("/og/noticias/:id", async (req, res) => {
         image = "https://comunidadedorock.onrender.com" + post.image;
       }
     }
-    const ogUrl = `https://comunidadedorock.com.br/noticias/${post.id}`;
+    const ogUrl = `https://comunidadedorock.com.br/og/noticias/${post.id}`;
     const siteUrl = `https://comunidadedorock.com.br/noticias/${post.id}`;
     const ua = (req.headers["user-agent"] || "").toLowerCase();
     const isBot = ua.includes("facebookexternalhit") || ua.includes("twitterbot") || ua.includes("whatsapp") || ua.includes("telegrambot") || ua.includes("linkedinbot") || ua.includes("slackbot") || ua.includes("bot") || ua.includes("crawl") || ua.includes("spider");
