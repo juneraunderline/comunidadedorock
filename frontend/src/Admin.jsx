@@ -1249,16 +1249,31 @@ export default function Admin({ user: currentUser }) {
         )}
 
         <div className="bands-pending-section">
-          <h3>Bandas Pendentes</h3>
-          <ul>
-            {pendingBands.length === 0 && <li>Nenhuma banda pendente</li>}
-            {pendingBands.map(b => (
-              <li key={b.id}>
-                <span>{b.name} - {b.genre} - {b.city}/{b.state}</span>
-                <button className="btn btn-primary" onClick={() => approveBand(b.id)}>Aprovar</button>
-              </li>
-            ))}
-          </ul>
+          <h3>Bandas Pendentes ({pendingBands.length})</h3>
+          {pendingBands.length === 0 && <p>Nenhuma banda pendente</p>}
+          {pendingBands.map(b => (
+            <div key={b.id} className="post-item">
+              <div className="post-preview">
+                {b.image && <img src={getImageUrl(b.image)} alt={b.name} />}
+                <div className="post-info">
+                  <h4>{b.name}</h4>
+                  <p><strong>{b.genre}</strong> - {b.city}/{b.state}</p>
+                  {b.year && <p>Formação: {b.year}</p>}
+                  <p>{b.biography ? b.biography.substring(0, 100) : "Sem descrição"}...</p>
+                  {b.instagram && <small>📷 {b.instagram}</small>}
+                  {b.contact && <small> · 📧 {b.contact}</small>}
+                </div>
+              </div>
+              <div className="post-actions">
+                <button className="btn btn-primary" onClick={() => approveBand(b.id)}>✅ Aprovar</button>
+                <button className="btn btn-outline" onClick={() => {
+                  if (confirm(`Rejeitar a banda ${b.name}?`)) {
+                    axios.delete(`${API_URL}/api/pending-bands/${b.id}`).then(() => fetchData()).catch(() => alert("Erro ao rejeitar"));
+                  }
+                }}>❌ Rejeitar</button>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
       )}
