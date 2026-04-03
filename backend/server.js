@@ -563,7 +563,7 @@ app.post("/api/test-rss-images", async (req, res) => {
 app.get("/og/noticias/:id", async (req, res) => {
   try {
     const post = await db.getOne("SELECT * FROM posts WHERE id = $1", [req.params.id]);
-    if (!post) return res.redirect("https://comunidadedorock.vercel.app/noticias");
+    if (!post) return res.redirect("https://comunidadedorock.com.br/noticias");
     const title = (post.title || "Comunidade do Rock").replace(/"/g, "&quot;").replace(/</g, "&lt;");
     const description = ((post.content || "").replace(/<[^>]+>/g, "").substring(0, 200) + "...").replace(/"/g, "&quot;").replace(/</g, "&lt;");
     let image = "https://comunidadedorock.onrender.com/logo.png";
@@ -574,8 +574,8 @@ app.get("/og/noticias/:id", async (req, res) => {
         image = "https://comunidadedorock.onrender.com" + post.image;
       }
     }
-    const ogUrl = `https://comunidadedorock.onrender.com/og/noticias/${post.id}`;
-    const siteUrl = `https://comunidadedorock.vercel.app/noticias/${post.id}`;
+    const ogUrl = `https://comunidadedorock.com.br/noticias/${post.id}`;
+    const siteUrl = `https://comunidadedorock.com.br/noticias/${post.id}`;
     const ua = (req.headers["user-agent"] || "").toLowerCase();
     const isBot = ua.includes("facebookexternalhit") || ua.includes("twitterbot") || ua.includes("whatsapp") || ua.includes("telegrambot") || ua.includes("linkedinbot") || ua.includes("slackbot") || ua.includes("bot") || ua.includes("crawl") || ua.includes("spider");
     if (!isBot) {
@@ -608,7 +608,7 @@ app.get("/og/noticias/:id", async (req, res) => {
 <body><h1>${title}</h1><p>${description}</p><img src="${image}" alt="${title}" /></body>
 </html>`);
   } catch (err) {
-    res.redirect("https://comunidadedorock.vercel.app");
+    res.redirect("https://comunidadedorock.com.br");
   }
 });
 
