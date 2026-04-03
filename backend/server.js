@@ -51,6 +51,7 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS rss_feeds (id SERIAL PRIMARY KEY, name TEXT NOT NULL, url TEXT NOT NULL UNIQUE, logo TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS events (id SERIAL PRIMARY KEY, title TEXT, artist TEXT, date TEXT, time TEXT, location TEXT, city TEXT, state TEXT, image TEXT, ticket_link TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS interviews (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, content TEXT, image TEXT, date TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, display_name TEXT, avatar TEXT, role TEXT DEFAULT 'user', created_at TIMESTAMPTZ DEFAULT NOW())`);
 };
 
 // Carregar Feeds
@@ -135,10 +136,83 @@ setInterval(autoImportRss, 60000);
 
 // --- ROTAS DA API ---
 
-app.post("/api/login", (req, res) => {
-  const { user, pass } = req.body;
-  if (user === "admin" && pass === "1234") return res.json({ success: true });
-  res.status(401).json({ success: false });
+// Autenticação
+app.post("/api/register", async (req, res) => {
+  try {
+    const { username, password, display_name } = req.body;
+    if (!username || !password) return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
+    if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
+    if (password.length < 4) return res.status(400).json({ error: "Senha deve ter pelo menos 4 caracteres" });
+    const exists = await db.getOne("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
+    if (exists) return res.status(409).json({ error: "Usuário já existe" });
+    const result = await pool.query(
+      "INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, $4) RETURNING id, username, display_name, avatar, role, created_at",
+      [username.toLowerCase(), password, display_name || username, "user"]
+    );
+    res.json({ success: true, user: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/login", async (req, res) => {
+  try {
+    const { user, pass } = req.body;
+    // Admin hardcoded (compatibilidade)
+    if (user === "admin" && pass === "1234") {
+      // Criar admin no banco se não existir
+      let admin = await db.getOne("SELECT * FROM users WHERE username = 'admin'");
+      if (!admin) {
+        const result = await pool.query(
+          "INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, $4) RETURNING id, username, display_name, avatar, role, created_at",
+          ["admin", "1234", "Administrador", "admin"]
+        );
+        admin = result.rows[0];
+      }
+      return res.json({ success: true, user: { id: admin.id, username: admin.username, display_name: admin.display_name, avatar: admin.avatar, role: admin.role } });
+    }
+    // Login normal
+    const found = await db.getOne("SELECT * FROM users WHERE username = $1 AND password = $2", [user?.toLowerCase(), pass]);
+    if (!found) return res.status(401).json({ success: false, error: "Usuário ou senha incorretos" });
+    res.json({ success: true, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/user/:id", async (req, res) => {
+  try {
+    const user = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/user/:id", async (req, res) => {
+  try {
+    const { display_name, avatar, new_password, current_password } = req.body;
+    const user = await db.getOne("SELECT * FROM users WHERE id = $1", [req.params.id]);
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+    if (new_password) {
+      if (!current_password || current_password !== user.password) {
+        return res.status(403).json({ error: "Senha atual incorreta" });
+      }
+      if (new_password.length < 4) return res.status(400).json({ error: "Nova senha deve ter pelo menos 4 caracteres" });
+      await db.run("UPDATE users SET password = $1 WHERE id = $2", [new_password, req.params.id]);
+    }
+    if (display_name !== undefined) {
+      await db.run("UPDATE users SET display_name = $1 WHERE id = $2", [display_name, req.params.id]);
+    }
+    if (avatar !== undefined) {
+      await db.run("UPDATE users SET avatar = $1 WHERE id = $2", [avatar, req.params.id]);
+    }
+    const updated = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
+    res.json({ success: true, user: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Posts

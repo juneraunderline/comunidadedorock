@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_URL from "./config/api";
 import "./style.css";
@@ -19,10 +19,28 @@ import Contato from "./Contato";
 import CadastrarBanda from "./CadastrarBanda";
 import Admin from "./Admin";
 import TestImages from "./TestImages";
+import Perfil from "./Perfil";
+import Login from "./Login";
 
 function App() {
   const [posts, setPosts] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem("user");
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    localStorage.setItem("user", JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem("user");
+  };
 
   useEffect(() => {
     // Buscar posts na montagem
@@ -59,6 +77,40 @@ function App() {
             <NavLink to="/eventos" onClick={() => setMenuOpen(false)}>EVENTOS</NavLink>
             <NavLink to="/contato" onClick={() => setMenuOpen(false)}>CONTATO</NavLink>
           </nav>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+            {user ? (
+              <>
+                <Link to="/perfil" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{
+                    width: "32px", height: "32px", borderRadius: "50%",
+                    background: user.avatar ? `url(${user.avatar}) center/cover` : "#e91e63",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "14px", color: "#fff", border: "2px solid #e91e63", flexShrink: 0
+                  }}>
+                    {!user.avatar && (user.display_name || user.username || "U").charAt(0).toUpperCase()}
+                  </div>
+                  <span style={{ color: "#fff", fontSize: "13px", fontWeight: "600" }} className="user-name-header">
+                    {user.display_name || user.username}
+                  </span>
+                </Link>
+                <button onClick={handleLogout} style={{
+                  background: "none", border: "1px solid #444", color: "#999",
+                  padding: "5px 12px", borderRadius: "4px", cursor: "pointer", fontSize: "11px",
+                  fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px"
+                }}>
+                  Sair
+                </button>
+              </>
+            ) : (
+              <Link to="/login" style={{
+                background: "#e91e63", color: "#fff", textDecoration: "none",
+                padding: "6px 16px", borderRadius: "4px", fontSize: "12px",
+                fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px"
+              }}>
+                Entrar
+              </Link>
+            )}
+          </div>
           <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? "✕" : "☰"}
           </button>
@@ -76,6 +128,8 @@ function App() {
           <Route path="/eventos/:id" element={<EventDetail />} />
           <Route path="/contato" element={<Contato />} />
           <Route path="/cadastrar-banda" element={<CadastrarBanda />} />
+          <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          <Route path="/perfil" element={<Perfil user={user} setUser={handleLogin} />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/test-images" element={<TestImages />} />
         </Routes>
