@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import API_URL from "./config/api";
+import API_URL, { getImageUrl } from "./config/api";
 
 function Entrevistas() {
   const [interviews, setInterviews] = useState([]);
@@ -42,7 +42,7 @@ function Entrevistas() {
               >
                 <div className="card-image">
                   <img 
-                    src={interview.image || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} 
+                    src={getImageUrl(interview.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} 
                     alt={interview.title} 
                   />
                 </div>

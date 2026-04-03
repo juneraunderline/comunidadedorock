@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import API_URL from "./config/api";
+import API_URL, { getImageUrl } from "./config/api";
 
 function NewsDetail() {
   const { id } = useParams();
@@ -131,7 +131,7 @@ function NewsDetail() {
         <div className="news-detail-container">
           {post.image && (
             <div className="news-detail-image">
-              <img src={post.image} alt={post.title} />
+              <img src={getImageUrl(post.image)} alt={post.title} />
             </div>
           )}
           

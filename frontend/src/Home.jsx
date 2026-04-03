@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import API_URL from "./config/api";
+import API_URL, { getImageUrl } from "./config/api";
 import logo from "./assets/logo.png";
 import hero from "./assets/hero-stage.jpg";
 import Portal from "./Portal";
@@ -120,7 +120,7 @@ function Home({ posts }) {
                   <div className="card-image">
                     {p.image ? (
                       <img 
-                        src={p.image} 
+                        src={getImageUrl(p.image)} 
                         alt={p.title}
                         onError={() => {
                           console.log("❌ Erro ao carregar imagem:", p.image);
@@ -177,7 +177,7 @@ function Home({ posts }) {
                 style={{ cursor: "pointer" }}
               >
                 <div className="card-image">
-                  <img src={band.image || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={band.name} />
+                  <img src={getImageUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={band.name} />
                 </div>
                 <div className="card-content">
                   <h3>{band.name}</h3>
@@ -211,7 +211,7 @@ function Home({ posts }) {
                   style={{ cursor: "pointer" }}
                 >
                   <div className="card-image">
-                    <img src={interview.image || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={interview.title} />
+                    <img src={getImageUrl(interview.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={interview.title} />
                   </div>
                   <div className="card-content">
                     <h3>{interview.title}</h3>

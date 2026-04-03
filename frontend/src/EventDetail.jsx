@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import API_URL from "./config/api";
+import API_URL, { getImageUrl } from "./config/api";
 
 function EventDetail() {
   const { id } = useParams();
@@ -51,7 +51,7 @@ function EventDetail() {
       <div className="event-card" style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
         {event.image && (
           <div style={{ width: '100%', height: '380px', overflow: 'hidden', borderRadius: '8px', marginBottom: '20px' }}>
-            <img src={event.image} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={getImageUrl(event.image)} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
         )}
         <div style={{ background: '#16161b', padding: '20px', borderRadius: '8px' }}>
