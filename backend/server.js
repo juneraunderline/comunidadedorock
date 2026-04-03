@@ -320,6 +320,15 @@ app.post("/api/approve-band/:id", async (req, res) => {
   res.json({ success: true });
 });
 
+app.delete("/api/pending-bands/:id", async (req, res) => {
+  try {
+    await db.run("DELETE FROM pending_bands WHERE id = $1", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Entrevistas
 app.get("/api/interviews", async (req, res) => {
   res.json(await db.getAll("SELECT * FROM interviews ORDER BY id DESC"));
