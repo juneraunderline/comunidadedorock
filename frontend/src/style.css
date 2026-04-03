@@ -200,10 +200,7 @@ body {
   letter-spacing: 5px;
   line-height: 1;
   text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9);
-
   white-space: normal;
-=======
-  white-space: nowrap;
   color: #fff;
 }
 
@@ -794,10 +791,13 @@ body {
 .hero h2 span {
   color: #e91e63;
   display: block;
+
+=======
 }
 =======
 .hero span {
   color: #ff1744;
+
 
 }
 
