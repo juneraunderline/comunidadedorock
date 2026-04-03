@@ -633,7 +633,7 @@ export default function Admin({ user: currentUser }) {
         <button className={activeTab === "noticias" ? "active" : ""} onClick={() => setActiveTab("noticias")}>NOTÍCIAS</button>
         {isAdmin && <button className={activeTab === "bandas" ? "active" : ""} onClick={() => setActiveTab("bandas")}>BANDAS</button>}
         {isAdmin && <button className={activeTab === "entrevistas" ? "active" : ""} onClick={() => setActiveTab("entrevistas")}>ENTREVISTAS</button>}
-        {isAdmin && <button className={activeTab === "eventos" ? "active" : ""} onClick={() => setActiveTab("eventos")}>EVENTOS</button>}
+        <button className={activeTab === "eventos" ? "active" : ""} onClick={() => setActiveTab("eventos")}>EVENTOS</button>
         {isAdmin && <button className={activeTab === "usuarios" ? "active" : ""} onClick={() => setActiveTab("usuarios")}>USUÁRIOS</button>}
       </div>
 
@@ -1661,7 +1661,7 @@ export default function Admin({ user: currentUser }) {
               </div>
               <div className="post-actions">
                 <button className="btn btn-primary" onClick={() => startEditEvent(event)}>✏️ Editar</button>
-                <button className="btn btn-outline" onClick={() => {if (confirm("Tem certeza?")) deleteEvent(event.id)}}>🗑 Deletar</button>
+                {isAdmin && <button className="btn btn-outline" onClick={() => {if (confirm("Tem certeza?")) deleteEvent(event.id)}}>🗑 Deletar</button>}
               </div>
             </div>
           ))}
