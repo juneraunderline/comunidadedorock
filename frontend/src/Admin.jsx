@@ -924,9 +924,9 @@ export default function Admin({ user: currentUser }) {
 
         <div className="posts-list">
           <h3>Lista de Notícias ({posts.length})</h3>
-          <div style={{marginBottom: "16px"}}>
+          {isAdmin && <div style={{marginBottom: "16px"}}>
             <button className="btn btn-outline" onClick={reimportRssFeeds}>🔄 Reimportar e Atualizar Imagens</button>
-          </div>
+          </div>}
           {posts.length === 0 && <p>Nenhuma notícia publicada</p>}
           {posts.map(post => (
             <div key={post.id} className="post-item">
@@ -939,7 +939,7 @@ export default function Admin({ user: currentUser }) {
               </div>
               <div className="post-actions">
                 <button className="btn btn-primary" onClick={() => startEditPost(post)}>✏️ Editar</button>
-                <button className="btn btn-outline" onClick={() => {if (confirm("Tem certeza?")) deletePost(post.id)}}>🗑 Deletar</button>
+                {isAdmin && <button className="btn btn-outline" onClick={() => {if (confirm("Tem certeza?")) deletePost(post.id)}}>🗑 Deletar</button>}
               </div>
             </div>
           ))}
