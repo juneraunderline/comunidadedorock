@@ -786,10 +786,12 @@ body {
 
 .hero h2 {
   font-size: 60px;
+  white-space: normal;
 }
 
 .hero h2 span {
   color: #e91e63;
+  display: block;
 }
 
 .btn-red {
