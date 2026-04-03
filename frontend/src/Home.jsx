@@ -161,39 +161,6 @@ function Home({ posts }) {
         </div>
       </section>
 
-      {/* BANDAS */}
-      <section className="section section-dark">
-        <div className="section-header">
-          <h2>BANDAS <span className="highlight">NOVAS</span></h2>
-          <button onClick={() => navigate("/bandas")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
-        </div>
-        <div className="grid grid-2">
-          {bands.length > 0 ? (
-            bands.slice(0, 3).map(band => (
-              <div 
-                key={band.id} 
-                className="card"
-                onClick={() => navigate(`/bandas/${band.id}`)}
-                style={{ cursor: "pointer" }}
-              >
-                <div className="card-image">
-                  <img src={getImageUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={band.name} />
-                </div>
-                <div className="card-content">
-                  <h3>{band.name}</h3>
-                  <p>{band.genre}</p>
-                  <small>{band.city}, {band.state}</small>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div style={{gridColumn: "1/-1", textAlign: "center", color: "#666", padding: "40px"}}>
-              Nenhuma banda cadastrada ainda.
-            </div>
-          )}
-        </div>
-      </section>
-
       {/* ENTREVISTAS */}
       <section className="section">
         <div className="section-header">
@@ -224,6 +191,39 @@ function Home({ posts }) {
           ) : (
             <div style={{gridColumn: "1/-1", textAlign: "center", color: "#888"}}>
               Nenhuma entrevista publicada ainda. Volte em breve!
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* BANDAS NOVAS */}
+      <section className="section section-dark">
+        <div className="section-header">
+          <h2>BANDAS <span className="highlight">NOVAS</span></h2>
+          <button onClick={() => navigate("/bandas")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
+        </div>
+        <div className="grid grid-2">
+          {bands.length > 0 ? (
+            bands.slice(0, 3).map(band => (
+              <div 
+                key={band.id} 
+                className="card"
+                onClick={() => navigate(`/bandas/${band.id}`)}
+                style={{ cursor: "pointer" }}
+              >
+                <div className="card-image">
+                  <img src={getImageUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={band.name} />
+                </div>
+                <div className="card-content">
+                  <h3>{band.name}</h3>
+                  <p>{band.genre}</p>
+                  <small>{band.city}, {band.state}</small>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={{gridColumn: "1/-1", textAlign: "center", color: "#666", padding: "40px"}}>
+              Nenhuma banda cadastrada ainda.
             </div>
           )}
         </div>
