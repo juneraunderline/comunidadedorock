@@ -118,7 +118,7 @@ async function autoImportRss() {
       const xml = await res.text();
       const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
       
-      for (const itemXml of items.slice(0, 5)) {
+      for (const itemXml of items) {
         const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
         const content = extractContentFromItem(itemXml);
         const image = extractImageFromItem(itemXml, content);
@@ -434,7 +434,7 @@ app.post("/api/import-rss", async (req, res) => {
         const response = await fetchFunc(feed.url);
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
-        for (const itemXml of items.slice(0, 10)) {
+        for (const itemXml of items) {
           const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
           const content = extractContentFromItem(itemXml);
           const image = extractImageFromItem(itemXml, content);
@@ -462,7 +462,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     const response = await fetchFunc(feed.url);
     const xml = await response.text();
     const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
-    for (const itemXml of items.slice(0, 10)) {
+    for (const itemXml of items) {
       const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
       const content = extractContentFromItem(itemXml);
       const image = extractImageFromItem(itemXml, content);
@@ -490,7 +490,7 @@ app.post("/api/reimport-rss", async (req, res) => {
         const response = await fetchFunc(feed.url);
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
-        for (const itemXml of items.slice(0, 10)) {
+        for (const itemXml of items) {
           const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
           const content = extractContentFromItem(itemXml);
           const image = extractImageFromItem(itemXml, content);
