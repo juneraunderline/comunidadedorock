@@ -559,6 +559,35 @@ app.post("/api/test-rss-images", async (req, res) => {
   }
 });
 
+// Open Graph para compartilhamento de notícias
+app.get("/og/noticias/:id", async (req, res) => {
+  try {
+    const post = await db.getOne("SELECT * FROM posts WHERE id = $1", [req.params.id]);
+    if (!post) return res.redirect("https://comunidadedorock.vercel.app/noticias");
+    const title = (post.title || "Comunidade do Rock").replace(/"/g, "&quot;");
+    const description = ((post.content || "").replace(/<[^>]+>/g, "").substring(0, 200) + "...").replace(/"/g, "&quot;");
+    const image = post.image && post.image.startsWith("http") ? post.image : "https://comunidadedorock.vercel.app/logo.png";
+    const url = `https://comunidadedorock.vercel.app/noticias/${post.id}`;
+    res.send(`<!DOCTYPE html><html><head>
+      <meta charset="utf-8">
+      <title>${title} - Comunidade do Rock</title>
+      <meta property="og:title" content="${title}">
+      <meta property="og:description" content="${description}">
+      <meta property="og:image" content="${image}">
+      <meta property="og:url" content="${url}">
+      <meta property="og:type" content="article">
+      <meta property="og:site_name" content="Comunidade do Rock">
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:title" content="${title}">
+      <meta name="twitter:description" content="${description}">
+      <meta name="twitter:image" content="${image}">
+      <meta http-equiv="refresh" content="0;url=${url}">
+    </head><body>Redirecionando...</body></html>`);
+  } catch (err) {
+    res.redirect("https://comunidadedorock.vercel.app");
+  }
+});
+
 // Inicializar banco e iniciar servidor
 async function startServer() {
   await initDb();
