@@ -179,9 +179,10 @@ app.delete("/api/bands/:id", (req, res) => {
 
 app.post("/api/bands/submit", (req, res) => {
   const b = req.body;
-  db.prepare(`INSERT INTO pending_bands (name, genre, city, state, biography, image) VALUES (?, ?, ?, ?, ?, ?)`)
-    .run(b.name, b.genre, b.city, b.state, b.biography, b.image);
-  res.json({ success: true });
+  if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
+  db.prepare(`INSERT INTO pending_bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site);
+  res.json({ success: true, message: "Banda cadastrada com sucesso! Aguarde a aprovação." });
 });
 
 app.get("/api/pending-bands", (req, res) => {
@@ -192,8 +193,8 @@ app.post("/api/approve-band/:id", (req, res) => {
   const band = db.prepare("SELECT * FROM pending_bands WHERE id = ?").get(req.params.id);
   if (!band) return res.status(404).send();
   
-  const stmt = db.prepare(`INSERT INTO bands (name, genre, city, state, biography, image) VALUES (?, ?, ?, ?, ?, ?)`);
-  stmt.run(band.name, band.genre, band.city, band.state, band.biography, band.image);
+  const stmt = db.prepare(`INSERT INTO bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  stmt.run(band.name, band.genre, band.city, band.state, band.year, band.members, band.biography, band.contact, band.image, band.instagram, band.facebook, band.youtube, band.spotify, band.bandcamp, band.site);
   db.prepare("DELETE FROM pending_bands WHERE id = ?").run(req.params.id);
   res.json({ success: true });
 });
