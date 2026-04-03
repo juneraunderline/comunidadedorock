@@ -788,10 +788,17 @@ body {
   font-size: 60px;
   white-space: normal;
 }
-
 .hero h2 span {
   color: #e91e63;
   display: block;
+
+=======
+}
+=======
+.hero span {
+  color: #ff1744;
+
+
 }
 
 .btn-red {
