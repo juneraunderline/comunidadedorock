@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API_URL from "./config/api";
 
 export default function TestImages() {
   const [posts, setPosts] = useState([]);
@@ -7,7 +8,7 @@ export default function TestImages() {
 
   useEffect(() => {
     axios
-      .get("http://https://comunidadedorock.onrender.com/api/posts")
+      .get(`${API_URL}/api/posts`)
       .then((res) => {
         console.log("✅ Posts carregados:", res.data.length);
         setPosts(res.data);

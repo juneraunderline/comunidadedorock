@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API_URL from "./config/api";
 import logo from "./assets/logo.png";
 import hero from "./assets/hero-stage.jpg";
 import Portal from "./Portal";
@@ -56,19 +57,19 @@ function Home({ posts }) {
 
   useEffect(() => {
     // Buscar bandas na primeira montagem
-    axios.get("http://https://comunidadedorock.onrender.com/api/bands")
+    axios.get(`${API_URL}/api/bands`)
       .then(res => setBands(res.data));
 
     // Buscar entrevistas
-    axios.get("http://https://comunidadedorock.onrender.com/api/interviews")
+    axios.get(`${API_URL}/api/interviews`)
       .then(res => setInterviews(res.data));
 
     // Atualizar a cada 5 segundos
     const interval = setInterval(() => {
-      axios.get("http://https://comunidadedorock.onrender.com/api/bands")
+      axios.get(`${API_URL}/api/bands`)
         .then(res => setBands(res.data));
 
-      axios.get("http://https://comunidadedorock.onrender.com/api/interviews")
+      axios.get(`${API_URL}/api/interviews`)
         .then(res => setInterviews(res.data));
     }, 5000);
 
