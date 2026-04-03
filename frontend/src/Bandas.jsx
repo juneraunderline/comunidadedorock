@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API_URL from "./config/api";
 
 function Bandas() {
   const navigate = useNavigate();
@@ -8,12 +9,12 @@ function Bandas() {
 
   useEffect(() => {
     // Buscar bandas na primeira montagem
-    axios.get("http://https://comunidadedorock.onrender.com/api/bands")
+    axios.get(`${API_URL}/api/bands`)
       .then(res => setBands(res.data));
 
     // Atualizar a cada 5 segundos
     const interval = setInterval(() => {
-      axios.get("http://https://comunidadedorock.onrender.com/api/bands")
+      axios.get(`${API_URL}/api/bands`)
         .then(res => setBands(res.data));
     }, 5000);
 

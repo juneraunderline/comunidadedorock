@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import API_URL from "./config/api";
 import "./portal.css";
 
 function Portal() {
@@ -32,7 +33,7 @@ function Portal() {
   useEffect(() => {
     // Forçar refetch dos feeds a cada 5 segundos
     const interval = setInterval(() => {
-      axios.get("http://https://comunidadedorock.onrender.com/api/rss-feeds")
+      axios.get(`${API_URL}/api/rss-feeds`)
         .then(res => {
           setFeeds(res.data);
           setLoading(false);
@@ -44,7 +45,7 @@ function Portal() {
     }, 5000);
     
     // Carregamento inicial
-    axios.get("http://https://comunidadedorock.onrender.com/api/rss-feeds")
+    axios.get(`${API_URL}/api/rss-feeds`)
       .then(res => {
         setFeeds(res.data);
         setLoading(false);

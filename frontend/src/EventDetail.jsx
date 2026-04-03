@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API_URL from "./config/api";
 
 function EventDetail() {
   const { id } = useParams();
@@ -9,7 +10,7 @@ function EventDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("http://https://comunidadedorock.onrender.com/api/events")
+    axios.get(`${API_URL}/api/events`)
       .then(res => {
         const selected = res.data.find(it => String(it.id) === String(id));
         setEvent(selected);

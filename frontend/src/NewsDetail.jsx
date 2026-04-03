@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API_URL from "./config/api";
 
 function NewsDetail() {
   const { id } = useParams();
@@ -33,7 +34,7 @@ function NewsDetail() {
   };
 
   useEffect(() => {
-    axios.get("https://comunidadedorock.onrender.app/api/posts")
+    axios.get(`${API_URL}/api/posts`)
       .then(res => {
         const selectedPost = res.data.find(p => p.id === parseInt(id));
         setPost(selectedPost);

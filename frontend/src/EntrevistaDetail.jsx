@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API_URL from "./config/api";
 
 function EntrevistaDetail() {
   const { id } = useParams();
@@ -50,7 +51,7 @@ function EntrevistaDetail() {
   };
 
   useEffect(() => {
-    axios.get("http://https://comunidadedorock.onrender.com/api/interviews")
+    axios.get(`${API_URL}/api/interviews`)
       .then(res => {
         const selectedInterview = res.data.find(i => i.id === parseInt(id));
         setInterview(selectedInterview);

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import API_URL from "./config/api";
 
 function Eventos() {
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    axios.get("http://https://comunidadedorock.onrender.com/api/events")
+    axios.get(`${API_URL}/api/events`)
       .then(res => setEvents(res.data))
       .catch(err => console.error("Erro ao carregar eventos:", err));
   }, []);

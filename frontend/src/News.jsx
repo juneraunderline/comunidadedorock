@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import axios from "axios";
+import API_URL from "./config/api";
 
 function News() {
   const [posts, setPosts] = useState([]);
@@ -38,7 +39,7 @@ function News() {
 
   useEffect(() => {
     // Construir URL com filtro se necessário
-    let url = "https://comunidadedorock.onrender.com/api/posts";
+    let url = `${API_URL}/api/posts`;
     if (portalFilter) {
       url += `?source=${encodeURIComponent(portalFilter)}`;
     }

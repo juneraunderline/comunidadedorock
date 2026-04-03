@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import API_URL from "./config/api";
 
 function CadastrarBanda() {
   const [form, setForm] = useState({
@@ -39,7 +40,7 @@ function CadastrarBanda() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://https://comunidadedorock.onrender.com/api/bands/submit", form);
+      const res = await axios.post(`${API_URL}/api/bands/submit`, form);
       setMessage(res.data.message);
       setForm({
         name: "",

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import API_URL from "./config/api";
 
 function Entrevistas() {
   const [interviews, setInterviews] = useState([]);
@@ -8,7 +9,7 @@ function Entrevistas() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get("http://https://comunidadedorock.onrender.com/api/interviews")
+    axios.get(`${API_URL}/api/interviews`)
       .then(res => {
         setInterviews(res.data);
         setLoading(false);

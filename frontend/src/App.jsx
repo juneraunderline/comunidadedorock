@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import axios from "axios";
+import API_URL from "./config/api";
 import "./style.css";
 import logo from "./assets/logo.png";
 import hero from "./assets/hero-stage.jpg";
@@ -24,17 +25,16 @@ function App() {
 
   useEffect(() => {
     // Buscar posts na montagem
-    axios.get("https://comunidadedorock.onrender.app/api/posts")
+    axios.get(`${API_URL}/api/posts`)
       .then(res => {
         console.log("🔄 App.jsx - Posts carregados:", res.data.length);
-        console.log("   Imagens esperadas de:", "http://https://comunidadedorock.onrender.com/images/...");
         setPosts(res.data);
       })
       .catch(err => console.error("❌ Erro ao carregar posts:", err));
 
     // Atualizar posts a cada 10 segundos para pegar novos que foram importados
     const interval = setInterval(() => {
-      axios.get("https://comunidadedorock.onrender.app/api/posts")
+      axios.get(`${API_URL}/api/posts`)
         .then(res => setPosts(res.data))
         .catch(err => console.error("❌ Erro ao atualizar posts:", err));
     }, 10000);
