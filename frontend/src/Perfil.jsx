@@ -88,6 +88,21 @@ function Perfil({ user, setUser }) {
           </div>
           <p style={{ color: "#999", fontSize: "13px" }}>@{user.username}</p>
           <p style={{ color: "#666", fontSize: "12px" }}>Membro desde {new Date(user.created_at).toLocaleDateString("pt-BR")}</p>
+          {(user.role === "admin" || user.role === "editor") && (
+            <a
+              href="/admin"
+              style={{
+                display: "inline-block", marginTop: "12px",
+                background: user.role === "admin" ? "#e91e63" : "#333",
+                color: "#fff", textDecoration: "none",
+                padding: "8px 20px", borderRadius: "6px",
+                fontSize: "13px", fontWeight: "700",
+                textTransform: "uppercase", letterSpacing: "0.5px"
+              }}
+            >
+              {user.role === "admin" ? "⚙️ Painel Admin Completo" : "📝 Painel de Notícias"}
+            </a>
+          )}
         </div>
 
         {/* Dados do perfil */}
