@@ -566,7 +566,7 @@ app.get("/og/noticias/:id", async (req, res) => {
     if (!post) return res.redirect("https://comunidadedorock.com.br/noticias");
     const title = (post.title || "Comunidade do Rock").replace(/"/g, "&quot;").replace(/</g, "&lt;");
     const description = ((post.content || "").replace(/<[^>]+>/g, "").substring(0, 200) + "...").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-    let image = "https://comunidadedorock.onrender.com/logo.png";
+    let image = "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=1200&h=630&fit=crop";
     if (post.image) {
       if (post.image.startsWith("http")) {
         image = post.image;
@@ -582,7 +582,7 @@ app.get("/og/noticias/:id", async (req, res) => {
       return res.redirect(siteUrl);
     }
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.status(200).send(`<!DOCTYPE html>
 <html prefix="og: http://ogp.me/ns#">
 <head>
@@ -592,7 +592,7 @@ app.get("/og/noticias/:id", async (req, res) => {
 <meta property="og:description" content="${description}" />
 <meta property="og:image" content="${image}" />
 <meta property="og:image:url" content="${image}" />
-<meta property="og:image:secure_url" content="${image}" />
+<meta property="og:image:secure_url" content="${image.replace('http://', 'https://')}" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:type" content="image/jpeg" />
@@ -605,7 +605,11 @@ app.get("/og/noticias/:id", async (req, res) => {
 <meta name="twitter:image" content="${image}" />
 <link rel="canonical" href="${ogUrl}" />
 </head>
-<body><h1>${title}</h1><p>${description}</p><img src="${image}" alt="${title}" /></body>
+<body>
+<h1>${title}</h1>
+<p>${description}</p>
+<img src="${image}" alt="${title}" width="1200" height="630" />
+</body>
 </html>`);
   } catch (err) {
     res.redirect("https://comunidadedorock.com.br");
