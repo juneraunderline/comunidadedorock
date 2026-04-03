@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Teste Imagens</title>
+    <style>
+        body { background: #000; color: #fff; font-family: Arial; padding: 30px; }
+        .card { border: 1px solid #333; padding: 20px; margin: 20px 0; width: 300px; }
+        .img-container { width: 100%; height: 250px; background: #222; margin-bottom: 10px; position: relative; }
+        .img-container img { width: 100%; height: 100%; object-fit: cover; }
+        .error { color: #f00; padding: 10px; background: #300; }
+        .ok { color: #0f0; }
+    </style>
+</head>
+<body>
+    <h1>🖼️ Teste Simples - Carregando Imagens</h1>
+    <div id="result"></div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+
+        // 1. Buscar posts
+        fetch('http://https://comunidadedorock.onrender.com/api/posts')
+            .then(r => r.json())
+            .then(posts => {
+                console.log('Posts recebidos:', posts.length);
+                
+                const html = posts.slice(0, 3).map((p, i) => `
+                    <div class="card">
+                        <strong>Post #${i+1}</strong>
+                        <p>ID: ${p.id}</p>
+                        <p>Título: ${p.title.substring(0, 40)}</p>
+                        <p>Fonte: ${p.source}</p>
+                        <p>Imagem URL: ${p.image}</p>
+                        <div class="img-container">
+                            <img 
+                                src="${p.image}" 
+                                alt="test"
+                                onload="this.parentElement.innerHTML += '<p class=ok>✅ IMAGEM CARREGOU!</p>'"
+                                onerror="this.parentElement.innerHTML += '<p class=error>❌ ERRO AO CARREGAR</p>'"
+                            >
+                        </div>
+                    </div>
+                `).join('');
+                
+                resultDiv.innerHTML = html;
+            })
+            .catch(err => {
+                resultDiv.innerHTML = `<div class="error">❌ Erro: ${err.message}</div>`;
+            });
+    </script>
+</body>
+</html>
