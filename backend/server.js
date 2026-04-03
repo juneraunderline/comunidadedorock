@@ -705,6 +705,95 @@ app.get("/og/eventos/:id", async (req, res) => {
   } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
 });
 
+// --- OPEN GRAPH HELPERS ---
+function buildOgHtml(title, description, image, ogUrl, type) {
+  const safeImg = (image || "").replace('http://', 'https://');
+  return `<!DOCTYPE html>
+<html prefix="og: http://ogp.me/ns#">
+<head>
+<meta charset="utf-8" />
+<title>${title} - Comunidade do Rock</title>
+<meta property="og:title" content="${title}" />
+<meta property="og:description" content="${description}" />
+<meta property="og:image" content="${safeImg}" />
+<meta property="og:image:url" content="${safeImg}" />
+<meta property="og:image:secure_url" content="${safeImg}" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:url" content="${ogUrl}" />
+<meta property="og:type" content="${type}" />
+<meta property="og:site_name" content="Comunidade do Rock" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${title}" />
+<meta name="twitter:description" content="${description}" />
+<meta name="twitter:image" content="${safeImg}" />
+<link rel="canonical" href="${ogUrl}" />
+</head>
+<body><h1>${title}</h1><p>${description}</p><img src="${safeImg}" alt="${title}" width="1200" height="630" /></body>
+</html>`;
+}
+function resolveImage(img) {
+  if (!img) return "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=1200&h=630&fit=crop";
+  if (img.startsWith("http")) return img;
+  return "https://comunidadedorock.onrender.com" + img;
+}
+function isCrawler(ua) {
+  const l = (ua || "").toLowerCase();
+  return l.includes("facebookexternalhit") || l.includes("twitterbot") || l.includes("whatsapp") || l.includes("telegrambot") || l.includes("linkedinbot") || l.includes("slackbot") || l.includes("bot") || l.includes("crawl") || l.includes("spider");
+}
+function sendOg(res, title, description, image, ogUrl, type, siteUrl, ua) {
+  if (!isCrawler(ua)) return res.redirect(siteUrl);
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.status(200).send(buildOgHtml(title, description, image, ogUrl, type));
+}
+
+// OG - Notícias
+app.get("/og/noticias/:id", async (req, res) => {
+  try {
+    const post = await db.getOne("SELECT * FROM posts WHERE id = $1", [req.params.id]);
+    if (!post) return res.redirect("https://comunidadedorock.com.br/noticias");
+    const title = (post.title || "Comunidade do Rock").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const description = ((post.content || "").replace(/<[^>]+>/g, "").substring(0, 200) + "...").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    sendOg(res, title, description, resolveImage(post.image), `https://comunidadedorock.com.br/og/noticias/${post.id}`, "article", `https://comunidadedorock.com.br/noticias/${post.id}`, req.headers["user-agent"]);
+  } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
+});
+
+// OG - Bandas
+app.get("/og/bandas/:id", async (req, res) => {
+  try {
+    const band = await db.getOne("SELECT * FROM bands WHERE id = $1", [req.params.id]);
+    if (!band) return res.redirect("https://comunidadedorock.com.br/bandas");
+    const title = (band.name || "Banda").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const description = ((band.biography || band.genre || "Conheça essa banda no Comunidade do Rock").substring(0, 200)).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    sendOg(res, title, description, resolveImage(band.image), `https://comunidadedorock.com.br/og/bandas/${band.id}`, "profile", `https://comunidadedorock.com.br/bandas/${band.id}`, req.headers["user-agent"]);
+  } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
+});
+
+// OG - Entrevistas
+app.get("/og/entrevistas/:id", async (req, res) => {
+  try {
+    const item = await db.getOne("SELECT * FROM interviews WHERE id = $1", [req.params.id]);
+    if (!item) return res.redirect("https://comunidadedorock.com.br/entrevistas");
+    const title = (`${item.title} - ${item.artist}`).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const description = ((item.content || "Entrevista exclusiva no Comunidade do Rock").replace(/<[^>]+>/g, "").substring(0, 200)).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    sendOg(res, title, description, resolveImage(item.image), `https://comunidadedorock.com.br/og/entrevistas/${item.id}`, "article", `https://comunidadedorock.com.br/entrevistas/${item.id}`, req.headers["user-agent"]);
+  } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
+});
+
+// OG - Eventos
+app.get("/og/eventos/:id", async (req, res) => {
+  try {
+    const item = await db.getOne("SELECT * FROM events WHERE id = $1", [req.params.id]);
+    if (!item) return res.redirect("https://comunidadedorock.com.br/eventos");
+    const title = (item.title || "Evento").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const desc = [item.artist, item.date, item.location, item.city].filter(Boolean).join(" · ");
+    const description = (desc || "Confira este evento no Comunidade do Rock").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    sendOg(res, title, description, resolveImage(item.image), `https://comunidadedorock.com.br/og/eventos/${item.id}`, "event", `https://comunidadedorock.com.br/eventos/${item.id}`, req.headers["user-agent"]);
+  } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
+});
+
 // Inicializar banco e iniciar servidor
 async function startServer() {
   await initDb();
