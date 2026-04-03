@@ -566,7 +566,14 @@ app.get("/og/noticias/:id", async (req, res) => {
     if (!post) return res.redirect("https://comunidadedorock.vercel.app/noticias");
     const title = (post.title || "Comunidade do Rock").replace(/"/g, "&quot;");
     const description = ((post.content || "").replace(/<[^>]+>/g, "").substring(0, 200) + "...").replace(/"/g, "&quot;");
-    const image = post.image && post.image.startsWith("http") ? post.image : "https://comunidadedorock.vercel.app/logo.png";
+    let image = "https://comunidadedorock.vercel.app/logo.png";
+    if (post.image) {
+      if (post.image.startsWith("http")) {
+        image = post.image;
+      } else if (post.image.startsWith("/images/")) {
+        image = "https://comunidadedorock.onrender.com" + post.image;
+      }
+    }
     const url = `https://comunidadedorock.vercel.app/noticias/${post.id}`;
     res.send(`<!DOCTYPE html><html><head>
       <meta charset="utf-8">
