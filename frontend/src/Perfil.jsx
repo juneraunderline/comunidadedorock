@@ -6,6 +6,7 @@ import API_URL from "./config/api";
 function Perfil({ user, setUser }) {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -19,6 +20,7 @@ function Perfil({ user, setUser }) {
       return;
     }
     setDisplayName(user.display_name || "");
+    setUsername(user.username || "");
     setAvatar(user.avatar || "");
   }, [user, navigate]);
 
@@ -28,6 +30,7 @@ function Perfil({ user, setUser }) {
     try {
       const res = await axios.put(`${API_URL}/api/user/${user.id}`, {
         display_name: displayName,
+        username: username,
         avatar: avatar
       });
       if (res.data.success) {
@@ -108,6 +111,17 @@ function Perfil({ user, setUser }) {
         {/* Dados do perfil */}
         <div style={{ background: "#111118", border: "1px solid #252532", borderRadius: "12px", padding: "24px", marginBottom: "20px" }}>
           <h3 style={{ color: "#e91e63", marginTop: 0, marginBottom: "16px" }}>Dados do Perfil</h3>
+
+          <div style={{ marginBottom: "12px" }}>
+            <label style={{ display: "block", marginBottom: "4px", color: "#b0b0c6", fontSize: "14px" }}>Usuário</label>
+            <input
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+              style={{ width: "100%", background: "#0a0a11", border: "1px solid #2c2c38", color: "#fff", padding: "10px 12px", borderRadius: "6px", fontSize: "14px" }}
+            />
+            <p style={{ margin: "4px 0 0", color: "#555", fontSize: "11px" }}>Apenas letras minúsculas, números e _</p>
+          </div>
 
           <div style={{ marginBottom: "12px" }}>
             <label style={{ display: "block", marginBottom: "4px", color: "#b0b0c6", fontSize: "14px" }}>Nome de exibição</label>
