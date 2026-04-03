@@ -176,13 +176,13 @@ body {
   letter-spacing: 5px;
   line-height: 1;
   text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9);
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .hero h2 span {
   color: #e91e63;
-  display: inline;
-  margin-left: 15px;
+  display: block;
+  margin-left: 0;
 }
 
 .hero p {
@@ -755,8 +755,8 @@ body {
   font-size: 60px;
 }
 
-.hero span {
-  color: #ff1744;
+.hero h2 span {
+  color: #e91e63;
 }
 
 .hero p {
