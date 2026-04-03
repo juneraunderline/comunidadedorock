@@ -200,14 +200,17 @@ body {
   letter-spacing: 5px;
   line-height: 1;
   text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9);
+
+  white-space: normal;
+=======
   white-space: nowrap;
   color: #fff;
 }
 
 .hero h2 span {
   color: #e91e63;
-  display: inline;
-  margin-left: 15px;
+  display: block;
+  margin-left: 0;
 }
 
 .hero p {
@@ -783,8 +786,17 @@ body {
   }
 }
 
+
+.hero h2 {
+  font-size: 60px;
+}
+
+.hero h2 span {
+  color: #e91e63;
+=======
 .hero span {
   color: #ff1744;
+
 }
 
 .btn-red {
