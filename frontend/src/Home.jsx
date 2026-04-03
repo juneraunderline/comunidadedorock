@@ -81,7 +81,7 @@ function Home({ posts }) {
           style={{ backgroundImage: `url(${hero})` }}
         >
           <div className="hero-content">
-            <h2>COMUNIDADE<br /><span>DO ROCK</span></h2>
+            <h2>CCOMUNIDADE<br /><span>DO ROCK</span></h2>
             <p>
               O melhor do rock underground brasileiro em um só lugar.
               Descubra novas bandas, leia entrevistas exclusivas e fique por dentro das últimas notícias.
