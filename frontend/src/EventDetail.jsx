@@ -72,10 +72,10 @@ function EventDetail() {
       <div style={{ maxWidth: '900px', margin: '20px auto 0' }}>
         <div className="news-detail-share">
           <span>Compartilhe:</span>
-          <button className="share-btn whatsapp" onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(event.title + " | Comunidade do Rock " + "https://comunidadedorock.onrender.com/og/eventos/" + event.id)}`, '_blank')}>💬 WhatsApp</button>
-          <button className="share-btn facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://comunidadedorock.onrender.com/og/eventos/" + event.id)}`, '_blank')}>f Facebook</button>
-          <button className="share-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(event.title)}&url=${encodeURIComponent("https://comunidadedorock.onrender.com/og/eventos/" + event.id)}`, '_blank')}>𝕏 Twitter</button>
-          <button className="share-btn telegram" onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent("https://comunidadedorock.onrender.com/og/eventos/" + event.id)}&text=${encodeURIComponent(event.title)}`, '_blank')}>✈ Telegram</button>
+          <button className="share-btn whatsapp" onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(event.title + " | Comunidade do Rock https://comunidadedorock.com.br/eventos/" + event.id)}`, '_blank')}>💬 WhatsApp</button>
+          <button className="share-btn facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://comunidadedorock.com.br/eventos/" + event.id)}`, '_blank')}>f Facebook</button>
+          <button className="share-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(event.title)}&url=${encodeURIComponent("https://comunidadedorock.com.br/eventos/" + event.id)}`, '_blank')}>𝕏 Twitter</button>
+          <button className="share-btn telegram" onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent("https://comunidadedorock.com.br/eventos/" + event.id)}&text=${encodeURIComponent(event.title)}`, '_blank')}>✈ Telegram</button>
         </div>
       </div>
       <div style={{ textAlign: 'center', marginTop: '24px' }}>

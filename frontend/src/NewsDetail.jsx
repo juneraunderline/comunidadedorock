@@ -89,8 +89,7 @@ function NewsDetail() {
   const shareOnSocial = (platform) => {
     if (!post) return;
     
-    // Usar URL do backend para Open Graph (Facebook/Twitter leem as meta tags)
-    const url = `https://comunidadedorock.onrender.com/og/noticias/${post.id}`;
+    const url = `https://comunidadedorock.com.br/noticias/${post.id}`;
     const title = post.title;
     const text = `${title} - Confira no Comunidade do Rock`;
     
