@@ -236,6 +236,87 @@ function Home({ posts }) {
           )}
         </div>
       </section>
+
+      {/* PRÓXIMOS EVENTOS */}
+      <section className="section">
+        <div className="section-header">
+          <h2>PRÓXIMOS <span className="highlight">EVENTOS</span></h2>
+          <button onClick={() => navigate("/eventos")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
+        </div>
+        {events.length > 0 ? (
+          <div className="events-grid">
+            {events.slice(0, 3).map(event => (
+              <div
+                key={event.id}
+                className="event-card"
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate(`/eventos/${event.id}`)}
+              >
+                <div className="event-image-wrapper">
+                  {event.image ? (
+                    <img src={getImageUrl(event.image)} alt={event.title} className="event-image" />
+                  ) : (
+                    <div className="event-image-placeholder">🎸</div>
+                  )}
+                  {event.date && (
+                    <div className="event-date-badge">
+                      <span className="date-day">{new Date(event.date + "T00:00:00").getDate()}</span>
+                      <span className="date-month">{new Date(event.date + "T00:00:00").toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase()}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="event-content">
+                  <h3 className="event-title">{event.title}</h3>
+                  {event.artist && (
+                    <p className="event-artist">
+                      <span className="event-icon">🎤</span>
+                      {event.artist}
+                    </p>
+                  )}
+                  {event.time && (
+                    <p className="event-time">
+                      <span className="event-icon">🕐</span>
+                      {event.time}
+                    </p>
+                  )}
+                  {event.location && (
+                    <p className="event-location">
+                      <span className="event-icon">📍</span>
+                      <strong>{event.location}</strong>
+                      {event.city && `, ${event.city}`}
+                      {event.state && ` - ${event.state}`}
+                    </p>
+                  )}
+                  {event.ticket_link ? (
+                    <a
+                      href={event.ticket_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary btn-buy-tickets"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      🎫 Comprar Ingresso
+                    </a>
+                  ) : (
+                    <button
+                      className="btn btn-primary btn-buy-tickets"
+                      disabled
+                      style={{ opacity: 0.6, cursor: 'not-allowed' }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      🎫 Em breve
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{textAlign: "center", color: "#888", padding: "40px"}}>
+            Nenhum evento agendado no momento. Fique atento!
+          </div>
+        )}
+      </section>
       </div>
     </div>
   );
