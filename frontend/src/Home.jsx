@@ -212,7 +212,7 @@ function Home({ posts }) {
         </div>
         <div className="grid grid-2">
           {bands.length > 0 ? (
-            bands.slice(0, 3).map(band => (
+            bands.slice(0, 6).map(band => (
               <div 
                 key={band.id} 
                 className="card"

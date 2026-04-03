@@ -791,36 +791,6 @@ body {
 .hero h2 span {
   color: #e91e63;
   display: block;
-
-=======
-}
-=======
-.hero span {
-  color: #ff1744;
-
-
-}
-
-.btn-red {
-  background: #ff1744;
-  color: white;
-}
-
-.btn-dark {
-  background: #111;
-  color: white;
-  border: 1px solid #333;
-}
-
-/* SEÇÕES */
-.section {
-  padding: 40px 60px;
-  margin-top: 80px;
-}
-
-.section h2 {
-  border-left: none;
-  padding-left: 0;
 }
 
 .admin-login-page {
