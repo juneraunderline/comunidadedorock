@@ -11,7 +11,7 @@ function Home({ posts }) {
   const [bands, setBands] = useState([]);
   const [interviews, setInterviews] = useState([]);
   const [events, setEvents] = useState([]);
-  const [displayCount, setDisplayCount] = useState(3);
+  const [displayCount, setDisplayCount] = useState(6);
   const [brokenImages, setBrokenImages] = useState(new Set());
 
   const formatDatePT = (dateString) => {
