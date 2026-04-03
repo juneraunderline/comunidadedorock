@@ -10,6 +10,7 @@ function Home({ posts }) {
   const navigate = useNavigate();
   const [bands, setBands] = useState([]);
   const [interviews, setInterviews] = useState([]);
+  const [events, setEvents] = useState([]);
   const [displayCount, setDisplayCount] = useState(3);
   const [brokenImages, setBrokenImages] = useState(new Set());
 
@@ -64,6 +65,10 @@ function Home({ posts }) {
     axios.get(`${API_URL}/api/interviews`)
       .then(res => setInterviews(res.data));
 
+    // Buscar eventos
+    axios.get(`${API_URL}/api/events`)
+      .then(res => setEvents(res.data));
+
     // Atualizar a cada 5 segundos
     const interval = setInterval(() => {
       axios.get(`${API_URL}/api/bands`)
@@ -71,6 +76,9 @@ function Home({ posts }) {
 
       axios.get(`${API_URL}/api/interviews`)
         .then(res => setInterviews(res.data));
+
+      axios.get(`${API_URL}/api/events`)
+        .then(res => setEvents(res.data));
     }, 5000);
 
     // Limpar intervalo quando o componente desmontar
