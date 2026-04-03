@@ -22,7 +22,15 @@ function Perfil({ user, setUser }) {
     setDisplayName(user.display_name || "");
     setUsername(user.username || "");
     setAvatar(user.avatar || "");
-  }, [user, navigate]);
+    // Buscar dados atualizados do servidor (inclui created_at)
+    if (user.id) {
+      axios.get(`${API_URL}/api/user/${user.id}`).then(res => {
+        const updated = { ...user, ...res.data };
+        setUser(updated);
+        localStorage.setItem("user", JSON.stringify(updated));
+      }).catch(() => {});
+    }
+  }, [user?.id, navigate]);
 
   const saveProfile = async () => {
     setMsg("");
