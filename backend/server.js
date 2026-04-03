@@ -163,20 +163,15 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   try {
     const { user, pass } = req.body;
-    // Admin hardcoded (compatibilidade)
-    if (user === "admin" && pass === "1234") {
-      // Criar admin no banco se não existir
-      let admin = await db.getOne("SELECT * FROM users WHERE username = 'admin'");
-      if (!admin) {
-        const result = await pool.query(
-          "INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, $4) RETURNING id, username, display_name, avatar, role, created_at",
-          ["admin", "1234", "Administrador", "admin"]
-        );
-        admin = result.rows[0];
-      }
-      return res.json({ success: true, user: { id: admin.id, username: admin.username, display_name: admin.display_name, avatar: admin.avatar, role: admin.role, created_at: admin.created_at } });
+    // Garantir que admin existe no banco
+    const adminExists = await db.getOne("SELECT * FROM users WHERE username = 'admin'");
+    if (!adminExists) {
+      await pool.query(
+        "INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, $4)",
+        ["admin", "1234", "Administrador", "admin"]
+      );
     }
-    // Login normal
+    // Login — sempre verifica senha do banco
     const found = await db.getOne("SELECT * FROM users WHERE username = $1 AND password = $2", [user?.toLowerCase(), pass]);
     if (!found) return res.status(401).json({ success: false, error: "Usuário ou senha incorretos" });
     res.json({ success: true, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role, created_at: found.created_at } });
