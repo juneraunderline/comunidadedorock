@@ -32,7 +32,7 @@ function Login({ onLogin }) {
         });
         if (res.data.success) {
           onLogin(res.data.user);
-          navigate("/");
+          navigate(wantEditor ? "/admin" : "/");
         }
       } else {
         if (!username || !password) return setError("Preencha todos os campos");
@@ -42,7 +42,8 @@ function Login({ onLogin }) {
         });
         if (res.data.success) {
           onLogin(res.data.user);
-          navigate("/");
+          const role = res.data.user.role;
+          navigate(role === "admin" || role === "editor" ? "/admin" : "/");
         }
       }
     } catch (err) {
