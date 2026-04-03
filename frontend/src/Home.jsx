@@ -97,10 +97,10 @@ function Home({ posts }) {
         }}
       >
         <div className="hero-content">
-          <h2>CcOMUNIDADE<br /><span>DO ROCK</span></h2>
+          <h2>COMUNIDADE<br /><span>DO ROCK</span></h2>
           <p>O melhor do rock underground brasileiro em um só lugar. Descubra novas bandas, leia entrevistas exclusivas e fique por dentro das últimas notícias.</p>
           <div className="hero-buttons">
-            <button className="btn btn-primary" onClick={() => navigate("/bandas")}>DESCOBRIR BANDAS →</button>
+            <button className="btn btn-primary" onClick={() => navigate("/bandas")}>DDESCOBRIR BANDAS →</button>
             <button className="btn btn-outline" onClick={() => navigate("/entrevistas")}>ENTREVISTAS</button>
           </div>
         </div>
