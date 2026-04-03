@@ -788,7 +788,8 @@ app.get("/og/eventos/:id", async (req, res) => {
     const item = await db.getOne("SELECT * FROM events WHERE id = $1", [req.params.id]);
     if (!item) return res.redirect("https://comunidadedorock.com.br/eventos");
     const title = (item.title || "Evento").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-    const desc = [item.artist, item.date, item.location, item.city].filter(Boolean).join(" · ");
+    const dateBR = item.date ? item.date.split("-").reverse().join("/") : "";
+    const desc = [item.artist, dateBR, item.location, item.city].filter(Boolean).join(" · ");
     const description = (desc || "Confira este evento no Comunidade do Rock").replace(/"/g, "&quot;").replace(/</g, "&lt;");
     sendOg(res, title, description, resolveImage(item.image), `https://comunidadedorock.com.br/og/eventos/${item.id}`, "event", `https://comunidadedorock.com.br/eventos/${item.id}`, req.headers["user-agent"]);
   } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
