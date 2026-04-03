@@ -163,13 +163,18 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   try {
     const { user, pass } = req.body;
-    // Garantir que admin existe no banco
-    const adminExists = await db.getOne("SELECT * FROM users WHERE username = 'admin'");
-    if (!adminExists) {
+    // Garantir que admin existe no banco (apenas 1)
+    const admins = await db.getAll("SELECT * FROM users WHERE username = 'admin' ORDER BY id ASC");
+    if (admins.length === 0) {
       await pool.query(
         "INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, $4)",
         ["admin", "1234", "Administrador", "admin"]
       );
+    } else if (admins.length > 1) {
+      // Remover duplicados, manter só o primeiro
+      for (let i = 1; i < admins.length; i++) {
+        await db.run("DELETE FROM users WHERE id = $1", [admins[i].id]);
+      }
     }
     // Login — sempre verifica senha do banco
     const found = await db.getOne("SELECT * FROM users WHERE username = $1 AND password = $2", [user?.toLowerCase(), pass]);
@@ -558,6 +563,15 @@ app.post("/api/test-rss-images", async (req, res) => {
 async function startServer() {
   await initDb();
   await loadFeeds();
+  // Resetar senha admin para 1234 (rodar uma vez)
+  await db.run("UPDATE users SET password = '1234' WHERE username = 'admin'").catch(() => {});
+  // Remover admins duplicados
+  const admins = await db.getAll("SELECT id FROM users WHERE username = 'admin' ORDER BY id ASC").catch(() => []);
+  if (admins.length > 1) {
+    for (let i = 1; i < admins.length; i++) {
+      await db.run("DELETE FROM users WHERE id = $1", [admins[i].id]).catch(() => {});
+    }
+  }
   autoImportRss();
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => console.log(`🚀 Server ON: http://localhost:${PORT}`));
