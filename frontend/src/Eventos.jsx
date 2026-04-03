@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import API_URL from "./config/api";
+import API_URL, { getImageUrl } from "./config/api";
 
 function Eventos() {
   const [events, setEvents] = useState([]);
@@ -50,7 +50,7 @@ function Eventos() {
               >
                 <div className="event-image-wrapper">
                   {event.image ? (
-                    <img src={event.image} alt={event.title} className="event-image" />
+                    <img src={getImageUrl(event.image)} alt={event.title} className="event-image" />
                   ) : (
                     <div className="event-image-placeholder">🎸</div>
                   )}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import API_URL from "./config/api";
+import API_URL, { getImageUrl } from "./config/api";
 
 export default function TestImages() {
   const [posts, setPosts] = useState([]);
@@ -45,7 +45,7 @@ export default function TestImages() {
             }}
           >
             <img
-              src={post.image}
+              src={getImageUrl(post.image)}
               alt={post.title}
               style={{
                 width: "100%",

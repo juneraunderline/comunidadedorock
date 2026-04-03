@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import API_URL from "./config/api";
+import API_URL, { getImageUrl } from "./config/api";
 
 function BandaDetail() {
   const { id } = useParams();
@@ -43,7 +43,7 @@ function BandaDetail() {
         <div className="band-detail-container">
           {band.image && (
             <div className="band-detail-image">
-              <img src={band.image} alt={band.name} />
+              <img src={getImageUrl(band.image)} alt={band.name} />
             </div>
           )}
           

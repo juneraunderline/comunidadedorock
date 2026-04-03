@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import API_URL from "./config/api";
+import API_URL, { getImageUrl } from "./config/api";
 
 export default function Admin() {
   const [logged, setLogged] = useState(false);
@@ -963,7 +963,7 @@ export default function Admin() {
           {posts.map(post => (
             <div key={post.id} className="post-item">
               <div className="post-preview">
-                {post.image && <img src={post.image} alt={post.title} />}
+                {post.image && <img src={getImageUrl(post.image)} alt={post.title} />}
                 <div className="post-info">
                   <h4>{post.title}</h4>
                   <p>{(post.content || "").substring(0, 100)}...</p>
@@ -1263,7 +1263,7 @@ export default function Admin() {
               {bands.map(band => (
                 <div key={band.id} className="post-item">
                   <div className="post-preview">
-                    {band.image && <img src={band.image} alt={band.name} />}
+                    {band.image && <img src={getImageUrl(band.image)} alt={band.name} />}
                     <div className="post-info">
                       <h4>{band.name}</h4>
                       <p><strong>{band.genre}</strong> - {band.city}/{band.state}</p>
@@ -1428,7 +1428,7 @@ export default function Admin() {
           {interviews.map(interview => (
             <div key={interview.id} className="post-item">
               <div className="post-preview">
-                {interview.image && <img src={interview.image} alt={interview.title} />}
+                {interview.image && <img src={getImageUrl(interview.image)} alt={interview.title} />}
                 <div className="post-info">
                   <h4>{interview.title}</h4>
                   <p><strong>{interview.artist}</strong></p>
@@ -1667,7 +1667,7 @@ export default function Admin() {
           {events.map(event => (
             <div key={event.id} className="post-item">
               <div className="post-preview">
-                {event.image && <img src={event.image} alt={event.title} />}
+                {event.image && <img src={getImageUrl(event.image)} alt={event.title} />}
                 <div className="post-info">
                   <h4>{event.title}</h4>
                   <p><strong>{event.artist}</strong></p>

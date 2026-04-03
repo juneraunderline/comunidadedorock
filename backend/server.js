@@ -132,6 +132,20 @@ app.get("/api/posts", (req, res) => {
   res.json(rows);
 });
 
+app.post("/api/posts", (req, res) => {
+  const { title, content, image, link } = req.body;
+  if (!title || !content) return res.status(400).json({ error: "Título e conteúdo são obrigatórios" });
+  db.prepare("INSERT INTO posts (title, content, image, link) VALUES (?, ?, ?, ?)").run(title, content, image || null, link || null);
+  res.json({ success: true });
+});
+
+app.put("/api/posts/:id", (req, res) => {
+  const { title, content, image, link } = req.body;
+  if (!title || !content) return res.status(400).json({ error: "Título e conteúdo são obrigatórios" });
+  db.prepare("UPDATE posts SET title = ?, content = ?, image = ?, link = ? WHERE id = ?").run(title, content, image || null, link || null, req.params.id);
+  res.json({ success: true });
+});
+
 app.delete("/api/posts/:id", (req, res) => {
   db.prepare("DELETE FROM posts WHERE id = ?").run(req.params.id);
   res.json({ success: true });
@@ -142,9 +156,30 @@ app.get("/api/bands", (req, res) => {
   res.json(db.prepare("SELECT * FROM bands ORDER BY name ASC").all());
 });
 
+app.post("/api/bands", (req, res) => {
+  const b = req.body;
+  if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
+  db.prepare(`INSERT INTO bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site);
+  res.json({ success: true });
+});
+
+app.put("/api/bands/:id", (req, res) => {
+  const b = req.body;
+  if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
+  db.prepare(`UPDATE bands SET name = ?, genre = ?, city = ?, state = ?, year = ?, members = ?, biography = ?, contact = ?, image = ?, instagram = ?, facebook = ?, youtube = ?, spotify = ?, bandcamp = ?, site = ? WHERE id = ?`)
+    .run(b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site, req.params.id);
+  res.json({ success: true });
+});
+
+app.delete("/api/bands/:id", (req, res) => {
+  db.prepare("DELETE FROM bands WHERE id = ?").run(req.params.id);
+  res.json({ success: true });
+});
+
 app.post("/api/bands/submit", (req, res) => {
   const b = req.body;
-  db.prepare(`INSERT INTO pending_bands (name, genre, city, state, biography, image) VALUES (?, ?, ?, ?, ?, ?)` )
+  db.prepare(`INSERT INTO pending_bands (name, genre, city, state, biography, image) VALUES (?, ?, ?, ?, ?, ?)`)
     .run(b.name, b.genre, b.city, b.state, b.biography, b.image);
   res.json({ success: true });
 });
@@ -163,6 +198,30 @@ app.post("/api/approve-band/:id", (req, res) => {
   res.json({ success: true });
 });
 
+// Entrevistas
+app.get("/api/interviews", (req, res) => {
+  res.json(db.prepare("SELECT * FROM interviews ORDER BY id DESC").all());
+});
+
+app.post("/api/interviews", (req, res) => {
+  const { title, artist, content, image, date } = req.body;
+  if (!title || !artist) return res.status(400).json({ error: "Título e artista são obrigatórios" });
+  db.prepare("INSERT INTO interviews (title, artist, content, image, date) VALUES (?, ?, ?, ?, ?)").run(title, artist, content || null, image || null, date || null);
+  res.json({ success: true });
+});
+
+app.put("/api/interviews/:id", (req, res) => {
+  const { title, artist, content, image, date } = req.body;
+  if (!title || !artist) return res.status(400).json({ error: "Título e artista são obrigatórios" });
+  db.prepare("UPDATE interviews SET title = ?, artist = ?, content = ?, image = ?, date = ? WHERE id = ?").run(title, artist, content || null, image || null, date || null, req.params.id);
+  res.json({ success: true });
+});
+
+app.delete("/api/interviews/:id", (req, res) => {
+  db.prepare("DELETE FROM interviews WHERE id = ?").run(req.params.id);
+  res.json({ success: true });
+});
+
 // Eventos
 app.get("/api/events", (req, res) => {
   res.json(db.prepare("SELECT * FROM events ORDER BY date ASC").all());
@@ -170,7 +229,22 @@ app.get("/api/events", (req, res) => {
 
 app.post("/api/events", (req, res) => {
   const e = req.body;
-  db.prepare("INSERT INTO events (title, artist, date, location) VALUES (?, ?, ?, ?)").run(e.title, e.artist, e.date, e.location);
+  if (!e.title || !e.date) return res.status(400).json({ error: "Título e data são obrigatórios" });
+  db.prepare("INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .run(e.title, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.description);
+  res.json({ success: true });
+});
+
+app.put("/api/events/:id", (req, res) => {
+  const e = req.body;
+  if (!e.title || !e.date) return res.status(400).json({ error: "Título e data são obrigatórios" });
+  db.prepare("UPDATE events SET title = ?, artist = ?, date = ?, time = ?, location = ?, city = ?, state = ?, image = ?, ticket_link = ?, description = ? WHERE id = ?")
+    .run(e.title, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.description, req.params.id);
+  res.json({ success: true });
+});
+
+app.delete("/api/events/:id", (req, res) => {
+  db.prepare("DELETE FROM events WHERE id = ?").run(req.params.id);
   res.json({ success: true });
 });
 
@@ -178,10 +252,175 @@ app.post("/api/events", (req, res) => {
 app.get("/api/rss-feeds", (req, res) => res.json(rssFeeds));
 
 app.post("/api/rss-feeds", (req, res) => {
-  const { name, url } = req.body;
-  db.prepare("INSERT INTO rss_feeds (name, url) VALUES (?, ?)").run(name, url);
+  const { name, url, logo } = req.body;
+  if (!name || !url) return res.status(400).json({ error: "Nome e URL são obrigatórios" });
+  db.prepare("INSERT INTO rss_feeds (name, url, logo) VALUES (?, ?, ?)").run(name, url, logo || null);
   rssFeeds = db.prepare("SELECT * FROM rss_feeds").all();
   res.json({ success: true, feeds: rssFeeds });
+});
+
+app.put("/api/rss-feeds/:index", (req, res) => {
+  const { name, url } = req.body;
+  if (!name || !url) return res.status(400).json({ error: "Nome e URL são obrigatórios" });
+  const index = parseInt(req.params.index);
+  if (index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
+  const feed = rssFeeds[index];
+  db.prepare("UPDATE rss_feeds SET name = ?, url = ? WHERE id = ?").run(name, url, feed.id);
+  rssFeeds = db.prepare("SELECT * FROM rss_feeds").all();
+  res.json({ success: true, feeds: rssFeeds });
+});
+
+app.put("/api/rss-feeds/:index/logo", (req, res) => {
+  const { logo } = req.body;
+  const index = parseInt(req.params.index);
+  if (index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
+  const feed = rssFeeds[index];
+  db.prepare("UPDATE rss_feeds SET logo = ? WHERE id = ?").run(logo || null, feed.id);
+  rssFeeds = db.prepare("SELECT * FROM rss_feeds").all();
+  res.json({ success: true, feeds: rssFeeds });
+});
+
+app.delete("/api/rss-feeds/:index", (req, res) => {
+  const index = parseInt(req.params.index);
+  if (index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
+  const feed = rssFeeds[index];
+  db.prepare("DELETE FROM rss_feeds WHERE id = ?").run(feed.id);
+  rssFeeds = db.prepare("SELECT * FROM rss_feeds").all();
+  res.json({ success: true, feeds: rssFeeds });
+});
+
+// Import RSS
+app.post("/api/import-rss", async (req, res) => {
+  try {
+    let imported = 0;
+    const feeds = req.body.feeds || rssFeeds;
+    for (const feed of feeds) {
+      try {
+        const response = await fetchFunc(feed.url);
+        const xml = await response.text();
+        const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+        for (const itemXml of items.slice(0, 10)) {
+          const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
+          const content = extractContentFromItem(itemXml);
+          const image = extractImageFromItem(itemXml, content);
+          const link = extractLinkFromItem(itemXml);
+          if (!title) continue;
+          const exists = db.prepare("SELECT id FROM posts WHERE title = ?").get(title);
+          if (!exists) {
+            const localImg = image ? await downloadImage(image).catch(() => image) : null;
+            db.prepare("INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)").run(title, content, localImg || image, link, feed.name);
+            imported++;
+          }
+        }
+      } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
+    }
+    res.json({ success: true, imported });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/import-rss-single", async (req, res) => {
+  try {
+    const { feed } = req.body;
+    if (!feed || !feed.url) return res.status(400).json({ error: "Feed inválido" });
+    let imported = 0;
+    const response = await fetchFunc(feed.url);
+    const xml = await response.text();
+    const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+    for (const itemXml of items.slice(0, 10)) {
+      const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
+      const content = extractContentFromItem(itemXml);
+      const image = extractImageFromItem(itemXml, content);
+      const link = extractLinkFromItem(itemXml);
+      if (!title) continue;
+      const exists = db.prepare("SELECT id FROM posts WHERE title = ?").get(title);
+      if (!exists) {
+        const localImg = image ? await downloadImage(image).catch(() => image) : null;
+        db.prepare("INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)").run(title, content, localImg || image, link, feed.name);
+        imported++;
+      }
+    }
+    res.json({ success: true, imported });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/reimport-rss", async (req, res) => {
+  try {
+    let updated = 0;
+    let created = 0;
+    const feeds = req.body.feeds || rssFeeds;
+    for (const feed of feeds) {
+      try {
+        const response = await fetchFunc(feed.url);
+        const xml = await response.text();
+        const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+        for (const itemXml of items.slice(0, 10)) {
+          const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
+          const content = extractContentFromItem(itemXml);
+          const image = extractImageFromItem(itemXml, content);
+          const link = extractLinkFromItem(itemXml);
+          if (!title) continue;
+          const existing = db.prepare("SELECT id, image FROM posts WHERE title = ?").get(title);
+          if (existing) {
+            if (image && !existing.image) {
+              const localImg = await downloadImage(image).catch(() => image);
+              db.prepare("UPDATE posts SET image = ? WHERE id = ?").run(localImg || image, existing.id);
+              updated++;
+            }
+          } else {
+            const localImg = image ? await downloadImage(image).catch(() => image) : null;
+            db.prepare("INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)").run(title, content, localImg || image, link, feed.name);
+            created++;
+          }
+        }
+      } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
+    }
+    res.json({ success: true, updated, created });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/fix-missing-images", async (req, res) => {
+  try {
+    const postsWithoutImages = db.prepare("SELECT * FROM posts WHERE image IS NULL OR image = ''").all();
+    let fixed = 0;
+    for (const post of postsWithoutImages) {
+      const imgMatch = (post.content || "").match(/<img[^>]*src=["']([^"']+)["']/i);
+      if (imgMatch) {
+        const localImg = await downloadImage(imgMatch[1]).catch(() => imgMatch[1]);
+        db.prepare("UPDATE posts SET image = ? WHERE id = ?").run(localImg || imgMatch[1], post.id);
+        fixed++;
+      }
+    }
+    res.json({ success: true, fixed, total: postsWithoutImages.length, message: `${fixed} imagens corrigidas de ${postsWithoutImages.length} posts sem imagem` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/test-rss-images", async (req, res) => {
+  try {
+    const { feedUrl } = req.body;
+    if (!feedUrl) return res.status(400).json({ error: "URL do feed é obrigatória" });
+    const response = await fetchFunc(feedUrl);
+    const xml = await response.text();
+    const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+    let itemsWithImages = 0;
+    let itemsWithoutImages = 0;
+    for (const itemXml of items) {
+      const content = extractContentFromItem(itemXml);
+      const image = extractImageFromItem(itemXml, content);
+      if (image) itemsWithImages++;
+      else itemsWithoutImages++;
+    }
+    res.json({ success: true, feedUrl, totalItems: items.length, itemsWithImages, itemsWithoutImages });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 const PORT = process.env.PORT || 3000;

@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import API_URL from "./config/api";
+import API_URL, { getImageUrl } from "./config/api";
 
 function Bandas() {
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ function Bandas() {
                 style={{ cursor: "pointer" }}
               >
                 <div className="card-image">
-                  <img src={band.image || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={band.name} />
+                  <img src={getImageUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={band.name} />
                 </div>
                 <div className="card-content">
                   <h3>{band.name}</h3>

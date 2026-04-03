@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import axios from "axios";
-import API_URL from "./config/api";
+import API_URL, { getImageUrl } from "./config/api";
 
 function News() {
   const [posts, setPosts] = useState([]);
@@ -115,7 +115,7 @@ function News() {
                   <div className="card-image">
                     {p.image ? (
                       <img 
-                        src={p.image} 
+                        src={getImageUrl(p.image)} 
                         alt={p.title}
                         onError={() => {
                           console.log("❌ Erro ao carregar imagem:", p.image);
