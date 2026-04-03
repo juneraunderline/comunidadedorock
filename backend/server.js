@@ -197,7 +197,7 @@ app.get("/api/user/:id", async (req, res) => {
 
 app.put("/api/user/:id", async (req, res) => {
   try {
-    const { display_name, avatar, new_password, current_password } = req.body;
+    const { display_name, username, avatar, new_password, current_password } = req.body;
     const user = await db.getOne("SELECT * FROM users WHERE id = $1", [req.params.id]);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
     if (new_password) {
@@ -206,6 +206,12 @@ app.put("/api/user/:id", async (req, res) => {
       }
       if (new_password.length < 4) return res.status(400).json({ error: "Nova senha deve ter pelo menos 4 caracteres" });
       await db.run("UPDATE users SET password = $1 WHERE id = $2", [new_password, req.params.id]);
+    }
+    if (username !== undefined && username !== user.username) {
+      if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
+      const exists = await db.getOne("SELECT id FROM users WHERE username = $1 AND id != $2", [username.toLowerCase(), req.params.id]);
+      if (exists) return res.status(409).json({ error: "Este nome de usuário já está em uso" });
+      await db.run("UPDATE users SET username = $1 WHERE id = $2", [username.toLowerCase(), req.params.id]);
     }
     if (display_name !== undefined) {
       await db.run("UPDATE users SET display_name = $1 WHERE id = $2", [display_name, req.params.id]);
