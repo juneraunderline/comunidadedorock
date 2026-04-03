@@ -263,7 +263,7 @@ app.put("/api/rss-feeds/:index", (req, res) => {
   const { name, url } = req.body;
   if (!name || !url) return res.status(400).json({ error: "Nome e URL são obrigatórios" });
   const index = parseInt(req.params.index);
-  if (index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
+  if (isNaN(index) || index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
   const feed = rssFeeds[index];
   db.prepare("UPDATE rss_feeds SET name = ?, url = ? WHERE id = ?").run(name, url, feed.id);
   rssFeeds = db.prepare("SELECT * FROM rss_feeds").all();
@@ -273,7 +273,7 @@ app.put("/api/rss-feeds/:index", (req, res) => {
 app.put("/api/rss-feeds/:index/logo", (req, res) => {
   const { logo } = req.body;
   const index = parseInt(req.params.index);
-  if (index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
+  if (isNaN(index) || index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
   const feed = rssFeeds[index];
   db.prepare("UPDATE rss_feeds SET logo = ? WHERE id = ?").run(logo || null, feed.id);
   rssFeeds = db.prepare("SELECT * FROM rss_feeds").all();
@@ -282,7 +282,7 @@ app.put("/api/rss-feeds/:index/logo", (req, res) => {
 
 app.delete("/api/rss-feeds/:index", (req, res) => {
   const index = parseInt(req.params.index);
-  if (index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
+  if (isNaN(index) || index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
   const feed = rssFeeds[index];
   db.prepare("DELETE FROM rss_feeds WHERE id = ?").run(feed.id);
   rssFeeds = db.prepare("SELECT * FROM rss_feeds").all();
