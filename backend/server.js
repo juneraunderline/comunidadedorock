@@ -174,12 +174,12 @@ app.post("/api/login", async (req, res) => {
         );
         admin = result.rows[0];
       }
-      return res.json({ success: true, user: { id: admin.id, username: admin.username, display_name: admin.display_name, avatar: admin.avatar, role: admin.role } });
+      return res.json({ success: true, user: { id: admin.id, username: admin.username, display_name: admin.display_name, avatar: admin.avatar, role: admin.role, created_at: admin.created_at } });
     }
     // Login normal
     const found = await db.getOne("SELECT * FROM users WHERE username = $1 AND password = $2", [user?.toLowerCase(), pass]);
     if (!found) return res.status(401).json({ success: false, error: "Usuário ou senha incorretos" });
-    res.json({ success: true, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role } });
+    res.json({ success: true, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role, created_at: found.created_at } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
