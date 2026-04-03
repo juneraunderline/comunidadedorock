@@ -100,7 +100,11 @@ function Home({ posts }) {
           <h2>COMUNIDADE<br /><span>DO ROCK</span></h2>
           <p>O melhor do rock underground brasileiro em um só lugar. Descubra novas bandas, leia entrevistas exclusivas e fique por dentro das últimas notícias.</p>
           <div className="hero-buttons">
+
             <button className="btn btn-primary" onClick={() => navigate("/bandas")}>DDESCOBRIR BANDAS →</button>
+
+            <button className="btn btn-primary" onClick={() => navigate("/bandas")}>DESCOBRIR BANDAS →</button>
+>>>>>>> 416f801609172b013c7487f14e91539c8b277db9
             <button className="btn btn-outline" onClick={() => navigate("/entrevistas")}>ENTREVISTAS</button>
           </div>
         </div>
