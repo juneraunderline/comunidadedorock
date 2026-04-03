@@ -89,7 +89,7 @@ function NewsDetail() {
   const shareOnSocial = (platform) => {
     if (!post) return;
     
-    const url = `https://comunidadedorock.com.br/noticias/${post.id}`;
+    const url = `https://comunidadedorock.com.br/og/noticias/${post.id}`;
     const title = post.title;
     const text = `${title} - Confira no Comunidade do Rock`;
     

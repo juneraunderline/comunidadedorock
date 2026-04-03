@@ -125,10 +125,10 @@ function BandaDetail() {
 
             <div className="news-detail-share">
               <span>Compartilhe:</span>
-              <button className="share-btn whatsapp" onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(band.name + " - Confira no Comunidade do Rock https://comunidadedorock.com.br/bandas/" + band.id)}`, '_blank')}>💬 WhatsApp</button>
-              <button className="share-btn facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://comunidadedorock.com.br/bandas/" + band.id)}`, '_blank')}>f Facebook</button>
-              <button className="share-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(band.name)}&url=${encodeURIComponent("https://comunidadedorock.com.br/bandas/" + band.id)}`, '_blank')}>𝕏 Twitter</button>
-              <button className="share-btn telegram" onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent("https://comunidadedorock.com.br/bandas/" + band.id)}&text=${encodeURIComponent(band.name)}`, '_blank')}>✈ Telegram</button>
+              <button className="share-btn whatsapp" onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(band.name + " - Confira no Comunidade do Rock https://comunidadedorock.com.br/og/bandas/" + band.id)}`, '_blank')}>💬 WhatsApp</button>
+              <button className="share-btn facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://comunidadedorock.com.br/og/bandas/" + band.id)}`, '_blank')}>f Facebook</button>
+              <button className="share-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(band.name)}&url=${encodeURIComponent("https://comunidadedorock.com.br/og/bandas/" + band.id)}`, '_blank')}>𝕏 Twitter</button>
+              <button className="share-btn telegram" onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent("https://comunidadedorock.com.br/og/bandas/" + band.id)}&text=${encodeURIComponent(band.name)}`, '_blank')}>✈ Telegram</button>
             </div>
 
             <div className="band-detail-actions">
