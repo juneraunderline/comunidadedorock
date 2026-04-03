@@ -1,8 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const Database = require("better-sqlite3");
+const { Pool } = require("pg");
 const path = require("path");
-const { downloadImage, imagesDir } = require("./image-downloader");
 
 let fetchFunc;
 if (typeof fetch !== "undefined") {
@@ -20,42 +19,60 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Servir imagens locais
-app.use('/images', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-  res.header('Cache-Control', 'public, max-age=31536000');
-  next();
-}, express.static(imagesDir));
+// BANCO POSTGRESQL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+});
 
-// BANCO SQLITE
-const db = new Database("./database.db");
+// Helper para queries
+const db = {
+  query: async (text, params) => {
+    const res = await pool.query(text, params);
+    return res;
+  },
+  getAll: async (text, params) => {
+    const res = await pool.query(text, params);
+    return res.rows;
+  },
+  getOne: async (text, params) => {
+    const res = await pool.query(text, params);
+    return res.rows[0] || null;
+  },
+  run: async (text, params) => {
+    await pool.query(text, params);
+  }
+};
 
 // Inicialização de Tabelas
-const initDb = () => {
-  db.prepare(`CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, content TEXT, image TEXT, link TEXT, source TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
-  db.prepare(`CREATE TABLE IF NOT EXISTS bands (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT)`).run();
-  db.prepare(`CREATE TABLE IF NOT EXISTS pending_bands (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
-  db.prepare(`CREATE TABLE IF NOT EXISTS rss_feeds (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, url TEXT NOT NULL UNIQUE, logo TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
-  db.prepare(`CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, artist TEXT, date TEXT, time TEXT, location TEXT, city TEXT, state TEXT, image TEXT, ticket_link TEXT, description TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
-  db.prepare(`CREATE TABLE IF NOT EXISTS interviews (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, artist TEXT NOT NULL, content TEXT, image TEXT, date TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
+const initDb = async () => {
+  await db.run(`CREATE TABLE IF NOT EXISTS posts (id SERIAL PRIMARY KEY, title TEXT, content TEXT, image TEXT, link TEXT, source TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`CREATE TABLE IF NOT EXISTS bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT)`);
+  await db.run(`CREATE TABLE IF NOT EXISTS pending_bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, submitted_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`CREATE TABLE IF NOT EXISTS rss_feeds (id SERIAL PRIMARY KEY, name TEXT NOT NULL, url TEXT NOT NULL UNIQUE, logo TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`CREATE TABLE IF NOT EXISTS events (id SERIAL PRIMARY KEY, title TEXT, artist TEXT, date TEXT, time TEXT, location TEXT, city TEXT, state TEXT, image TEXT, ticket_link TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`CREATE TABLE IF NOT EXISTS interviews (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, content TEXT, image TEXT, date TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
 };
-initDb();
 
 // Carregar Feeds
 let rssFeeds = [];
-try {
-  const rows = db.prepare("SELECT * FROM rss_feeds").all();
-  if (rows.length > 0) {
-    rssFeeds = rows;
-  } else {
-    rssFeeds = [
-      { name: "Rolling Stone Brasil", url: "https://rollingstone.com.br/feed/", logo: null },
-      { name: "Rock in Rio News", url: "https://www.rockinrio.com/pt-br/feed/", logo: null }
-    ];
-    rssFeeds.forEach(f => db.prepare("INSERT INTO rss_feeds (name, url, logo) VALUES (?, ?, ?)").run(f.name, f.url, f.logo));
-  }
-} catch (e) { console.error(e); }
+async function loadFeeds() {
+  try {
+    const rows = await db.getAll("SELECT * FROM rss_feeds");
+    if (rows.length > 0) {
+      rssFeeds = rows;
+    } else {
+      const defaults = [
+        { name: "Rolling Stone Brasil", url: "https://rollingstone.com.br/feed/", logo: null },
+        { name: "Rock in Rio News", url: "https://www.rockinrio.com/pt-br/feed/", logo: null }
+      ];
+      for (const f of defaults) {
+        await db.run("INSERT INTO rss_feeds (name, url, logo) VALUES ($1, $2, $3) ON CONFLICT (url) DO NOTHING", [f.name, f.url, f.logo]);
+      }
+      rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
+    }
+  } catch (e) { console.error(e); }
+}
 
 // --- FUNÇÕES AUXILIARES ---
 
@@ -105,18 +122,17 @@ async function autoImportRss() {
 
         if (!title || !image) continue;
 
-        const exists = db.prepare("SELECT id FROM posts WHERE title = ?").get(title);
+        const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
         if (!exists) {
-          const localImg = await downloadImage(image).catch(() => image);
-          db.prepare("INSERT INTO posts (title, content, image, link, source) VALUES (?, ?, ?, ?, ?)")
-            .run(title, content, localImg || image, link, feed.name);
+          await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)",
+            [title, content, image, link, feed.name]);
           console.log(`✅ Importado: ${title.substring(0, 30)}`);
         }
       }
     } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
   }
 }
-setInterval(autoImportRss, 60000); // 1 minuto é mais saudável que 5s
+setInterval(autoImportRss, 60000);
 
 // --- ROTAS DA API ---
 
@@ -127,27 +143,26 @@ app.post("/api/login", (req, res) => {
 });
 
 // Posts
-app.get("/api/posts", (req, res) => {
-  const rows = db.prepare("SELECT * FROM posts ORDER BY id DESC").all();
-  res.json(rows);
+app.get("/api/posts", async (req, res) => {
+  res.json(await db.getAll("SELECT * FROM posts ORDER BY id DESC"));
 });
 
-app.post("/api/posts", (req, res) => {
+app.post("/api/posts", async (req, res) => {
   const { title, content, image, link } = req.body;
   if (!title || !content) return res.status(400).json({ error: "Título e conteúdo são obrigatórios" });
-  db.prepare("INSERT INTO posts (title, content, image, link) VALUES (?, ?, ?, ?)").run(title, content, image || null, link || null);
+  await db.run("INSERT INTO posts (title, content, image, link) VALUES ($1, $2, $3, $4)", [title, content, image || null, link || null]);
   res.json({ success: true });
 });
 
-app.put("/api/posts/:id", (req, res) => {
+app.put("/api/posts/:id", async (req, res) => {
   const { title, content, image, link } = req.body;
   if (!title || !content) return res.status(400).json({ error: "Título e conteúdo são obrigatórios" });
-  db.prepare("UPDATE posts SET title = ?, content = ?, image = ?, link = ? WHERE id = ?").run(title, content, image || null, link || null, req.params.id);
+  await db.run("UPDATE posts SET title = $1, content = $2, image = $3, link = $4 WHERE id = $5", [title, content, image || null, link || null, req.params.id]);
   res.json({ success: true });
 });
 
-app.delete("/api/posts/:id", (req, res) => {
-  db.prepare("DELETE FROM posts WHERE id = ?").run(req.params.id);
+app.delete("/api/posts/:id", async (req, res) => {
+  await db.run("DELETE FROM posts WHERE id = $1", [req.params.id]);
   res.json({ success: true });
 });
 
