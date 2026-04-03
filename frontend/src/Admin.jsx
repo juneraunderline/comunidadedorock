@@ -640,26 +640,38 @@ export default function Admin({ user: currentUser }) {
       {activeTab === "rss" && (
       <section className="admin-card">
         <h2>FEEDS RSS</h2>
-        <div className="rss-actions">
-          <input
-            type="text"
-            placeholder="Nome do feed"
-            value={feedName}
-            onChange={(e) => setFeedName(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="URL do feed RSS"
-            value={feedUrl}
-            onChange={(e) => setFeedUrl(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="URL da logo (opcional)"
-            value={feedLogo}
-            onChange={(e) => setFeedLogo(e.target.value)}
-          />
-          <button className="btn btn-primary" onClick={addRssFeed}>Adicionar</button>
+        <div className="edit-post-form">
+          <h3>Novo Feed RSS</h3>
+          <div className="form-group">
+            <label>Nome do Feed</label>
+            <input
+              type="text"
+              placeholder="Ex: Rolling Stone Brasil"
+              value={feedName}
+              onChange={(e) => setFeedName(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label>URL do Feed RSS</label>
+            <input
+              type="text"
+              placeholder="https://exemplo.com/feed/"
+              value={feedUrl}
+              onChange={(e) => setFeedUrl(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label>URL da Logo (opcional)</label>
+            <input
+              type="text"
+              placeholder="https://exemplo.com/logo.png"
+              value={feedLogo}
+              onChange={(e) => setFeedLogo(e.target.value)}
+            />
+          </div>
+          <div className="form-actions">
+            <button className="btn btn-primary" onClick={addRssFeed}>Adicionar Feed</button>
+          </div>
         </div>
 
         {rssFeeds.length === 0 ? (
