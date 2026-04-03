@@ -10,6 +10,7 @@ function Home({ posts }) {
   const navigate = useNavigate();
   const [bands, setBands] = useState([]);
   const [interviews, setInterviews] = useState([]);
+  const [events, setEvents] = useState([]);
   const [displayCount, setDisplayCount] = useState(3);
   const [brokenImages, setBrokenImages] = useState(new Set());
 
@@ -64,6 +65,10 @@ function Home({ posts }) {
     axios.get(`${API_URL}/api/interviews`)
       .then(res => setInterviews(res.data));
 
+    // Buscar eventos
+    axios.get(`${API_URL}/api/events`)
+      .then(res => setEvents(res.data));
+
     // Atualizar a cada 5 segundos
     const interval = setInterval(() => {
       axios.get(`${API_URL}/api/bands`)
@@ -71,6 +76,9 @@ function Home({ posts }) {
 
       axios.get(`${API_URL}/api/interviews`)
         .then(res => setInterviews(res.data));
+
+      axios.get(`${API_URL}/api/events`)
+        .then(res => setEvents(res.data));
     }, 5000);
 
     // Limpar intervalo quando o componente desmontar
@@ -161,39 +169,6 @@ function Home({ posts }) {
         </div>
       </section>
 
-      {/* BANDAS */}
-      <section className="section section-dark">
-        <div className="section-header">
-          <h2>BANDAS <span className="highlight">NOVAS</span></h2>
-          <button onClick={() => navigate("/bandas")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
-        </div>
-        <div className="grid grid-2">
-          {bands.length > 0 ? (
-            bands.slice(0, 3).map(band => (
-              <div 
-                key={band.id} 
-                className="card"
-                onClick={() => navigate(`/bandas/${band.id}`)}
-                style={{ cursor: "pointer" }}
-              >
-                <div className="card-image">
-                  <img src={getImageUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={band.name} />
-                </div>
-                <div className="card-content">
-                  <h3>{band.name}</h3>
-                  <p>{band.genre}</p>
-                  <small>{band.city}, {band.state}</small>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div style={{gridColumn: "1/-1", textAlign: "center", color: "#666", padding: "40px"}}>
-              Nenhuma banda cadastrada ainda.
-            </div>
-          )}
-        </div>
-      </section>
-
       {/* ENTREVISTAS */}
       <section className="section">
         <div className="section-header">
@@ -227,6 +202,120 @@ function Home({ posts }) {
             </div>
           )}
         </div>
+      </section>
+
+      {/* BANDAS NOVAS */}
+      <section className="section section-dark">
+        <div className="section-header">
+          <h2>BANDAS <span className="highlight">NOVAS</span></h2>
+          <button onClick={() => navigate("/bandas")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
+        </div>
+        <div className="grid grid-2">
+          {bands.length > 0 ? (
+            bands.slice(0, 3).map(band => (
+              <div 
+                key={band.id} 
+                className="card"
+                onClick={() => navigate(`/bandas/${band.id}`)}
+                style={{ cursor: "pointer" }}
+              >
+                <div className="card-image">
+                  <img src={getImageUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={band.name} />
+                </div>
+                <div className="card-content">
+                  <h3>{band.name}</h3>
+                  <p>{band.genre}</p>
+                  <small>{band.city}, {band.state}</small>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={{gridColumn: "1/-1", textAlign: "center", color: "#666", padding: "40px"}}>
+              Nenhuma banda cadastrada ainda.
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* PRÓXIMOS EVENTOS */}
+      <section className="section">
+        <div className="section-header">
+          <h2>PRÓXIMOS <span className="highlight">EVENTOS</span></h2>
+          <button onClick={() => navigate("/eventos")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
+        </div>
+        {events.length > 0 ? (
+          <div className="events-grid">
+            {events.slice(0, 3).map(event => (
+              <div
+                key={event.id}
+                className="event-card"
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate(`/eventos/${event.id}`)}
+              >
+                <div className="event-image-wrapper">
+                  {event.image ? (
+                    <img src={getImageUrl(event.image)} alt={event.title} className="event-image" />
+                  ) : (
+                    <div className="event-image-placeholder">🎸</div>
+                  )}
+                  {event.date && (
+                    <div className="event-date-badge">
+                      <span className="date-day">{new Date(event.date + "T00:00:00").getDate()}</span>
+                      <span className="date-month">{new Date(event.date + "T00:00:00").toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase()}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="event-content">
+                  <h3 className="event-title">{event.title}</h3>
+                  {event.artist && (
+                    <p className="event-artist">
+                      <span className="event-icon">🎤</span>
+                      {event.artist}
+                    </p>
+                  )}
+                  {event.time && (
+                    <p className="event-time">
+                      <span className="event-icon">🕐</span>
+                      {event.time}
+                    </p>
+                  )}
+                  {event.location && (
+                    <p className="event-location">
+                      <span className="event-icon">📍</span>
+                      <strong>{event.location}</strong>
+                      {event.city && `, ${event.city}`}
+                      {event.state && ` - ${event.state}`}
+                    </p>
+                  )}
+                  {event.ticket_link ? (
+                    <a
+                      href={event.ticket_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary btn-buy-tickets"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      🎫 Comprar Ingresso
+                    </a>
+                  ) : (
+                    <button
+                      className="btn btn-primary btn-buy-tickets"
+                      disabled
+                      style={{ opacity: 0.6, cursor: 'not-allowed' }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      🎫 Em breve
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{textAlign: "center", color: "#888", padding: "40px"}}>
+            Nenhum evento agendado no momento. Fique atento!
+          </div>
+        )}
       </section>
       </div>
     </div>
