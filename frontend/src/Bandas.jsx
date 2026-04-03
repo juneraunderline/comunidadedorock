@@ -46,6 +46,16 @@ function Bandas() {
                   <h3>{band.name}</h3>
                   <p>{band.genre}</p>
                   <small>{band.city}, {band.state}</small>
+                  {(band.instagram || band.facebook || band.youtube || band.spotify || band.bandcamp || band.site) && (
+                    <div style={{marginTop: "8px", display: "flex", gap: "6px", fontSize: "14px"}}>
+                      {band.instagram && <span title="Instagram">📷</span>}
+                      {band.facebook && <span title="Facebook">📘</span>}
+                      {band.youtube && <span title="YouTube">▶️</span>}
+                      {band.spotify && <span title="Spotify">🎵</span>}
+                      {band.bandcamp && <span title="Bandcamp">🎶</span>}
+                      {band.site && <span title="Site">🌐</span>}
+                    </div>
+                  )}
                 </div>
               </div>
             ))
