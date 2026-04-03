@@ -139,15 +139,16 @@ setInterval(autoImportRss, 60000);
 // Autenticação
 app.post("/api/register", async (req, res) => {
   try {
-    const { username, password, display_name } = req.body;
+    const { username, password, display_name, role } = req.body;
     if (!username || !password) return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
     if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
     if (password.length < 4) return res.status(400).json({ error: "Senha deve ter pelo menos 4 caracteres" });
     const exists = await db.getOne("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
     if (exists) return res.status(409).json({ error: "Usuário já existe" });
+    const userRole = role === "editor" ? "editor" : "user";
     const result = await pool.query(
       "INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, $4) RETURNING id, username, display_name, avatar, role, created_at",
-      [username.toLowerCase(), password, display_name || username, "user"]
+      [username.toLowerCase(), password, display_name || username, userRole]
     );
     res.json({ success: true, user: result.rows[0] });
   } catch (err) {
@@ -210,6 +211,39 @@ app.put("/api/user/:id", async (req, res) => {
     }
     const updated = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
     res.json({ success: true, user: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Gerenciamento de usuários (admin)
+app.get("/api/users", async (req, res) => {
+  try {
+    res.json(await db.getAll("SELECT id, username, display_name, avatar, role, created_at FROM users ORDER BY created_at DESC"));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/user/:id/role", async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!["admin", "editor", "user"].includes(role)) return res.status(400).json({ error: "Role inválida" });
+    await db.run("UPDATE users SET role = $1 WHERE id = $2", [role, req.params.id]);
+    const updated = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
+    res.json({ success: true, user: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/user/:id", async (req, res) => {
+  try {
+    const user = await db.getOne("SELECT role FROM users WHERE id = $1", [req.params.id]);
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
+    if (user.role === "admin") return res.status(403).json({ error: "Não é possível deletar um admin" });
+    await db.run("DELETE FROM users WHERE id = $1", [req.params.id]);
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

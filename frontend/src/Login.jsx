@@ -10,6 +10,7 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [wantEditor, setWantEditor] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +27,8 @@ function Login({ onLogin }) {
         const res = await axios.post(`${API_URL}/api/register`, {
           username,
           password,
-          display_name: displayName || username
+          display_name: displayName || username,
+          role: wantEditor ? "editor" : "user"
         });
         if (res.data.success) {
           onLogin(res.data.user);
@@ -116,6 +118,21 @@ function Login({ onLogin }) {
                 placeholder="••••••"
                 style={{ width: "100%", padding: "12px 14px", background: "#10101a", border: "1px solid #2a2a33", borderRadius: "8px", color: "#fff", fontSize: "14px" }}
               />
+            </div>
+          )}
+
+          {isRegister && (
+            <div style={{ marginBottom: "14px", textAlign: "left" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", color: "#ddd", fontSize: "13px", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={wantEditor}
+                  onChange={e => setWantEditor(e.target.checked)}
+                  style={{ accentColor: "#e91e63", width: "16px", height: "16px" }}
+                />
+                Quero ser <strong style={{ color: "#e91e63" }}>Editor</strong> (publicar notícias)
+              </label>
+              <p style={{ margin: "4px 0 0 24px", color: "#666", fontSize: "11px" }}>Editores podem criar e gerenciar notícias no painel admin</p>
             </div>
           )}
 

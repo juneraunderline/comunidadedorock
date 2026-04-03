@@ -2,17 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 
-export default function Admin() {
-  const [logged, setLogged] = useState(false);
-  const [user, setUser] = useState("");
-  const [pass, setPass] = useState("");
+export default function Admin({ user: currentUser }) {
   const [posts, setPosts] = useState([]);
   const [bands, setBands] = useState([]);
   const [pendingBands, setPendingBands] = useState([]);
   const [interviews, setInterviews] = useState([]);
   const [newPost, setNewPost] = useState({ title: "", content: "", image: "", link: "" });
   const [newBand, setNewBand] = useState({ name: "", genre: "", city: "", state: "", year: "", members: "", biography: "", contact: "", image: "", instagram: "", facebook: "", youtube: "", spotify: "", bandcamp: "", site: "" });
-  const [activeTab, setActiveTab] = useState("rss");
+  const [activeTab, setActiveTab] = useState("noticias");
   const [editingPost, setEditingPost] = useState(null);
   const [editingBand, setEditingBand] = useState(null);
   const [editingInterview, setEditingInterview] = useState(null);
@@ -26,6 +23,7 @@ export default function Admin() {
   const [feedUrl, setFeedUrl] = useState("");
   const [feedLogo, setFeedLogo] = useState("");
   const [loadingFeeds, setLoadingFeeds] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [editingLogoId, setEditingLogoId] = useState(null);
   const [editingLogoUrl, setEditingLogoUrl] = useState("");
   const [editingFeedId, setEditingFeedId] = useState(null);
@@ -50,19 +48,13 @@ export default function Admin() {
   }, []);
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/rss-feeds`)
-      .then(res => setRssFeeds(res.data))
-      .catch(() => setRssFeeds([]));
-  }, []);
+    if (currentUser && (currentUser.role === "admin" || currentUser.role === "editor")) {
+      fetchData();
+    }
+  }, [currentUser]);
 
-  const login = () => {
-    axios.post(`${API_URL}/api/login`, { user, pass })
-      .then(() => {
-        setLogged(true);
-        fetchData();
-      })
-      .catch(() => alert("Login errado"));
-  };
+  const isAdmin = currentUser?.role === "admin";
+  const isEditor = currentUser?.role === "editor";
 
   const fetchData = () => {
     axios.get(`${API_URL}/api/posts`).then(res => setPosts(res.data));
@@ -70,8 +62,8 @@ export default function Admin() {
     axios.get(`${API_URL}/api/pending-bands`).then(res => setPendingBands(res.data));
     axios.get(`${API_URL}/api/interviews`).then(res => setInterviews(res.data));
     axios.get(`${API_URL}/api/events`).then(res => setEvents(res.data));
-    // Buscar feeds RSS do backend
     axios.get(`${API_URL}/api/rss-feeds`).then(res => setRssFeeds(res.data));
+    axios.get(`${API_URL}/api/users`).then(res => setAllUsers(res.data)).catch(() => {});
   };
 
   // Função para comprimir imagem
@@ -609,64 +601,40 @@ export default function Admin() {
     }
   };
 
-  if (!logged) {
+  if (!currentUser || (currentUser.role !== "admin" && currentUser.role !== "editor")) {
     return (
       <div className="admin-login-page">
         <div className="admin-login-card">
           <h1>PAINEL ADMIN</h1>
           <p>Acesso restrito — faça login para continuar</p>
-
-          <div className="admin-login-field">
-            <label>Email</label>
-            <input
-              type="text"
-              value={user}
-              onChange={e => setUser(e.target.value)}
-              placeholder="admin"
-            />
-          </div>
-
-          <div className="admin-login-field">
-            <label>Senha</label>
-            <input
-              type="password"
-              value={pass}
-              onChange={e => setPass(e.target.value)}
-              placeholder="1234"
-            />
-          </div>
-
-          <button className="btn btn-primary" onClick={login}>ENTRAR</button>
+          <p style={{ color: "#888", fontSize: "13px", marginBottom: "16px" }}>
+            {currentUser ? "Sua conta não tem permissão de acesso ao painel." : "Você precisa estar logado."}
+          </p>
+          <a href="/login" className="btn btn-primary" style={{ textDecoration: "none", display: "inline-block" }}>
+            {currentUser ? "Voltar" : "Fazer Login"}
+          </a>
         </div>
       </div>
     );
   }
-
-  const logout = () => {
-    setLogged(false);
-    setUser("");
-    setPass("");
-    setPosts([]);
-    setBands([]);
-    setPendingBands([]);
-  };
 
   return (
     <div className="admin-dashboard">
       <header className="admin-header">
         <div>
           <h1>PAINEL <span>ADMIN</span></h1>
-          <p>Gestão de notícias, bandas, entrevistas e eventos</p>
+          <p>Logado como <strong>{currentUser.display_name || currentUser.username}</strong> ({currentUser.role})</p>
         </div>
-        <button className="btn btn-outline" onClick={logout}>Sair</button>
+        <a href="/" className="btn btn-outline" style={{ textDecoration: "none" }}>Voltar ao site</a>
       </header>
 
       <div className="admin-tabs">
-        <button className={activeTab === "rss" ? "active" : ""} onClick={() => setActiveTab("rss")}>RSS</button>
+        {isAdmin && <button className={activeTab === "rss" ? "active" : ""} onClick={() => setActiveTab("rss")}>RSS</button>}
         <button className={activeTab === "noticias" ? "active" : ""} onClick={() => setActiveTab("noticias")}>NOTÍCIAS</button>
-        <button className={activeTab === "bandas" ? "active" : ""} onClick={() => setActiveTab("bandas")}>BANDAS</button>
-        <button className={activeTab === "entrevistas" ? "active" : ""} onClick={() => setActiveTab("entrevistas")}>ENTREVISTAS</button>
-        <button className={activeTab === "eventos" ? "active" : ""} onClick={() => setActiveTab("eventos")}>EVENTOS</button>
+        {isAdmin && <button className={activeTab === "bandas" ? "active" : ""} onClick={() => setActiveTab("bandas")}>BANDAS</button>}
+        {isAdmin && <button className={activeTab === "entrevistas" ? "active" : ""} onClick={() => setActiveTab("entrevistas")}>ENTREVISTAS</button>}
+        {isAdmin && <button className={activeTab === "eventos" ? "active" : ""} onClick={() => setActiveTab("eventos")}>EVENTOS</button>}
+        {isAdmin && <button className={activeTab === "usuarios" ? "active" : ""} onClick={() => setActiveTab("usuarios")}>USUÁRIOS</button>}
       </div>
 
       {activeTab === "rss" && (
@@ -1683,6 +1651,65 @@ export default function Admin() {
             </div>
           ))}
         </div>
+      </section>
+      )}
+
+      {activeTab === "usuarios" && isAdmin && (
+      <section className="admin-card">
+        <h2>GERENCIAR USUÁRIOS</h2>
+        <p style={{ color: "#888", marginBottom: "16px" }}>Total: {allUsers.length} usuário(s) cadastrado(s)</p>
+        {allUsers.length === 0 && <p>Nenhum usuário cadastrado</p>}
+        {allUsers.map(u => (
+          <div key={u.id} className="post-item" style={{ alignItems: "center" }}>
+            <div className="post-preview" style={{ alignItems: "center" }}>
+              <div style={{
+                width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0,
+                background: u.avatar ? `url(${u.avatar}) center/cover` : "#e91e63",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "16px", color: "#fff", border: "2px solid #333"
+              }}>
+                {!u.avatar && (u.display_name || u.username || "U").charAt(0).toUpperCase()}
+              </div>
+              <div className="post-info">
+                <h4>{u.display_name || u.username}</h4>
+                <p>@{u.username} · {u.role} · Desde {new Date(u.created_at).toLocaleDateString("pt-BR")}</p>
+              </div>
+            </div>
+            <div className="post-actions" style={{ alignItems: "center" }}>
+              <select
+                value={u.role}
+                onChange={async (e) => {
+                  try {
+                    await axios.put(`${API_URL}/api/user/${u.id}/role`, { role: e.target.value });
+                    fetchData();
+                  } catch (err) {
+                    alert(err.response?.data?.error || "Erro ao mudar role");
+                  }
+                }}
+                style={{ background: "#1a1a2e", color: "#fff", border: "1px solid #444", borderRadius: "4px", padding: "6px 8px", fontSize: "12px" }}
+              >
+                <option value="user">user</option>
+                <option value="editor">editor</option>
+                <option value="admin">admin</option>
+              </select>
+              {u.role !== "admin" && (
+                <button
+                  className="btn btn-outline"
+                  onClick={() => {
+                    if (confirm(`Deletar o usuário @${u.username}?`)) {
+                      axios.delete(`${API_URL}/api/user/${u.id}`)
+                        .then(() => fetchData())
+                        .catch(err => alert(err.response?.data?.error || "Erro ao deletar"));
+                    }
+                  }}
+                  style={{ fontSize: "12px", padding: "6px 10px" }}
+                >
+                  🗑
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
       </section>
       )}
     </div>

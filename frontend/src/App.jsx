@@ -130,7 +130,7 @@ function App() {
           <Route path="/cadastrar-banda" element={<CadastrarBanda />} />
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/perfil" element={<Perfil user={user} setUser={handleLogin} />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin" element={<Admin user={user} />} />
           <Route path="/test-images" element={<TestImages />} />
         </Routes>
 
