@@ -732,12 +732,12 @@ body {
   }
 
   .hero {
-    height: 350px;
+    height: 420px;
     margin-bottom: 30px;
   }
 
   .hero h2 {
-    font-size: 50px;
+    font-size: 36px !important;
     letter-spacing: 2px;
     white-space: normal;
   }
@@ -749,7 +749,13 @@ body {
   }
 
   .hero p {
-    font-size: 14px;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .hero-content {
+    padding: 0 16px;
+    padding-top: 20px;
   }
 
   .section-header h2 {
@@ -777,23 +783,8 @@ body {
   }
 }
 
-.hero h2 {
-  font-size: 60px;
-}
-
 .hero span {
   color: #ff1744;
-}
-
-.hero p {
-  color: #ccc;
-}
-
-.hero button {
-  margin: 10px;
-  padding: 12px 20px;
-  border: none;
-  cursor: pointer;
 }
 
 .btn-red {
@@ -888,6 +879,7 @@ body {
   font-size: 36px;
   letter-spacing: 2px;
   margin: 0 0 8px;
+  color: #fff;
 }
 
 .admin-header h1 span {
@@ -1238,6 +1230,7 @@ body {
   font-size: 36px;
   margin: 0 0 16px;
   letter-spacing: 1px;
+  color: #fff !important;
 }
 
 .news-detail-meta {
@@ -1556,7 +1549,7 @@ body {
 .band-detail-content h1 {
   font-size: 36px;
   margin: 0 0 20px;
-  color: #e91e63;
+  color: #e91e63 !important;
   text-transform: uppercase;
   letter-spacing: 2px;
 }
@@ -1672,7 +1665,7 @@ body {
 .interview-detail-header h1 {
   font-size: 32px;
   margin: 0 0 15px;
-  color: #fff;
+  color: #fff !important;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
