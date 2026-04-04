@@ -1824,7 +1824,7 @@ body {
   height: auto;
   margin: 25px 0;
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(233, 30, 99, 0.2);
+  box-shadow: 0 4px 16px rgba(233, 182, 30, 0.2);
   display: block;
 }
 
@@ -1838,7 +1838,7 @@ body {
 }
 
 .interview-detail-text table thead {
-  background: rgba(233, 30, 99, 0.1);
+  background: rgba(233, 182, 30, 0.1);
 }
 
 .interview-detail-text table th,
@@ -1849,7 +1849,7 @@ body {
 }
 
 .interview-detail-text table th {
-  color: #e91e63;
+  color: #e9b61e;
   font-weight: 700;
   text-transform: uppercase;
   font-size: 13px;
@@ -1857,7 +1857,7 @@ body {
 }
 
 .interview-detail-text table tr:hover {
-  background: rgba(233, 30, 99, 0.05);
+  background: rgba(233, 182, 30, 0.05);
 }
 
 .interview-detail-text hr {
@@ -1867,14 +1867,14 @@ body {
 }
 
 .interview-detail-text a {
-  color: #e91e63;
+  color: #e9b61e;
   text-decoration: none;
   transition: all 0.3s;
   font-weight: 600;
 }
 
 .interview-detail-text a:hover {
-  color: #ff4d7f;
+  color: #ffd54f;
   text-decoration: underline;
 }
 

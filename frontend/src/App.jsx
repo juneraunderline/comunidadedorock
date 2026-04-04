@@ -85,7 +85,7 @@ function App() {
                     width: "32px", height: "32px", borderRadius: "50%",
                     background: user.avatar ? `url(${user.avatar}) center/cover` : "#e91e63",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "14px", color: "#fff", border: "2px solid #e91e63", flexShrink: 0
+                    fontSize: "14px", color: "#fff", border: "2px solid #e9b61e", flexShrink: 0
                   }}>
                     {!user.avatar && (user.display_name || user.username || "U").charAt(0).toUpperCase()}
                   </div>
