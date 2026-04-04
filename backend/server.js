@@ -76,6 +76,27 @@ async function loadFeeds() {
 
 // --- FUNÇÕES AUXILIARES ---
 
+function decodeHtmlEntities(text) {
+  if (!text) return text;
+  return text
+    .replace(/&#8216;/g, "'").replace(/&#8217;/g, "'")
+    .replace(/&#8218;/g, ",").replace(/&#8219;/g, "'")
+    .replace(/&#8220;/g, '"').replace(/&#8221;/g, '"')
+    .replace(/&#8222;/g, '"').replace(/&#8223;/g, '"')
+    .replace(/&#8211;/g, "–").replace(/&#8212;/g, "—")
+    .replace(/&#8230;/g, "…").replace(/&#8226;/g, "•")
+    .replace(/&#8364;/g, "€").replace(/&#163;/g, "£")
+    .replace(/&#xe9;/gi, "é").replace(/&#xe3;/gi, "ã")
+    .replace(/&#xe7;/gi, "ç").replace(/&#xf3;/gi, "ó")
+    .replace(/&#xfa;/gi, "ú").replace(/&#xed;/gi, "í")
+    .replace(/&#xf4;/gi, "ô").replace(/&#xe1;/gi, "á")
+    .replace(/&#xea;/gi, "ê").replace(/&#xe0;/gi, "à")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)));
+}
+
 function sanitizeImageUrl(url) {
   if (!url || !url.startsWith("http") || url.includes("youtube.com/embed")) return "";
   return url.replace(/\/(www\.[^\s\/]+\.com)\//i, "/").replace(/\/uploads\.([^\/]+\.com)\//i, "/uploads/").trim();
@@ -119,8 +140,9 @@ async function autoImportRss() {
       const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
       
       for (const itemXml of items) {
-        const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
-        const content = extractContentFromItem(itemXml);
+        const rawTitle = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
+        const title = decodeHtmlEntities(rawTitle);
+        const content = decodeHtmlEntities(extractContentFromItem(itemXml));
         const image = extractImageFromItem(itemXml, content);
         const link = extractLinkFromItem(itemXml);
 
@@ -655,6 +677,18 @@ app.get("/og/eventos/:id", async (req, res) => {
 async function startServer() {
   await initDb();
   await loadFeeds();
+  // Limpar entidades HTML dos títulos e conteúdos existentes
+  try {
+    const allPosts = await db.getAll("SELECT id, title, content FROM posts");
+    for (const p of allPosts) {
+      const cleanTitle = decodeHtmlEntities(p.title);
+      const cleanContent = decodeHtmlEntities(p.content);
+      if (cleanTitle !== p.title || cleanContent !== p.content) {
+        await db.run("UPDATE posts SET title = $1, content = $2 WHERE id = $3", [cleanTitle, cleanContent, p.id]);
+      }
+    }
+    console.log("✅ Entidades HTML limpas dos posts existentes");
+  } catch (e) { console.warn("Erro ao limpar entidades:", e.message); }
   // Resetar senha admin para 1234 (rodar uma vez)
   await db.run("UPDATE users SET password = '1234' WHERE username = 'admin'").catch(() => {});
   // Remover admins duplicados
