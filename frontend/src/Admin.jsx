@@ -148,6 +148,37 @@ export default function Admin({ user: currentUser }) {
     }
   };
 
+  const execFormat = (command, value = null) => {
+    document.execCommand(command, false, value);
+  };
+
+  const clearFormatting = () => {
+    document.execCommand("removeFormat", false, null);
+    const sel = window.getSelection();
+    if (sel.rangeCount > 0) {
+      const text = sel.toString();
+      document.execCommand("insertText", false, text);
+    }
+  };
+
+  const FormatToolbar = () => (
+    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "6px", padding: "6px", background: "#12121f", borderRadius: "4px", border: "1px solid #2c2c38" }}>
+      <button type="button" onClick={() => execFormat("bold")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", fontSize: "13px" }} title="Negrito">B</button>
+      <button type="button" onClick={() => execFormat("italic")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontStyle: "italic", fontSize: "13px" }} title="Itálico">I</button>
+      <button type="button" onClick={() => execFormat("underline")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", textDecoration: "underline", fontSize: "13px" }} title="Sublinhado">U</button>
+      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
+      <button type="button" onClick={() => execFormat("formatBlock", "h2")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Título">H2</button>
+      <button type="button" onClick={() => execFormat("formatBlock", "h3")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Subtítulo">H3</button>
+      <button type="button" onClick={() => execFormat("formatBlock", "p")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Parágrafo">P</button>
+      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
+      <button type="button" onClick={() => execFormat("insertUnorderedList")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Lista">• Lista</button>
+      <button type="button" onClick={() => execFormat("justifyLeft")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Alinhar esquerda">⬅</button>
+      <button type="button" onClick={() => execFormat("justifyCenter")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Centralizar">⬌</button>
+      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
+      <button type="button" onClick={clearFormatting} style={{ background: "#3d2a2a", border: "1px solid #644", color: "#f88", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Limpar formatação">✕ Limpar</button>
+    </div>
+  );
+
   const handleContentInput = (e, isEditing = false) => {
     const newContent = e.currentTarget.innerHTML;
     
@@ -833,6 +864,7 @@ export default function Admin({ user: currentUser }) {
             </div>
             <div className="form-group">
               <label>Conteúdo</label>
+              <FormatToolbar />
               <div
                 ref={editingContentRef}
                 contentEditable
@@ -900,6 +932,7 @@ export default function Admin({ user: currentUser }) {
             </div>
             <div className="form-group">
               <label>Conteúdo</label>
+              <FormatToolbar />
               <div
                 ref={newContentRef}
                 contentEditable
