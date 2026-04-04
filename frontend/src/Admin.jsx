@@ -7,7 +7,7 @@ export default function Admin({ user: currentUser }) {
   const [bands, setBands] = useState([]);
   const [pendingBands, setPendingBands] = useState([]);
   const [interviews, setInterviews] = useState([]);
-  const [newPost, setNewPost] = useState({ title: "", content: "", image: "", link: "" });
+  const [newPost, setNewPost] = useState({ title: "", content: "", image: "", link: "", source: "" });
   const [newBand, setNewBand] = useState({ name: "", genre: "", city: "", state: "", year: "", members: "", biography: "", contact: "", image: "", instagram: "", facebook: "", youtube: "", spotify: "", bandcamp: "", site: "" });
   const [activeTab, setActiveTab] = useState("noticias");
   const [editingPost, setEditingPost] = useState(null);
@@ -175,7 +175,7 @@ export default function Admin({ user: currentUser }) {
 
     axios.post(`${API_URL}/api/posts`, { ...newPost, content: finalContent })
       .then(() => {
-        setNewPost({ title: "", content: "", image: "", link: "" });
+        setNewPost({ title: "", content: "", image: "", link: "", source: "" });
         if (newContentRef.current) {
           newContentRef.current.innerHTML = "";
         }
@@ -214,7 +214,8 @@ export default function Admin({ user: currentUser }) {
       title: editingPost.title,
       content: finalContent,
       image: editingPost.image,
-      link: editingPost.link
+      link: editingPost.link,
+      source: editingPost.source
     })
       .then(() => {
         setEditingPost(null);
@@ -861,6 +862,15 @@ export default function Admin({ user: currentUser }) {
               />
             </div>
             <div className="form-group">
+              <label>Fonte</label>
+              <input
+                type="text"
+                value={editingPost.source || ""}
+                onChange={(e) => setEditingPost({...editingPost, source: e.target.value})}
+                placeholder="Ex: Comunidade do Rock, Rolling Stone..."
+              />
+            </div>
+            <div className="form-group">
               <label>Link da Notícia (URL Original)</label>
               <input
                 type="text"
@@ -917,6 +927,15 @@ export default function Admin({ user: currentUser }) {
                 value={newPost.image}
                 onChange={(e) => setNewPost({...newPost, image: e.target.value})}
                 placeholder="URL da imagem"
+              />
+            </div>
+            <div className="form-group">
+              <label>Fonte</label>
+              <input
+                type="text"
+                value={newPost.source || ""}
+                onChange={(e) => setNewPost({...newPost, source: e.target.value})}
+                placeholder="Ex: Comunidade do Rock, Rolling Stone..."
               />
             </div>
             <div className="form-group">
