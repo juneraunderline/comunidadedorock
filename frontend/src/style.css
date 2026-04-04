@@ -205,7 +205,7 @@ body {
 }
 
 .hero h2 span {
-  color: #e91e63;
+  color: #e9b61e;
   display: block;
   margin-left: 0;
 }
@@ -241,8 +241,8 @@ body {
 }
 
 .hero .btn-outline:hover {
-  background: #e91e63;
-  border-color: #e91e63;
+  background: #e9b61e;
+  border-color: #e9b61e;
   color: white;
 }
 
@@ -262,12 +262,12 @@ body {
 } 
 
 .btn-primary {
-  background: #e91e63;
+  background: #e9b61e;
   color: white;
 }
 
 .btn-primary:hover {
-  background: #c2185b;
+  background: #c49b16;
 }
 
 .btn-outline {
@@ -277,8 +277,8 @@ body {
 }
 
 .btn-outline:hover {
-  border-color: #e91e63;
-  color: #e91e63;
+  border-color: #e9b61e;
+  color: #e9b61e;
 }
 
 .btn-small {
@@ -349,11 +349,11 @@ body {
 }
 
 .highlight {
-  color: #e91e63;
+  color: #e9b61e;
 }
 
 .view-all {
-  color: #e91e63;
+  color: #e9b61e;
   text-decoration: none;
   font-weight: 700;
   font-size: 13px;
@@ -413,7 +413,7 @@ body {
 
 .card:hover {
   transform: translateY(-5px);
-  border-color: #e91e63;
+  border-color: #e9b61e;
 }
 .card-image {
   width: 100%;
@@ -451,7 +451,7 @@ body {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(233, 30, 99, 0.9);
+  background: rgba(233, 182, 30, 0.9);
   color: #fff;
   padding: 6px 12px;
   font-size: 12px;
@@ -469,7 +469,7 @@ body {
 }
 
 .card-date {
-  color: #e91e63;
+  color: #e9b61e;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -504,14 +504,14 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  box-shadow: 0 4px 15px rgba(233, 30, 99, 0.1);
+  box-shadow: 0 4px 15px rgba(233, 182, 30, 0.1);
   position: relative;
 }
 
 .event-card:hover {
   transform: translateY(-8px);
-  border-color: #e91e63;
-  box-shadow: 0 12px 30px rgba(233, 30, 99, 0.3);
+  border-color: #e9b61e;
+  box-shadow: 0 12px 30px rgba(233, 182, 30, 0.3);
 }
 
 .event-image-wrapper {
@@ -545,7 +545,7 @@ body {
   position: absolute;
   top: 12px;
   left: 12px;
-  background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
+  background: linear-gradient(135deg, #e9b61e 0%, #c49b16 100%);
   color: white;
   padding: 7px 14px;
   border-radius: 4px;
@@ -553,7 +553,7 @@ body {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  box-shadow: 0 3px 10px rgba(233, 30, 99, 0.4);
+  box-shadow: 0 3px 10px rgba(233, 182, 30, 0.4);
   z-index: 2;
 }
 
@@ -561,7 +561,7 @@ body {
   position: absolute;
   bottom: 12px;
   right: 12px;
-  background: linear-gradient(135deg, rgba(233, 30, 99, 0.95) 0%, rgba(194, 24, 91, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(233, 182, 30, 0.95) 0%, rgba(196, 155, 22, 0.95) 100%);
   border-left: 3px solid #fff;
   padding: 8px 10px;
   border-radius: 4px;
@@ -607,7 +607,7 @@ body {
 
 .event-artist {
   font-size: 13px;
-  color: #e91e63;
+  color: #e9b61e;
   margin-bottom: 8px;
   font-weight: 700;
   display: flex;
@@ -654,7 +654,7 @@ body {
   font-weight: 900 !important;
   letter-spacing: 1px !important;
   text-transform: uppercase !important;
-  background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%) !important;
+  background: linear-gradient(135deg, #e9b61e 0%, #c49b16 100%) !important;
   border: none !important;
   border-radius: 4px !important;
   color: #fff !important;
@@ -664,12 +664,12 @@ body {
   text-decoration: none !important;
   display: inline-block !important;
   text-align: center !important;
-  box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(233, 182, 30, 0.3) !important;
 }
 
 .btn-buy-tickets:hover:not(:disabled) {
-  background: linear-gradient(135deg, #f50057 0%, #e91e63 100%) !important;
-  box-shadow: 0 8px 20px rgba(233, 30, 99, 0.5) !important;
+  background: linear-gradient(135deg, #f5c007 0%, #e9b61e 100%) !important;
+  box-shadow: 0 8px 20px rgba(233, 182, 30, 0.5) !important;
   transform: translateY(-2px) !important;
 }
 
@@ -779,7 +779,7 @@ body {
   }
 
   .btn-outline {
-    border-color: #e91e63;
+    border-color: #e9b61e;
   }
 }
 
@@ -789,7 +789,7 @@ body {
   white-space: normal;
 }
 .hero h2 span {
-  color: #e91e63;
+  color: #e9b61e;
   display: block;
 
 
@@ -897,7 +897,7 @@ body {
 }
 
 .admin-header h1 span {
-  color: #e91e63;
+  color: #e9b61e;
 }
 
 .admin-header p {
@@ -922,7 +922,7 @@ body {
 
 .admin-tabs button.active {
   color: #fff;
-  border-color: #e91e63;
+  border-color: #e9b61e;
   background: #161627;
 }
 
@@ -993,7 +993,7 @@ body {
 }
 
 .admin-card ul li button {
-  background: #e91e63;
+  background: #e9b61e;
   border: none;
   padding: 6px 10px;
   border-radius: 6px;
@@ -1008,7 +1008,7 @@ body {
 }
 
 .btn-primary {
-  background: #e91e63;
+  background: #e9b61e;
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -1062,7 +1062,7 @@ body {
 
 .edit-post-form h3 {
   margin-top: 0;
-  color: #e91e63;
+  color: #e9b61e;
 }
 
 .form-group {
@@ -1091,7 +1091,7 @@ body {
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #e91e63;
+  border-color: #e9b61e;
 }
 
 .form-actions {
@@ -1282,8 +1282,8 @@ body {
 
 [contenteditable]:focus {
   background-color: #252548;
-  border-color: #e91e63;
-  box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
+  border-color: #e9b61e;
+  box-shadow: 0 0 0 3px rgba(233, 182, 30, 0.1);
 }
 
 /* Placeholder para contenteditable */
@@ -1308,7 +1308,7 @@ body {
   margin: 20px auto;
   display: block;
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(233, 30, 99, 0.2);
+  box-shadow: 0 4px 16px rgba(233, 182, 30, 0.2);
   transition: transform 0.3s ease;
 }
 
@@ -1333,7 +1333,7 @@ body {
 }
 
 .news-detail-actions .btn-primary {
-  background: #e91e63;
+  background: #e9b61e;
   color: #fff;
   border: none;
 }
@@ -1350,8 +1350,8 @@ body {
 }
 
 .news-detail-actions .btn-outline:hover {
-  border-color: #e91e63;
-  color: #e91e63;
+  border-color: #e9b61e;
+  color: #e9b61e;
 }
 
 /* Media queries para responsividade */
@@ -1394,7 +1394,7 @@ body {
   gap: 12px;
   margin: 30px 0;
   padding: 20px;
-  background: rgba(233, 30, 99, 0.1);
+  background: rgba(233, 182, 30, 0.1);
   border-radius: 8px;
   flex-wrap: wrap;
 }
@@ -1563,7 +1563,7 @@ body {
 .band-detail-content h1 {
   font-size: 36px;
   margin: 0 0 20px;
-  color: #e91e63 !important;
+  color: #e9b61e !important;
   text-transform: uppercase;
   letter-spacing: 2px;
 }
@@ -1583,7 +1583,7 @@ body {
 }
 
 .meta-item strong {
-  color: #e91e63;
+  color: #e9b61e;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -1602,7 +1602,7 @@ body {
 }
 
 .band-detail-section-box h3 {
-  color: #e91e63;
+  color: #e9b61e;
   font-size: 18px;
   margin: 0 0 12px;
   text-transform: uppercase;
@@ -1620,7 +1620,7 @@ body {
 }
 
 .band-detail-social h3 {
-  color: #e91e63;
+  color: #e9b61e;
   font-size: 18px;
   margin: 0 0 15px;
   text-transform: uppercase;
@@ -1673,7 +1673,7 @@ body {
 .interview-detail-header {
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 2px solid #e91e63;
+  border-bottom: 2px solid #e9b61e;
 }
 
 .interview-detail-header h1 {
@@ -1686,7 +1686,7 @@ body {
 
 .interview-artist {
   font-size: 18px;
-  color: #e91e63;
+  color: #e9b61e;
   margin: 10px 0;
 }
 
@@ -1739,13 +1739,13 @@ body {
 
 .interview-detail-text h2 {
   font-size: 24px;
-  border-bottom: 2px solid #e91e63;
+  border-bottom: 2px solid #e9b61e;
   padding-bottom: 10px;
 }
 
 .interview-detail-text h3 {
   font-size: 20px;
-  color: #e91e63;
+  color: #e9b61e;
 }
 
 .interview-detail-text h4 {
@@ -1766,8 +1766,8 @@ body {
 .interview-detail-text blockquote {
   margin: 20px 0;
   padding: 15px 20px;
-  border-left: 4px solid #e91e63;
-  background: rgba(233, 30, 99, 0.05);
+  border-left: 4px solid #e9b61e;
+  background: rgba(233, 182, 30, 0.05);
   font-style: italic;
   color: #bbb;
   line-height: 1.8;
@@ -1780,7 +1780,7 @@ body {
 
 .interview-detail-text strong,
 .interview-detail-text b {
-  color: #e91e63;
+  color: #e9b61e;
   font-weight: 700;
 }
 
@@ -1796,7 +1796,7 @@ body {
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'Courier New', monospace;
-  color: #e91e63;
+  color: #e9b61e;
   font-size: 14px;
 }
 
@@ -1824,7 +1824,7 @@ body {
   height: auto;
   margin: 25px 0;
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(233, 30, 99, 0.2);
+  box-shadow: 0 4px 16px rgba(233, 182, 30, 0.2);
   display: block;
 }
 
@@ -1838,7 +1838,7 @@ body {
 }
 
 .interview-detail-text table thead {
-  background: rgba(233, 30, 99, 0.1);
+  background: rgba(233, 182, 30, 0.1);
 }
 
 .interview-detail-text table th,
@@ -1849,7 +1849,7 @@ body {
 }
 
 .interview-detail-text table th {
-  color: #e91e63;
+  color: #e9b61e;
   font-weight: 700;
   text-transform: uppercase;
   font-size: 13px;
@@ -1857,7 +1857,7 @@ body {
 }
 
 .interview-detail-text table tr:hover {
-  background: rgba(233, 30, 99, 0.05);
+  background: rgba(233, 182, 30, 0.05);
 }
 
 .interview-detail-text hr {
@@ -1867,14 +1867,14 @@ body {
 }
 
 .interview-detail-text a {
-  color: #e91e63;
+  color: #e9b61e;
   text-decoration: none;
   transition: all 0.3s;
   font-weight: 600;
 }
 
 .interview-detail-text a:hover {
-  color: #ff4d7f;
+  color: #ffd54f;
   text-decoration: underline;
 }
 

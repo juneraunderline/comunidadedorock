@@ -81,7 +81,7 @@ function Perfil({ user, setUser }) {
     <div style={{ minHeight: "80vh", padding: "40px 20px", background: "#0a0a0e", marginTop: "80px" }}>
       <div style={{ maxWidth: "600px", margin: "0 auto" }}>
         <h1 style={{ fontSize: "32px", marginBottom: "30px", color: "#fff" }}>
-          MEU <span style={{ color: "#e91e63" }}>PERFIL</span>
+          MEU <span style={{ color: "#e9b61e" }}>PERFIL</span>
         </h1>
 
         {msg && <div style={{ background: "rgba(76,175,80,0.15)", border: "1px solid #4caf50", color: "#4caf50", padding: "12px", borderRadius: "8px", marginBottom: "16px" }}>{msg}</div>}
@@ -91,9 +91,9 @@ function Perfil({ user, setUser }) {
         <div style={{ textAlign: "center", marginBottom: "30px" }}>
           <div style={{
             width: "100px", height: "100px", borderRadius: "50%", margin: "0 auto 16px",
-            background: avatar ? `url(${avatar}) center/cover` : "#e91e63",
+            background: avatar ? `url(${avatar}) center/cover` : "#e9b61e",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "40px", color: "#fff", border: "3px solid #e91e63"
+            fontSize: "40px", color: "#fff", border: "3px solid #e9b61e"
           }}>
             {!avatar && (user.display_name || user.username || "U").charAt(0).toUpperCase()}
           </div>
@@ -104,7 +104,7 @@ function Perfil({ user, setUser }) {
               href="/admin"
               style={{
                 display: "inline-block", marginTop: "12px",
-                background: user.role === "admin" ? "#e91e63" : "#333",
+                background: user.role === "admin" ? "#e9b61e" : "#333",
                 color: "#fff", textDecoration: "none",
                 padding: "8px 20px", borderRadius: "6px",
                 fontSize: "13px", fontWeight: "700",
@@ -118,7 +118,7 @@ function Perfil({ user, setUser }) {
 
         {/* Dados do perfil */}
         <div style={{ background: "#111118", border: "1px solid #252532", borderRadius: "12px", padding: "24px", marginBottom: "20px" }}>
-          <h3 style={{ color: "#e91e63", marginTop: 0, marginBottom: "16px" }}>Dados do Perfil</h3>
+          <h3 style={{ color: "#e9b61e", marginTop: 0, marginBottom: "16px" }}>Dados do Perfil</h3>
 
           <div style={{ marginBottom: "12px" }}>
             <label style={{ display: "block", marginBottom: "4px", color: "#b0b0c6", fontSize: "14px" }}>Usuário</label>
@@ -152,14 +152,14 @@ function Perfil({ user, setUser }) {
             />
           </div>
 
-          <button onClick={saveProfile} style={{ background: "#e91e63", color: "#fff", border: "none", padding: "10px 24px", borderRadius: "6px", cursor: "pointer", fontWeight: "700", fontSize: "14px" }}>
+          <button onClick={saveProfile} style={{ background: "#e9b61e", color: "#fff", border: "none", padding: "10px 24px", borderRadius: "6px", cursor: "pointer", fontWeight: "700", fontSize: "14px" }}>
             Salvar Perfil
           </button>
         </div>
 
         {/* Alterar senha */}
         <div style={{ background: "#111118", border: "1px solid #252532", borderRadius: "12px", padding: "24px", marginBottom: "20px" }}>
-          <h3 style={{ color: "#e91e63", marginTop: 0, marginBottom: "16px" }}>Alterar Senha</h3>
+          <h3 style={{ color: "#e9b61e", marginTop: 0, marginBottom: "16px" }}>Alterar Senha</h3>
 
           <div style={{ marginBottom: "12px" }}>
             <label style={{ display: "block", marginBottom: "4px", color: "#b0b0c6", fontSize: "14px" }}>Senha atual</label>
