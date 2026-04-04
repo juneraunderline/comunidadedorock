@@ -175,6 +175,17 @@ export default function Admin({ user: currentUser }) {
       <button type="button" onClick={() => execFormat("justifyLeft")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Alinhar esquerda">⬅</button>
       <button type="button" onClick={() => execFormat("justifyCenter")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Centralizar">⬌</button>
       <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
+      <button type="button" onClick={() => {
+        const url = prompt("URL do link:");
+        if (url) {
+          const newTab = confirm("Abrir em nova aba?");
+          const sel = window.getSelection();
+          const text = sel.toString() || url;
+          const target = newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
+          document.execCommand("insertHTML", false, `<a href="${url}"${target} style="color:#e91e63">${text}</a>`);
+        }
+      }} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Inserir link">🔗 Link</button>
+      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
       <button type="button" onClick={clearFormatting} style={{ background: "#3d2a2a", border: "1px solid #644", color: "#f88", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Limpar formatação">✕ Limpar</button>
     </div>
   );
