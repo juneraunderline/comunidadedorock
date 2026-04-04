@@ -1620,7 +1620,7 @@ body {
 }
 
 .band-detail-social h3 {
-  color: #e91e63;
+  color: #e9b61e;
   font-size: 18px;
   margin: 0 0 15px;
   text-transform: uppercase;
@@ -1673,7 +1673,7 @@ body {
 .interview-detail-header {
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 2px solid #e91e63;
+  border-bottom: 2px solid #e9b61e;
 }
 
 .interview-detail-header h1 {
@@ -1686,7 +1686,7 @@ body {
 
 .interview-artist {
   font-size: 18px;
-  color: #e91e63;
+  color: #e9b61e;
   margin: 10px 0;
 }
 
@@ -1739,13 +1739,13 @@ body {
 
 .interview-detail-text h2 {
   font-size: 24px;
-  border-bottom: 2px solid #e91e63;
+  border-bottom: 2px solid #e9b61e;
   padding-bottom: 10px;
 }
 
 .interview-detail-text h3 {
   font-size: 20px;
-  color: #e91e63;
+  color: #e9b61e;
 }
 
 .interview-detail-text h4 {
@@ -1766,8 +1766,8 @@ body {
 .interview-detail-text blockquote {
   margin: 20px 0;
   padding: 15px 20px;
-  border-left: 4px solid #e91e63;
-  background: rgba(233, 30, 99, 0.05);
+  border-left: 4px solid #e9b61e;
+  background: rgba(233, 182, 30, 0.05);
   font-style: italic;
   color: #bbb;
   line-height: 1.8;
@@ -1780,7 +1780,7 @@ body {
 
 .interview-detail-text strong,
 .interview-detail-text b {
-  color: #e91e63;
+  color: #e9b61e;
   font-weight: 700;
 }
 
@@ -1796,7 +1796,7 @@ body {
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'Courier New', monospace;
-  color: #e91e63;
+  color: #e9b61e;
   font-size: 14px;
 }
 
