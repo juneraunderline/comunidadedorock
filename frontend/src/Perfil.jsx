@@ -104,7 +104,7 @@ function Perfil({ user, setUser }) {
               href="/admin"
               style={{
                 display: "inline-block", marginTop: "12px",
-                background: user.role === "admin" ? "#e91e63" : "#333",
+                background: user.role === "admin" ? "#e9b61e" : "#333",
                 color: "#fff", textDecoration: "none",
                 padding: "8px 20px", borderRadius: "6px",
                 fontSize: "13px", fontWeight: "700",
@@ -118,7 +118,7 @@ function Perfil({ user, setUser }) {
 
         {/* Dados do perfil */}
         <div style={{ background: "#111118", border: "1px solid #252532", borderRadius: "12px", padding: "24px", marginBottom: "20px" }}>
-          <h3 style={{ color: "#e91e63", marginTop: 0, marginBottom: "16px" }}>Dados do Perfil</h3>
+          <h3 style={{ color: "#e9b61e", marginTop: 0, marginBottom: "16px" }}>Dados do Perfil</h3>
 
           <div style={{ marginBottom: "12px" }}>
             <label style={{ display: "block", marginBottom: "4px", color: "#b0b0c6", fontSize: "14px" }}>Usuário</label>
@@ -152,14 +152,14 @@ function Perfil({ user, setUser }) {
             />
           </div>
 
-          <button onClick={saveProfile} style={{ background: "#e91e63", color: "#fff", border: "none", padding: "10px 24px", borderRadius: "6px", cursor: "pointer", fontWeight: "700", fontSize: "14px" }}>
+          <button onClick={saveProfile} style={{ background: "#e9b61e", color: "#fff", border: "none", padding: "10px 24px", borderRadius: "6px", cursor: "pointer", fontWeight: "700", fontSize: "14px" }}>
             Salvar Perfil
           </button>
         </div>
 
         {/* Alterar senha */}
         <div style={{ background: "#111118", border: "1px solid #252532", borderRadius: "12px", padding: "24px", marginBottom: "20px" }}>
-          <h3 style={{ color: "#e91e63", marginTop: 0, marginBottom: "16px" }}>Alterar Senha</h3>
+          <h3 style={{ color: "#e9b61e", marginTop: 0, marginBottom: "16px" }}>Alterar Senha</h3>
 
           <div style={{ marginBottom: "12px" }}>
             <label style={{ display: "block", marginBottom: "4px", color: "#b0b0c6", fontSize: "14px" }}>Senha atual</label>

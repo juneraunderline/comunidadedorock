@@ -182,7 +182,7 @@ export default function Admin({ user: currentUser }) {
           const sel = window.getSelection();
           const text = sel.toString() || url;
           const target = newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
-          document.execCommand("insertHTML", false, `<a href="${url}"${target} style="color:#e91e63">${text}</a>`);
+          document.execCommand("insertHTML", false, `<a href="${url}"${target} style="color:#e9b61e">${text}</a>`);
         }
       }} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Inserir link">🔗 Link</button>
       <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
@@ -721,7 +721,7 @@ export default function Admin({ user: currentUser }) {
           <p style={{ color: "#afafba" }}>Nenhum feed adicionado</p>
         ) : (
           rssFeeds.map((feed, index) => (
-            <div key={`${feed.url}-${index}`} className="rss-row" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "1rem", alignItems: "start", padding: "12px", backgroundColor: "#1a1a1a", borderRadius: "8px", marginBottom: "12px", borderLeft: "3px solid #e91e63" }}>
+            <div key={`${feed.url}-${index}`} className="rss-row" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "1rem", alignItems: "start", padding: "12px", backgroundColor: "#1a1a1a", borderRadius: "8px", marginBottom: "12px", borderLeft: "3px solid #e9b61e" }}>
               {editingFeedId === index ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   <div>
@@ -1754,7 +1754,7 @@ export default function Admin({ user: currentUser }) {
             <div className="post-preview" style={{ alignItems: "center" }}>
               <div style={{
                 width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0,
-                background: u.avatar ? `url(${u.avatar}) center/cover` : "#e91e63",
+                background: u.avatar ? `url(${u.avatar}) center/cover` : "#e9b61e",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: "16px", color: "#fff", border: "2px solid #333"
               }}>
