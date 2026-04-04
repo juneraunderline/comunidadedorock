@@ -897,7 +897,7 @@ body {
 }
 
 .admin-header h1 span {
-  color: #e91e63;
+  color: #e9b61e;
 }
 
 .admin-header p {
@@ -922,7 +922,7 @@ body {
 
 .admin-tabs button.active {
   color: #fff;
-  border-color: #e91e63;
+  border-color: #e9b61e;
   background: #161627;
 }
 
@@ -993,7 +993,7 @@ body {
 }
 
 .admin-card ul li button {
-  background: #e91e63;
+  background: #e9b61e;
   border: none;
   padding: 6px 10px;
   border-radius: 6px;
@@ -1008,7 +1008,7 @@ body {
 }
 
 .btn-primary {
-  background: #e91e63;
+  background: #e9b61e;
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -1062,7 +1062,7 @@ body {
 
 .edit-post-form h3 {
   margin-top: 0;
-  color: #e91e63;
+  color: #e9b61e;
 }
 
 .form-group {
@@ -1091,7 +1091,7 @@ body {
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #e91e63;
+  border-color: #e9b61e;
 }
 
 .form-actions {
@@ -1282,8 +1282,8 @@ body {
 
 [contenteditable]:focus {
   background-color: #252548;
-  border-color: #e91e63;
-  box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
+  border-color: #e9b61e;
+  box-shadow: 0 0 0 3px rgba(233, 182, 30, 0.1);
 }
 
 /* Placeholder para contenteditable */
