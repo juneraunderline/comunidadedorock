@@ -141,10 +141,9 @@ function Home({ posts }) {
                         Sem imagem
                       </div>
                     )}
-                    <div className="card-source">{p.source || "Desconhecida"}</div>
                   </div>
                   <div className="card-content">
-                    <small className="card-date">{formatDatePT(p.created_at)}</small>
+                    <small className="card-date" style={{ marginBottom: "6px" }}>{formatDatePT(p.created_at)}</small>
                     <h3>{p.title}</h3>
                     <p>{(p.content || "").slice(0, 100)}...</p>
                   </div>
