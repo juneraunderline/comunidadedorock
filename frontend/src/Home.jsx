@@ -141,6 +141,7 @@ function Home({ posts }) {
                         Sem imagem
                       </div>
                     )}
+                    {p.source && <div className="card-source">{p.source}</div>}
                   </div>
                   <div className="card-content">
                     <small className="card-date" style={{ marginBottom: "6px" }}>{formatDatePT(p.created_at)}</small>
