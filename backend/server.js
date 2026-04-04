@@ -287,16 +287,16 @@ app.get("/api/posts", async (req, res) => {
 });
 
 app.post("/api/posts", async (req, res) => {
-  const { title, content, image, link } = req.body;
+  const { title, content, image, link, source } = req.body;
   if (!title || !content) return res.status(400).json({ error: "Título e conteúdo são obrigatórios" });
-  await db.run("INSERT INTO posts (title, content, image, link) VALUES ($1, $2, $3, $4)", [title, content, image || null, link || null]);
+  await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image || null, link || null, source || null]);
   res.json({ success: true });
 });
 
 app.put("/api/posts/:id", async (req, res) => {
-  const { title, content, image, link } = req.body;
+  const { title, content, image, link, source } = req.body;
   if (!title || !content) return res.status(400).json({ error: "Título e conteúdo são obrigatórios" });
-  await db.run("UPDATE posts SET title = $1, content = $2, image = $3, link = $4 WHERE id = $5", [title, content, image || null, link || null, req.params.id]);
+  await db.run("UPDATE posts SET title = $1, content = $2, image = $3, link = $4, source = $5 WHERE id = $6", [title, content, image || null, link || null, source || null, req.params.id]);
   res.json({ success: true });
 });
 
