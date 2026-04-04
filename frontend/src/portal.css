@@ -24,10 +24,10 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  color: #e91e63;
+  color: #e9b61e;
   margin: 0;
   padding: 12px 0;
-  border-bottom: 2px solid #e91e63;
+  border-bottom: 2px solid #e9b61e;
 }
 
 .portal-list {
@@ -60,7 +60,7 @@
 
 .portal-link:hover {
   background: #1a1a1a;
-  border-left-color: #e91e63;
+  border-left-color: #e9b61e;
   color: #fff;
 }
 
@@ -90,7 +90,7 @@
 
 .portal-link:hover .portal-icon {
   opacity: 1;
-  filter: drop-shadow(0 0 3px #e91e63);
+  filter: drop-shadow(0 0 3px #e9b61e);
 }
 
 .portal-name {
@@ -147,10 +147,10 @@
 }
 
 .portal::-webkit-scrollbar-thumb {
-  background: #e91e63;
+  background: #e9b61e;
   border-radius: 3px;
 }
 
 .portal::-webkit-scrollbar-thumb:hover {
-  background: #ff1744;
+  background: #ffd54f;
 }
