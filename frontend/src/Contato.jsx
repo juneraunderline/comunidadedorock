@@ -2,6 +2,11 @@ import { useState } from "react";
 
 function Contato() {
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [assunto, setAssunto] = useState("");
+  const [mensagem, setMensagem] = useState("");
 
   const inputStyle = {
     width: "100%",
@@ -13,6 +18,34 @@ function Contato() {
     color: "#fff",
     fontSize: "14px",
     fontFamily: "inherit"
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSending(true);
+    try {
+      await fetch("https://formsubmit.co/ajax/junior.lopes@yahoo.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({
+          nome,
+          email,
+          assunto,
+          mensagem,
+          _subject: "Novo contato - Comunidade do Rock",
+          _template: "table"
+        })
+      });
+      setSent(true);
+      setNome("");
+      setEmail("");
+      setAssunto("");
+      setMensagem("");
+    } catch (err) {
+      alert("Erro ao enviar mensagem. Tente novamente.");
+    } finally {
+      setSending(false);
+    }
   };
 
   if (sent) {
@@ -42,53 +75,45 @@ function Contato() {
         </div>
         <div style={{ maxWidth: "600px", margin: "0 auto", textAlign: "center", padding: "60px 20px" }}>
           <p style={{ color: "#999", marginBottom: "24px" }}>Entre em contato conosco para sugestões, parcerias ou dúvidas.</p>
-          <form
-            action="https://formsubmit.co/junior.lopes@yahoo.com"
-            method="POST"
-            onSubmit={() => {
-              setTimeout(() => setSent(true), 100);
-            }}
-          >
-            {/* FormSubmit configs */}
-            <input type="hidden" name="_subject" value="Novo contato - Comunidade do Rock" />
-            <input type="hidden" name="_captcha" value="false" />
-            <input type="hidden" name="_template" value="table" />
-            <input type="hidden" name="_next" value="https://comunidadedorock.vercel.app/contato" />
-            <input type="text" name="_honey" style={{ display: "none" }} />
-
+          <form onSubmit={handleSubmit}>
             <input
               type="text"
-              name="nome"
               placeholder="Seu nome"
               required
+              value={nome}
+              onChange={e => setNome(e.target.value)}
               style={inputStyle}
             />
             <input
               type="email"
-              name="email"
               placeholder="Seu email"
               required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               style={inputStyle}
             />
             <input
               type="text"
-              name="assunto"
               placeholder="Assunto"
+              value={assunto}
+              onChange={e => setAssunto(e.target.value)}
               style={inputStyle}
             />
             <textarea
-              name="mensagem"
               placeholder="Sua mensagem..."
               rows="6"
               required
+              value={mensagem}
+              onChange={e => setMensagem(e.target.value)}
               style={{ ...inputStyle, resize: "vertical" }}
             ></textarea>
             <button
               type="submit"
+              disabled={sending}
               className="btn btn-primary"
-              style={{ width: "100%", padding: "14px", fontSize: "14px", fontWeight: "700", letterSpacing: "1px" }}
+              style={{ width: "100%", padding: "14px", fontSize: "14px", fontWeight: "700", letterSpacing: "1px", opacity: sending ? 0.7 : 1 }}
             >
-              🚀 Enviar Mensagem
+              {sending ? "Enviando..." : "🚀 Enviar Mensagem"}
             </button>
           </form>
           <p style={{ color: "#555", fontSize: "11px", marginTop: "16px" }}>
