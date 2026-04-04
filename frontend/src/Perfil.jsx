@@ -81,7 +81,7 @@ function Perfil({ user, setUser }) {
     <div style={{ minHeight: "80vh", padding: "40px 20px", background: "#0a0a0e", marginTop: "80px" }}>
       <div style={{ maxWidth: "600px", margin: "0 auto" }}>
         <h1 style={{ fontSize: "32px", marginBottom: "30px", color: "#fff" }}>
-          MEU <span style={{ color: "#e91e63" }}>PERFIL</span>
+          MEU <span style={{ color: "#e9b61e" }}>PERFIL</span>
         </h1>
 
         {msg && <div style={{ background: "rgba(76,175,80,0.15)", border: "1px solid #4caf50", color: "#4caf50", padding: "12px", borderRadius: "8px", marginBottom: "16px" }}>{msg}</div>}
@@ -91,9 +91,9 @@ function Perfil({ user, setUser }) {
         <div style={{ textAlign: "center", marginBottom: "30px" }}>
           <div style={{
             width: "100px", height: "100px", borderRadius: "50%", margin: "0 auto 16px",
-            background: avatar ? `url(${avatar}) center/cover` : "#e91e63",
+            background: avatar ? `url(${avatar}) center/cover` : "#e9b61e",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "40px", color: "#fff", border: "3px solid #e91e63"
+            fontSize: "40px", color: "#fff", border: "3px solid #e9b61e"
           }}>
             {!avatar && (user.display_name || user.username || "U").charAt(0).toUpperCase()}
           </div>

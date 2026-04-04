@@ -83,7 +83,7 @@ function App() {
                 <Link to="/perfil" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "8px" }}>
                   <div style={{
                     width: "32px", height: "32px", borderRadius: "50%",
-                    background: user.avatar ? `url(${user.avatar}) center/cover` : "#e91e63",
+                    background: user.avatar ? `url(${user.avatar}) center/cover` : "#e9b61e",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: "14px", color: "#fff", border: "2px solid #e9b61e", flexShrink: 0
                   }}>
@@ -103,7 +103,7 @@ function App() {
               </>
             ) : (
               <Link to="/login" style={{
-                background: "#e91e63", color: "#fff", textDecoration: "none",
+                background: "#e9b61e", color: "#fff", textDecoration: "none",
                 padding: "6px 16px", borderRadius: "4px", fontSize: "12px",
                 fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px"
               }}>

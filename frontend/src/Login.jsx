@@ -129,9 +129,9 @@ function Login({ onLogin }) {
                   type="checkbox"
                   checked={wantEditor}
                   onChange={e => setWantEditor(e.target.checked)}
-                  style={{ accentColor: "#e91e63", width: "16px", height: "16px" }}
+                  style={{ accentColor: "#e9b61e", width: "16px", height: "16px" }}
                 />
-                Quero ser <strong style={{ color: "#e91e63" }}>Editor</strong> (publicar notícias)
+                Quero ser <strong style={{ color: "#e9b61e" }}>Editor</strong> (publicar notícias)
               </label>
               <p style={{ margin: "4px 0 0 24px", color: "#666", fontSize: "11px" }}>Editores podem criar e gerenciar notícias no painel admin</p>
             </div>
@@ -141,7 +141,7 @@ function Login({ onLogin }) {
             type="submit"
             disabled={loading}
             style={{
-              width: "100%", padding: "14px", background: "#e91e63", color: "#fff",
+              width: "100%", padding: "14px", background: "#e9b61e", color: "#fff",
               border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: "700",
               cursor: loading ? "wait" : "pointer", opacity: loading ? 0.7 : 1,
               textTransform: "uppercase", letterSpacing: "1px", marginTop: "8px"
@@ -155,7 +155,7 @@ function Login({ onLogin }) {
           {isRegister ? "Já tem conta?" : "Não tem conta?"}{" "}
           <button
             onClick={() => { setIsRegister(!isRegister); setError(""); }}
-            style={{ background: "none", border: "none", color: "#e91e63", cursor: "pointer", fontSize: "13px", fontWeight: "700" }}
+            style={{ background: "none", border: "none", color: "#e9b61e", cursor: "pointer", fontSize: "13px", fontWeight: "700" }}
           >
             {isRegister ? "Fazer login" : "Criar conta"}
           </button>
