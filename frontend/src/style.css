@@ -205,7 +205,7 @@ body {
 }
 
 .hero h2 span {
-  color: #e91e63;
+  color: #e9b61e;
   display: block;
   margin-left: 0;
 }
@@ -241,8 +241,8 @@ body {
 }
 
 .hero .btn-outline:hover {
-  background: #e91e63;
-  border-color: #e91e63;
+  background: #e9b61e;
+  border-color: #e9b61e;
   color: white;
 }
 
@@ -262,12 +262,12 @@ body {
 } 
 
 .btn-primary {
-  background: #e91e63;
+  background: #e9b61e;
   color: white;
 }
 
 .btn-primary:hover {
-  background: #c2185b;
+  background: #c49b16;
 }
 
 .btn-outline {
@@ -277,8 +277,8 @@ body {
 }
 
 .btn-outline:hover {
-  border-color: #e91e63;
-  color: #e91e63;
+  border-color: #e9b61e;
+  color: #e9b61e;
 }
 
 .btn-small {
@@ -349,11 +349,11 @@ body {
 }
 
 .highlight {
-  color: #e91e63;
+  color: #e9b61e;
 }
 
 .view-all {
-  color: #e91e63;
+  color: #e9b61e;
   text-decoration: none;
   font-weight: 700;
   font-size: 13px;
@@ -413,7 +413,7 @@ body {
 
 .card:hover {
   transform: translateY(-5px);
-  border-color: #e91e63;
+  border-color: #e9b61e;
 }
 .card-image {
   width: 100%;
@@ -451,7 +451,7 @@ body {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(233, 30, 99, 0.9);
+  background: rgba(233, 182, 30, 0.9);
   color: #fff;
   padding: 6px 12px;
   font-size: 12px;
@@ -469,7 +469,7 @@ body {
 }
 
 .card-date {
-  color: #e91e63;
+  color: #e9b61e;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
