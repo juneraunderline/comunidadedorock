@@ -55,7 +55,7 @@ function EventDetail() {
           </div>
         )}
         <div style={{ background: '#16161b', padding: '20px', borderRadius: '8px' }}>
-          <p style={{ color: '#e91e63', fontWeight: 700, marginBottom: '8px' }}>{formatWeekdayFull(event.date)}</p>
+          <p style={{ color: '#e9b61e', fontWeight: 700, marginBottom: '8px' }}>{formatWeekdayFull(event.date)}</p>
           {event.time && <p style={{ color: '#fff', marginBottom: '8px' }}>Hora: <strong>{event.time}</strong></p>}
           {event.location && <p style={{ color: '#fff', marginBottom: '8px' }}>Local: <strong>{event.location}</strong></p>}
           {event.city && event.state && <p style={{ color: '#fff', marginBottom: '8px' }}>Cidade: {event.city} - {event.state}</p>}

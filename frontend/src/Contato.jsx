@@ -57,7 +57,7 @@ function Contato() {
           </div>
           <div style={{ maxWidth: "600px", margin: "0 auto", textAlign: "center", padding: "60px 20px" }}>
             <div style={{ fontSize: "60px", marginBottom: "20px" }}>🎸</div>
-            <h3 style={{ color: "#e91e63", marginBottom: "12px" }}>Mensagem enviada!</h3>
+            <h3 style={{ color: "#e9b61e", marginBottom: "12px" }}>Mensagem enviada!</h3>
             <p style={{ color: "#999", marginBottom: "24px" }}>Obrigado por entrar em contato. Responderemos em breve!</p>
             <button className="btn btn-primary" onClick={() => setSent(false)}>Enviar outra mensagem</button>
           </div>
