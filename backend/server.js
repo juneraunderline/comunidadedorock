@@ -463,8 +463,8 @@ app.post("/api/import-rss", async (req, res) => {
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
         for (const itemXml of items) {
-          const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
-          const content = extractContentFromItem(itemXml);
+          const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
+          const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const image = extractImageFromItem(itemXml, content);
           const link = extractLinkFromItem(itemXml);
           if (!title) continue;
@@ -491,8 +491,8 @@ app.post("/api/import-rss-single", async (req, res) => {
     const xml = await response.text();
     const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
     for (const itemXml of items) {
-      const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
-      const content = extractContentFromItem(itemXml);
+      const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
+      const content = decodeHtmlEntities(extractContentFromItem(itemXml));
       const image = extractImageFromItem(itemXml, content);
       const link = extractLinkFromItem(itemXml);
       if (!title) continue;
@@ -519,8 +519,8 @@ app.post("/api/reimport-rss", async (req, res) => {
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
         for (const itemXml of items) {
-          const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
-          const content = extractContentFromItem(itemXml);
+          const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
+          const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const image = extractImageFromItem(itemXml, content);
           const link = extractLinkFromItem(itemXml);
           if (!title) continue;
@@ -538,6 +538,24 @@ app.post("/api/reimport-rss", async (req, res) => {
       } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
     }
     res.json({ success: true, updated, created });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/fix-html-entities", async (req, res) => {
+  try {
+    const allPosts = await db.getAll("SELECT id, title, content FROM posts");
+    let fixed = 0;
+    for (const p of allPosts) {
+      const cleanTitle = decodeHtmlEntities(p.title);
+      const cleanContent = decodeHtmlEntities(p.content);
+      if (cleanTitle !== p.title || cleanContent !== p.content) {
+        await db.run("UPDATE posts SET title = $1, content = $2 WHERE id = $3", [cleanTitle, cleanContent, p.id]);
+        fixed++;
+      }
+    }
+    res.json({ success: true, fixed, total: allPosts.length, message: `${fixed} posts corrigidos de ${allPosts.length} total` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
