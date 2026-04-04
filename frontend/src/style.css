@@ -504,14 +504,14 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  box-shadow: 0 4px 15px rgba(233, 30, 99, 0.1);
+  box-shadow: 0 4px 15px rgba(233, 182, 30, 0.1);
   position: relative;
 }
 
 .event-card:hover {
   transform: translateY(-8px);
-  border-color: #e91e63;
-  box-shadow: 0 12px 30px rgba(233, 30, 99, 0.3);
+  border-color: #e9b61e;
+  box-shadow: 0 12px 30px rgba(233, 182, 30, 0.3);
 }
 
 .event-image-wrapper {
@@ -545,7 +545,7 @@ body {
   position: absolute;
   top: 12px;
   left: 12px;
-  background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
+  background: linear-gradient(135deg, #e9b61e 0%, #c49b16 100%);
   color: white;
   padding: 7px 14px;
   border-radius: 4px;
@@ -553,7 +553,7 @@ body {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  box-shadow: 0 3px 10px rgba(233, 30, 99, 0.4);
+  box-shadow: 0 3px 10px rgba(233, 182, 30, 0.4);
   z-index: 2;
 }
 
@@ -561,7 +561,7 @@ body {
   position: absolute;
   bottom: 12px;
   right: 12px;
-  background: linear-gradient(135deg, rgba(233, 30, 99, 0.95) 0%, rgba(194, 24, 91, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(233, 182, 30, 0.95) 0%, rgba(196, 155, 22, 0.95) 100%);
   border-left: 3px solid #fff;
   padding: 8px 10px;
   border-radius: 4px;
@@ -607,7 +607,7 @@ body {
 
 .event-artist {
   font-size: 13px;
-  color: #e91e63;
+  color: #e9b61e;
   margin-bottom: 8px;
   font-weight: 700;
   display: flex;
@@ -654,7 +654,7 @@ body {
   font-weight: 900 !important;
   letter-spacing: 1px !important;
   text-transform: uppercase !important;
-  background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%) !important;
+  background: linear-gradient(135deg, #e9b61e 0%, #c49b16 100%) !important;
   border: none !important;
   border-radius: 4px !important;
   color: #fff !important;
@@ -664,12 +664,12 @@ body {
   text-decoration: none !important;
   display: inline-block !important;
   text-align: center !important;
-  box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(233, 182, 30, 0.3) !important;
 }
 
 .btn-buy-tickets:hover:not(:disabled) {
-  background: linear-gradient(135deg, #f50057 0%, #e91e63 100%) !important;
-  box-shadow: 0 8px 20px rgba(233, 30, 99, 0.5) !important;
+  background: linear-gradient(135deg, #f5c007 0%, #e9b61e 100%) !important;
+  box-shadow: 0 8px 20px rgba(233, 182, 30, 0.5) !important;
   transform: translateY(-2px) !important;
 }
 
@@ -779,7 +779,7 @@ body {
   }
 
   .btn-outline {
-    border-color: #e91e63;
+    border-color: #e9b61e;
   }
 }
 
@@ -789,7 +789,7 @@ body {
   white-space: normal;
 }
 .hero h2 span {
-  color: #e91e63;
+  color: #e9b61e;
   display: block;
 
 
