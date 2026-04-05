@@ -708,6 +708,16 @@ app.get("/og/eventos/:id", async (req, res) => {
   } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
 });
 
+// Deletar todas as notícias sem imagem
+app.delete("/api/posts-without-images", async (req, res) => {
+  try {
+    const result = await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' RETURNING id");
+    res.json({ success: true, deleted: result.rowCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Debug RSS feed - ver o que está vindo
 app.get("/api/debug-rss", async (req, res) => {
   try {
