@@ -158,8 +158,23 @@ async function autoImportRss() {
   } catch (e) { console.warn("Erro ao recarregar feeds:", e.message); }
   for (const feed of rssFeeds) {
     try {
-      const res = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
-      const xml = await res.text();
+      // Tentar URL direta primeiro, se falhar tentar via proxy
+      let xml = "";
+      try {
+        const directRes = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
+        if (directRes.status === 200) {
+          xml = await directRes.text();
+        } else {
+          // Tentar via proxy RSS
+          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
+          const proxyRes = await fetchFunc(proxyUrl);
+          if (proxyRes.status === 200) xml = await proxyRes.text();
+        }
+      } catch (err) {
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
+        const proxyRes = await fetchFunc(proxyUrl).catch(() => null);
+        if (proxyRes?.status === 200) xml = await proxyRes.text();
+      }
       const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
       
       for (const itemXml of items) {
