@@ -138,6 +138,17 @@ function App() {
 
         {/* FOOTER */}
         <footer className="footer">
+          <div style={{ maxWidth: "400px", margin: "0 auto 16px" }}>
+            <iframe
+              src="https://open.spotify.com/embed/playlist/3pDLG8bJG1FtGjXmFnNT3D?utm_source=generator&theme=0"
+              width="100%"
+              height="80"
+              frameBorder="0"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              style={{ borderRadius: "8px", border: "none" }}
+            ></iframe>
+          </div>
           <img src={logo} alt="Logo" className="footer-logo" />
           <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginBottom: "16px" }}>
             <a href="https://www.instagram.com/comunidadedorock" target="_blank" rel="noopener noreferrer" title="Instagram" style={{ color: "#999", fontSize: "24px", textDecoration: "none", transition: "color 0.3s" }} onMouseEnter={e => e.target.style.color = "#e9b61e"} onMouseLeave={e => e.target.style.color = "#999"}>
