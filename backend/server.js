@@ -619,7 +619,7 @@ app.post("/api/test-rss-images", async (req, res) => {
 
 
 // --- OPEN GRAPH HELPERS ---
-function buildOgHtml(title, description, image, ogUrl, type) {
+function buildOgHtml(title, description, image, ogUrl, type, siteUrl) {
   const safeImg = (image || "").replace('http://', 'https://');
   return `<!DOCTYPE html>
 <html prefix="og: http://ogp.me/ns#">
@@ -643,7 +643,10 @@ function buildOgHtml(title, description, image, ogUrl, type) {
 <meta name="twitter:image" content="${safeImg}" />
 <link rel="canonical" href="${ogUrl}" />
 </head>
-<body><h1>${title}</h1><p>${description}</p><img src="${safeImg}" alt="${title}" width="1200" height="630" /></body>
+<body>
+<h1>${title}</h1><p>${description}</p><img src="${safeImg}" alt="${title}" width="1200" height="630" />
+<script>if(!/bot|crawl|spider|facebook|twitter|whatsapp|telegram|linkedin|slack/i.test(navigator.userAgent)){window.location.replace("${siteUrl || ogUrl}")}</script>
+</body>
 </html>`;
 }
 function resolveImage(img) {
@@ -656,10 +659,9 @@ function isCrawler(ua) {
   return l.includes("facebookexternalhit") || l.includes("twitterbot") || l.includes("whatsapp") || l.includes("telegrambot") || l.includes("linkedinbot") || l.includes("slackbot") || l.includes("bot") || l.includes("crawl") || l.includes("spider");
 }
 function sendOg(res, title, description, image, ogUrl, type, siteUrl, ua) {
-  if (!isCrawler(ua)) return res.redirect(siteUrl);
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  res.status(200).send(buildOgHtml(title, description, image, ogUrl, type));
+  res.status(200).send(buildOgHtml(title, description, image, ogUrl, type, siteUrl));
 }
 
 // OG - Notícias
