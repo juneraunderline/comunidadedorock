@@ -11,6 +11,7 @@ export default function Admin({ user: currentUser }) {
   const [newBand, setNewBand] = useState({ name: "", genre: "", city: "", state: "", year: "", members: "", biography: "", contact: "", image: "", instagram: "", facebook: "", youtube: "", spotify: "", bandcamp: "", site: "" });
   const [activeTab, setActiveTab] = useState("noticias");
   const [editingPost, setEditingPost] = useState(null);
+  const [selectedPosts, setSelectedPosts] = useState(new Set());
   const [editingBand, setEditingBand] = useState(null);
   const [editingInterview, setEditingInterview] = useState(null);
   const [newInterview, setNewInterview] = useState({ title: "", artist: "", content: "", image: "", date: "" });
@@ -999,12 +1000,35 @@ export default function Admin({ user: currentUser }) {
 
         <div className="posts-list">
           <h3>Lista de Notícias ({posts.length})</h3>
-          {isAdmin && <div style={{marginBottom: "16px"}}>
+          {isAdmin && <div style={{marginBottom: "16px", display: "flex", gap: "8px", flexWrap: "wrap"}}>
             <button className="btn btn-outline" onClick={reimportRssFeeds}>🔄 Reimportar e Atualizar Imagens</button>
+            <button className="btn btn-outline" onClick={() => {
+              if (selectedPosts.size === posts.length) {
+                setSelectedPosts(new Set());
+              } else {
+                setSelectedPosts(new Set(posts.map(p => p.id)));
+              }
+            }}>{selectedPosts.size === posts.length ? "☐ Desmarcar todas" : "☑ Selecionar todas"}</button>
+            {selectedPosts.size > 0 && (
+              <button className="btn btn-outline" style={{ color: "#f44", borderColor: "#f44" }} onClick={() => {
+                if (confirm(`Deletar ${selectedPosts.size} notícia(s) selecionada(s)?`)) {
+                  Promise.all([...selectedPosts].map(id => axios.delete(`${API_URL}/api/posts/${id}`))).then(() => {
+                    setSelectedPosts(new Set());
+                    fetchData();
+                    alert(`${selectedPosts.size} notícia(s) deletada(s)!`);
+                  }).catch(() => alert("Erro ao deletar"));
+                }
+              }}>🗑 Deletar selecionadas ({selectedPosts.size})</button>
+            )}
           </div>}
           {posts.length === 0 && <p>Nenhuma notícia publicada</p>}
           {posts.map(post => (
-            <div key={post.id} className="post-item">
+            <div key={post.id} className="post-item" style={{ background: selectedPosts.has(post.id) ? "#1a1a3a" : undefined }}>
+              {isAdmin && <input type="checkbox" checked={selectedPosts.has(post.id)} onChange={() => {
+                const next = new Set(selectedPosts);
+                if (next.has(post.id)) next.delete(post.id); else next.add(post.id);
+                setSelectedPosts(next);
+              }} style={{ accentColor: "#e9b61e", width: "18px", height: "18px", flexShrink: 0 }} />}
               <div className="post-preview">
                 {post.image && <img src={getImageUrl(post.image)} alt={post.title} />}
                 <div className="post-info">
