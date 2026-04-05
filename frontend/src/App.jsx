@@ -24,6 +24,7 @@ import Login from "./Login";
 
 function App() {
   const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState(() => {
     try {
@@ -48,8 +49,9 @@ function App() {
       .then(res => {
         console.log("🔄 App.jsx - Posts carregados:", res.data.length);
         setPosts(res.data);
+        setLoading(false);
       })
-      .catch(err => console.error("❌ Erro ao carregar posts:", err));
+      .catch(err => { console.error("❌ Erro ao carregar posts:", err); setLoading(false); });
 
     // Atualizar posts a cada 10 segundos para pegar novos que foram importados
     const interval = setInterval(() => {
