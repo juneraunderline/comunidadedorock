@@ -99,7 +99,7 @@ function decodeHtmlEntities(text) {
 
 function sanitizeImageUrl(url) {
   if (!url || !url.startsWith("http") || url.includes("youtube.com/embed")) return "";
-  return url.replace(/\/(www\.[^\s\/]+\.com)\//i, "/").replace(/\/uploads\.([^\/]+\.com)\//i, "/uploads/").trim();
+  return url.trim();
 }
 
 function extractRawContent(item) {
