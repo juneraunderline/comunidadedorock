@@ -650,7 +650,9 @@ function buildOgHtml(title, description, image, ogUrl, type, siteUrl) {
 </html>`;
 }
 function resolveImage(img) {
-  if (!img) return "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=1200&h=630&fit=crop";
+  const fallback = "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=1200&h=630&fit=crop";
+  if (!img) return fallback;
+  if (img.includes("fbcdn.net") || img.includes("facebook.com") || img.includes("scontent")) return fallback;
   if (img.startsWith("http")) return img;
   return "https://comunidadedorock.onrender.com" + img;
 }
