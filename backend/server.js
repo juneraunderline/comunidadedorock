@@ -152,7 +152,7 @@ async function autoImportRss() {
         const image = extractImageFromItem(itemXml, content);
         const link = extractLinkFromItem(itemXml);
 
-        if (!title) continue;
+        if (!title || !image) continue;
 
         const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
         if (!exists) {
