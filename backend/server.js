@@ -708,6 +708,27 @@ app.get("/og/eventos/:id", async (req, res) => {
   } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
 });
 
+// Debug RSS feed - ver o que está vindo
+app.get("/api/debug-rss", async (req, res) => {
+  try {
+    const feedUrl = req.query.url || "https://tenhomaisdiscosqueamigos.com/feed/";
+    const response = await fetchFunc(feedUrl);
+    const xml = await response.text();
+    const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+    const results = items.slice(0, 3).map(itemXml => {
+      const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").trim();
+      const rawHtml = extractRawContent(itemXml);
+      const image = extractImageFromItem(itemXml, null);
+      const hasImg = rawHtml.includes("<img");
+      const imgTags = rawHtml.match(/<img[^>]*>/gi) || [];
+      return { title: title?.substring(0, 60), image, hasImg, imgTags: imgTags.map(t => t.substring(0, 200)), rawHtmlLength: rawHtml.length, rawHtmlPreview: rawHtml.substring(0, 500) };
+    });
+    res.json({ feedUrl, totalItems: items.length, results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Inicializar banco e iniciar servidor
 async function startServer() {
   await initDb();
