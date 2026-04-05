@@ -102,15 +102,20 @@ function sanitizeImageUrl(url) {
   return url.replace(/\/(www\.[^\s\/]+\.com)\//i, "/").replace(/\/uploads\.([^\/]+\.com)\//i, "/uploads/").trim();
 }
 
+function extractRawContent(item) {
+  let raw = item.match(/<content:encoded[^>]*>([\s\S]*?)<\/content:encoded>/i)?.[1] || 
+            item.match(/<description[^>]*>([\s\S]*?)<\/description>/i)?.[1] || "";
+  return raw.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
+}
+
 function extractContentFromItem(item) {
-  let content = item.match(/<content:encoded[^>]*>([\s\S]*?)<\/content:encoded>/i)?.[1] || 
-                item.match(/<description[^>]*>([\s\S]*?)<\/description>/i)?.[1] || "";
-  content = content.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "").trim();
+  let content = extractRawContent(item).replace(/<[^>]+>/g, "").trim();
   return content.length > 10 ? content : null;
 }
 
 function extractImageFromItem(item, content) {
-  // Primeiro decodificar CDATA para encontrar imagens escondidas
+  // Pegar o HTML bruto do conteúdo (com tags, antes de limpar)
+  const rawHtml = extractRawContent(item);
   const decoded = item.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
   
   let image = item.match(/<media:content[^>]*url=["']([^"']+)["']/i)?.[1] ||
@@ -118,11 +123,12 @@ function extractImageFromItem(item, content) {
               item.match(/<enclosure[^>]*url=["']([^"']+\.(jpg|jpeg|png|gif|webp)[^"']*)["']/i)?.[1] ||
               item.match(/<enclosure[^>]*url=["']([^"']+)["'][^>]*type=["']image/i)?.[1] ||
               item.match(/<image>[^<]*<url>([^<]+)<\/url>/i)?.[1] ||
-              decoded.match(/<img[^>]*src=["']([^"']+\.(jpg|jpeg|png|gif|webp)[^"']*)["']/i)?.[1] ||
+              rawHtml.match(/<img[^>]*src=["']([^"']+)["']/i)?.[1] ||
               decoded.match(/<img[^>]*src=["']([^"']+)["']/i)?.[1] ||
               item.match(/<img[^>]*src=["']([^"']+)["']/i)?.[1] ||
               content?.match(/<img[^>]*src=["']([^"']+)["']/i)?.[1] ||
-              decoded.match(/src=["'](https?:\/\/[^"']+\.(jpg|jpeg|png|gif|webp)[^"']*)["']/i)?.[1] ||
+              rawHtml.match(/src=["'](https?:\/\/[^"']+\.(jpg|jpeg|png|gif|webp)[^"']*)["']/i)?.[1] ||
+              rawHtml.match(/(https?:\/\/[^\s"'<>]+\.(jpg|jpeg|png|gif|webp))/i)?.[1] ||
               decoded.match(/(https?:\/\/[^\s"'<>]+\.(jpg|jpeg|png|gif|webp))/i)?.[1];
   return sanitizeImageUrl(image) || null;
 }
