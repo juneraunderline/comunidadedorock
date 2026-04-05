@@ -715,6 +715,11 @@ app.get("/api/debug-rss", async (req, res) => {
     const response = await fetchFunc(feedUrl);
     const xml = await response.text();
     const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+    const statusCode = response.status;
+    const contentType = response.headers.get("content-type");
+    const xmlPreview = xml.substring(0, 1000);
+    const hasItems = xml.includes("<item");
+    const hasEntry = xml.includes("<entry");
     const results = items.slice(0, 3).map(itemXml => {
       const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").trim();
       const rawHtml = extractRawContent(itemXml);
@@ -723,7 +728,7 @@ app.get("/api/debug-rss", async (req, res) => {
       const imgTags = rawHtml.match(/<img[^>]*>/gi) || [];
       return { title: title?.substring(0, 60), image, hasImg, imgTags: imgTags.map(t => t.substring(0, 200)), rawHtmlLength: rawHtml.length, rawHtmlPreview: rawHtml.substring(0, 500) };
     });
-    res.json({ feedUrl, totalItems: items.length, results });
+    res.json({ feedUrl, statusCode, contentType, hasItems, hasEntry, totalItems: items.length, xmlPreview, results });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
