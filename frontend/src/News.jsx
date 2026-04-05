@@ -38,16 +38,13 @@ function News() {
   };
 
   useEffect(() => {
-    // Construir URL com filtro se necessário
-    let url = `${API_URL}/api/posts`;
-    if (portalFilter) {
-      url += `?source=${encodeURIComponent(portalFilter)}`;
-    }
-    
-    axios.get(url)
+    axios.get(`${API_URL}/api/posts`)
       .then(res => {
-        console.log("Posts recebidos:", res.data);
-        setPosts(res.data);
+        let data = res.data;
+        if (portalFilter) {
+          data = data.filter(p => p.source && p.source.toLowerCase().includes(portalFilter.toLowerCase()));
+        }
+        setPosts(data);
       })
       .catch(err => {
         console.error("Erro ao buscar posts:", err);
