@@ -180,6 +180,10 @@ async function autoImportRss() {
       }
     } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
   }
+  // Limpar notícias sem imagem automaticamente
+  try {
+    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = ''");
+  } catch (e) {}
 }
 setInterval(autoImportRss, 5000);
 
