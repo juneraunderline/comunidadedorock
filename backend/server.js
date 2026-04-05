@@ -494,7 +494,7 @@ app.post("/api/import-rss", async (req, res) => {
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const image = extractImageFromItem(itemXml, content);
           const link = extractLinkFromItem(itemXml);
-          if (!title) continue;
+          if (!title || !image) continue;
           const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
           if (!exists) {
             await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
@@ -522,7 +522,7 @@ app.post("/api/import-rss-single", async (req, res) => {
       const content = decodeHtmlEntities(extractContentFromItem(itemXml));
       const image = extractImageFromItem(itemXml, content);
       const link = extractLinkFromItem(itemXml);
-      if (!title) continue;
+      if (!title || !image) continue;
       const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
       if (!exists) {
         await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
@@ -550,7 +550,7 @@ app.post("/api/reimport-rss", async (req, res) => {
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const image = extractImageFromItem(itemXml, content);
           const link = extractLinkFromItem(itemXml);
-          if (!title) continue;
+          if (!title || !image) continue;
           const existing = await db.getOne("SELECT id, image FROM posts WHERE title = $1", [title]);
           if (existing) {
             if (image && !existing.image) {
