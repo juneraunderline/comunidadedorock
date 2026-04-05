@@ -6,21 +6,31 @@ import API_URL, { getImageUrl } from "./config/api";
 function Bandas() {
   const navigate = useNavigate();
   const [bands, setBands] = useState([]);
+  const [search, setSearch] = useState("");
+  const [genreFilter, setGenreFilter] = useState("");
 
   useEffect(() => {
-    // Buscar bandas na primeira montagem
     axios.get(`${API_URL}/api/bands`)
       .then(res => setBands(res.data));
 
-    // Atualizar a cada 5 segundos
     const interval = setInterval(() => {
       axios.get(`${API_URL}/api/bands`)
         .then(res => setBands(res.data));
     }, 5000);
 
-    // Limpar intervalo quando o componente desmontar
     return () => clearInterval(interval);
   }, []);
+
+  const genres = [...new Set(bands.map(b => b.genre).filter(Boolean))].sort();
+
+  const filtered = bands.filter(band => {
+    const matchSearch = !search || 
+      band.name?.toLowerCase().includes(search.toLowerCase()) ||
+      band.genre?.toLowerCase().includes(search.toLowerCase()) ||
+      band.city?.toLowerCase().includes(search.toLowerCase());
+    const matchGenre = !genreFilter || band.genre === genreFilter;
+    return matchSearch && matchGenre;
+  });
 
   return (
     <div>
@@ -30,9 +40,37 @@ function Bandas() {
           <h2>BANDAS <span className="highlight">NOVAS</span></h2>
           <Link to="/cadastrar-banda" className="btn btn-primary">Cadastrar Banda</Link>
         </div>
+
+        <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
+          <input
+            type="text"
+            placeholder="🔍 Buscar por nome, gênero ou cidade..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ flex: 1, minWidth: "200px", padding: "10px 14px", background: "#10101a", border: "1px solid #2a2a33", borderRadius: "8px", color: "#fff", fontSize: "14px" }}
+          />
+          <select
+            value={genreFilter}
+            onChange={e => setGenreFilter(e.target.value)}
+            style={{ padding: "10px 14px", background: "#10101a", border: "1px solid #2a2a33", borderRadius: "8px", color: "#fff", fontSize: "14px", minWidth: "160px" }}
+          >
+            <option value="">Todos os gêneros</option>
+            {genres.map(g => <option key={g} value={g}>{g}</option>)}
+          </select>
+          {(search || genreFilter) && (
+            <button onClick={() => { setSearch(""); setGenreFilter(""); }} style={{ padding: "10px 14px", background: "#333", border: "none", borderRadius: "8px", color: "#fff", cursor: "pointer", fontSize: "13px" }}>✕ Limpar</button>
+          )}
+        </div>
+
+        {(search || genreFilter) && (
+          <p style={{ color: "#888", marginBottom: "16px", fontSize: "13px" }}>
+            {filtered.length} banda{filtered.length !== 1 ? "s" : ""} encontrada{filtered.length !== 1 ? "s" : ""}
+          </p>
+        )}
+
         <div className="grid grid-4">
-          {bands.length > 0 ? (
-            bands.map(band => (
+          {filtered.length > 0 ? (
+            filtered.map(band => (
               <div 
                 key={band.id} 
                 className="card"
