@@ -98,8 +98,26 @@ function decodeHtmlEntities(text) {
 }
 
 function sanitizeImageUrl(url) {
-  if (!url || !url.startsWith("http") || url.includes("youtube.com/embed")) return "";
-  return url.trim();
+  if (!url || url.includes("youtube.com/embed")) return "";
+  let clean = url.trim();
+  // Corrigir domínio duplicado (ex: https://site.com/site.com/path → https://site.com/path)
+  clean = clean.replace(/(https?:\/\/[^\/]+)\/(www\.)?([^\/]+\.(com|net|org|br)[^\/]*)\//i, (match, proto, www, domain) => {
+    if (match.includes(domain + "/" + domain) || match.includes(domain + "/www." + domain)) {
+      return proto + "/";
+    }
+    return match;
+  });
+  // Corrigir URL duplicada mais agressivamente
+  const dupeMatch = clean.match(/^(https?:\/\/[^\/]+)(\/(?:www\.)?[^\/]+\.[a-z]{2,})/i);
+  if (dupeMatch) {
+    const host = dupeMatch[1].replace(/^https?:\/\//, "").replace(/^www\./, "");
+    const path = dupeMatch[2].replace(/^\/(?:www\.)?/, "");
+    if (path.startsWith(host)) {
+      clean = dupeMatch[1] + dupeMatch[2].replace(/\/(?:www\.)?[^\/]+\.[a-z]{2,}/, "");
+    }
+  }
+  if (!clean.startsWith("http")) return "";
+  return clean;
 }
 
 function extractRawContent(item) {
