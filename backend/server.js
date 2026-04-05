@@ -145,6 +145,12 @@ function extractDateFromItem(item) {
 
 // --- LOGICA RSS AUTOMÁTICA ---
 
+const BROWSER_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
+};
+
 async function autoImportRss() {
   // Recarregar feeds do banco para pegar novos feeds adicionados
   try {
@@ -152,7 +158,7 @@ async function autoImportRss() {
   } catch (e) { console.warn("Erro ao recarregar feeds:", e.message); }
   for (const feed of rssFeeds) {
     try {
-      const res = await fetchFunc(feed.url);
+      const res = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
       const xml = await res.text();
       const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
       
@@ -476,7 +482,7 @@ app.post("/api/import-rss", async (req, res) => {
     const feeds = req.body.feeds || rssFeeds;
     for (const feed of feeds) {
       try {
-        const response = await fetchFunc(feed.url);
+        const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
         for (const itemXml of items) {
@@ -504,7 +510,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     const { feed } = req.body;
     if (!feed || !feed.url) return res.status(400).json({ error: "Feed inválido" });
     let imported = 0;
-    const response = await fetchFunc(feed.url);
+    const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
     const xml = await response.text();
     const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
     for (const itemXml of items) {
@@ -532,7 +538,7 @@ app.post("/api/reimport-rss", async (req, res) => {
     const feeds = req.body.feeds || rssFeeds;
     for (const feed of feeds) {
       try {
-        const response = await fetchFunc(feed.url);
+        const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
         for (const itemXml of items) {
@@ -599,7 +605,7 @@ app.post("/api/test-rss-images", async (req, res) => {
   try {
     const { feedUrl } = req.body;
     if (!feedUrl) return res.status(400).json({ error: "URL do feed é obrigatória" });
-    const response = await fetchFunc(feedUrl);
+    const response = await fetchFunc(feedUrl, { headers: BROWSER_HEADERS });
     const xml = await response.text();
     const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
     let itemsWithImages = 0;
@@ -726,7 +732,7 @@ app.delete("/api/posts-without-images", async (req, res) => {
 app.get("/api/debug-rss", async (req, res) => {
   try {
     const feedUrl = req.query.url || "https://tenhomaisdiscosqueamigos.com/feed/";
-    const response = await fetchFunc(feedUrl);
+    const response = await fetchFunc(feedUrl, { headers: BROWSER_HEADERS });
     const xml = await response.text();
     const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
     const statusCode = response.status;
