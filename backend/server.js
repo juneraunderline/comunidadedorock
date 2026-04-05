@@ -110,15 +110,20 @@ function extractContentFromItem(item) {
 }
 
 function extractImageFromItem(item, content) {
+  // Primeiro decodificar CDATA para encontrar imagens escondidas
+  const decoded = item.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
+  
   let image = item.match(/<media:content[^>]*url=["']([^"']+)["']/i)?.[1] ||
               item.match(/<media:thumbnail[^>]*url=["']([^"']+)["']/i)?.[1] ||
               item.match(/<enclosure[^>]*url=["']([^"']+\.(jpg|jpeg|png|gif|webp)[^"']*)["']/i)?.[1] ||
+              item.match(/<enclosure[^>]*url=["']([^"']+)["'][^>]*type=["']image/i)?.[1] ||
               item.match(/<image>[^<]*<url>([^<]+)<\/url>/i)?.[1] ||
+              decoded.match(/<img[^>]*src=["']([^"']+\.(jpg|jpeg|png|gif|webp)[^"']*)["']/i)?.[1] ||
+              decoded.match(/<img[^>]*src=["']([^"']+)["']/i)?.[1] ||
               item.match(/<img[^>]*src=["']([^"']+)["']/i)?.[1] ||
-              item.match(/<content:encoded[^>]*>[\s\S]*?<img[^>]*src=["']([^"']+)["']/i)?.[2] ||
-              item.match(/<description[^>]*>[\s\S]*?<img[^>]*src=["']([^"']+)["']/i)?.[2] ||
               content?.match(/<img[^>]*src=["']([^"']+)["']/i)?.[1] ||
-              item.match(/src=["'](https?:\/\/[^"']+\.(jpg|jpeg|png|gif|webp)[^"']*)["']/i)?.[1];
+              decoded.match(/src=["'](https?:\/\/[^"']+\.(jpg|jpeg|png|gif|webp)[^"']*)["']/i)?.[1] ||
+              decoded.match(/(https?:\/\/[^\s"'<>]+\.(jpg|jpeg|png|gif|webp))/i)?.[1];
   return sanitizeImageUrl(image) || null;
 }
 
