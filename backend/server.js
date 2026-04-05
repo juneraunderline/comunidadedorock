@@ -717,6 +717,10 @@ async function startServer() {
     }
   }
   autoImportRss();
+  // Manter o servidor acordado (ping a cada 14 minutos)
+  setInterval(() => {
+    fetchFunc("https://comunidadedorock.onrender.com/api/posts").catch(() => {});
+  }, 14 * 60 * 1000);
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => console.log(`🚀 Server ON: http://localhost:${PORT}`));
 }
