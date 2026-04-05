@@ -110,9 +110,15 @@ function extractContentFromItem(item) {
 }
 
 function extractImageFromItem(item, content) {
-  let image = item.match(/<media:content[^>]*url=["']([^"']+)["']/i)?.[1] || 
+  let image = item.match(/<media:content[^>]*url=["']([^"']+)["']/i)?.[1] ||
+              item.match(/<media:thumbnail[^>]*url=["']([^"']+)["']/i)?.[1] ||
+              item.match(/<enclosure[^>]*url=["']([^"']+\.(jpg|jpeg|png|gif|webp)[^"']*)["']/i)?.[1] ||
+              item.match(/<image>[^<]*<url>([^<]+)<\/url>/i)?.[1] ||
               item.match(/<img[^>]*src=["']([^"']+)["']/i)?.[1] ||
-              content?.match(/<img[^>]*src=["']([^"']+)["']/i)?.[1];
+              item.match(/<content:encoded[^>]*>[\s\S]*?<img[^>]*src=["']([^"']+)["']/i)?.[2] ||
+              item.match(/<description[^>]*>[\s\S]*?<img[^>]*src=["']([^"']+)["']/i)?.[2] ||
+              content?.match(/<img[^>]*src=["']([^"']+)["']/i)?.[1] ||
+              item.match(/src=["'](https?:\/\/[^"']+\.(jpg|jpeg|png|gif|webp)[^"']*)["']/i)?.[1];
   return sanitizeImageUrl(image) || null;
 }
 
@@ -146,7 +152,7 @@ async function autoImportRss() {
         const image = extractImageFromItem(itemXml, content);
         const link = extractLinkFromItem(itemXml);
 
-        if (!title || !image) continue;
+        if (!title) continue;
 
         const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
         if (!exists) {
