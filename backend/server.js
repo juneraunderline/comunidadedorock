@@ -202,6 +202,7 @@ async function autoImportRss() {
         const image = extractImageFromItem(itemXml, content);
         const link = extractLinkFromItem(itemXml);
 
+
         if (!title || !image) continue;
         // Verificar se a imagem é uma URL válida de imagem
         if (!image.match(/\.(jpg|jpeg|png|gif|webp)/i) && !image.includes("images") && !image.includes("uploads") && !image.includes("wp-content") && !image.includes("img") && !image.includes("photo") && !image.includes("media")) continue;
@@ -214,6 +215,15 @@ async function autoImportRss() {
             if (!imgTest.ok) continue;
             const ct = imgTest.headers.get("content-type") || "";
             if (!ct.includes("image")) continue;
+
+         if (!title || !image) continue;
+        if (!image.match(/\.(jpg|jpeg|png|gif|webp)/i) && !image.includes("uploads") && !image.includes("wp-content") && !image.includes("img") && !image.includes("media")) continue;
+        const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
+        if (!exists) {
+          try {
+            const imgTest = await fetchFunc(image, { method: "HEAD", headers: BROWSER_HEADERS });
+            if (!imgTest.ok) continue;
+
           } catch (e) { continue; }
           await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)",
             [title, content, image, link, feed.name]);
