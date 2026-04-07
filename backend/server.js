@@ -163,6 +163,18 @@ function extractDateFromItem(item) {
 
 // --- LOGICA RSS AUTOMÁTICA ---
 
+// Validar se imagem é real e acessível
+async function isValidImage(imageUrl) {
+  if (!imageUrl) return false;
+  if (!imageUrl.match(/\.(jpg|jpeg|png|gif|webp)/i) && !imageUrl.includes("uploads") && !imageUrl.includes("wp-content") && !imageUrl.includes("img") && !imageUrl.includes("media") && !imageUrl.includes("images") && !imageUrl.includes("photo")) return false;
+  try {
+    const res = await fetchFunc(imageUrl, { method: "HEAD", headers: { "User-Agent": "Mozilla/5.0" } });
+    if (!res.ok) return false;
+    const ct = res.headers.get("content-type") || "";
+    return ct.includes("image");
+  } catch (e) { return false; }
+}
+
 const BROWSER_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
   "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -547,6 +559,7 @@ app.post("/api/import-rss", async (req, res) => {
           const image = extractImageFromItem(itemXml, content);
           const link = extractLinkFromItem(itemXml);
           if (!title || !image) continue;
+          if (!(await isValidImage(image))) continue;
           const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
           if (!exists) {
             await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
@@ -555,6 +568,8 @@ app.post("/api/import-rss", async (req, res) => {
         }
       } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
     }
+    // Limpar posts sem imagem após import manual
+    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
     res.json({ success: true, imported });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -575,12 +590,14 @@ app.post("/api/import-rss-single", async (req, res) => {
       const image = extractImageFromItem(itemXml, content);
       const link = extractLinkFromItem(itemXml);
       if (!title || !image) continue;
+      if (!(await isValidImage(image))) continue;
       const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
       if (!exists) {
         await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
         imported++;
       }
     }
+    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
     res.json({ success: true, imported });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -603,6 +620,7 @@ app.post("/api/reimport-rss", async (req, res) => {
           const image = extractImageFromItem(itemXml, content);
           const link = extractLinkFromItem(itemXml);
           if (!title || !image) continue;
+          if (!(await isValidImage(image))) continue;
           const existing = await db.getOne("SELECT id, image FROM posts WHERE title = $1", [title]);
           if (existing) {
             if (image && !existing.image) {
