@@ -215,9 +215,14 @@ async function autoImportRss() {
         const link = extractLinkFromItem(itemXml);
 
 
+<<<<<<< devin/1775179408-fix-images-and-admin
         if (!title || !image) continue;
         if (!(await isValidImage(image))) continue;
 
+=======
+          if (!title || !image) continue;
+        if (!(await isValidImage(image))) continue;
+>>>>>>> main
         const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
         if (!exists) {
           await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)",
@@ -233,7 +238,6 @@ async function autoImportRss() {
   } catch (e) {}
 }
 setInterval(autoImportRss, 5000);
-
 // --- ROTAS DA API ---
 
 // Autenticação
