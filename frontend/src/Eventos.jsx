@@ -46,7 +46,7 @@ function Eventos() {
                 key={event.id}
                 className="event-card"
                 style={{ cursor: 'pointer' }}
-                onClick={() => navigate(`/eventos/${event.id}`)}
+                onClick={() => navigate(`/eventos/${event.slug || event.id}`)}
               >
                 <div className="event-image-wrapper">
                   {event.image ? (
