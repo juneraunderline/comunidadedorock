@@ -12,7 +12,7 @@ function EventDetail() {
   useEffect(() => {
     axios.get(`${API_URL}/api/events`)
       .then(res => {
-        const selected = res.data.find(it => String(it.id) === String(id));
+        const selected = res.data.find(it => it.slug === id || String(it.id) === String(id));
         setEvent(selected);
         setLoading(false);
       })

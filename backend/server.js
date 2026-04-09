@@ -475,7 +475,9 @@ app.delete("/api/interviews/:id", async (req, res) => {
 
 // Eventos
 app.get("/api/events", async (req, res) => {
-  res.json(await db.getAll("SELECT * FROM events ORDER BY date ASC"));
+  const events = await db.getAll("SELECT * FROM events ORDER BY date ASC");
+  const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+  res.json(events.map(e => ({ ...e, slug: mkSlug(e.title) })));
 });
 
 app.post("/api/events", async (req, res) => {
