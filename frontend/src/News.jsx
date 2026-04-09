@@ -89,7 +89,7 @@ function News() {
                 <div 
                   key={p.id} 
                   className="card"
-                  onClick={() => navigate(`/noticias/${p.id}`)}
+                  onClick={() => navigate(`/noticias/${p.slug || p.id}`)}
                   style={{ 
                     cursor: "pointer",
                     animation: idx >= 8 ? `fadeInUp 0.5s ease-out ${(idx - 8) * 0.1}s both` : "none"
