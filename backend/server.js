@@ -222,7 +222,7 @@ async function autoImportRss() {
         if (!exists) {
           await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)",
             [title, content, image, link, feed.name]);
-          console.log(`✅ Importado: ${title.substring(0, 30)}`);
+          console.log(`Importado: ${title.substring(0, 30)}`);
         }
       }
     } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
