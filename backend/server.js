@@ -215,8 +215,9 @@ async function autoImportRss() {
         const link = extractLinkFromItem(itemXml);
 
 
-          if (!title || !image) continue;
+        if (!title || !image) continue;
         if (!(await isValidImage(image))) continue;
+
         const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
         if (!exists) {
           await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)",
