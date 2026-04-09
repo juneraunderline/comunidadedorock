@@ -109,17 +109,6 @@ function generateSlug(text) {
     .substring(0, 80);
 }
 
-function generateSlug(text) {
-  if (!text) return "";
-  return text.toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .substring(0, 80);
-}
-
 function sanitizeImageUrl(url) {
   if (!url || url.includes("youtube.com/embed")) return "";
   let clean = url.trim();
