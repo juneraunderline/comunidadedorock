@@ -31,7 +31,7 @@ function Portal() {
   };
 
   useEffect(() => {
-    // Forçar refetch dos feeds a cada 5 segundos
+    // Refetch dos feeds a cada 60 segundos
     const interval = setInterval(() => {
       axios.get(`${API_URL}/api/rss-feeds`)
         .then(res => {
@@ -42,7 +42,7 @@ function Portal() {
           console.error("Erro ao carregar feeds:", err);
           setLoading(false);
         });
-    }, 5000);
+    }, 60000);
     
     // Carregamento inicial
     axios.get(`${API_URL}/api/rss-feeds`)

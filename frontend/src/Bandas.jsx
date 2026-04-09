@@ -16,7 +16,7 @@ function Bandas() {
     const interval = setInterval(() => {
       axios.get(`${API_URL}/api/bands`)
         .then(res => setBands(res.data));
-    }, 5000);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, []);
