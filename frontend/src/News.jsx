@@ -52,20 +52,6 @@ function News() {
       });
   }, [portalFilter]);
 
-  function getImage(post) {
-    // se já tiver imagem
-    if (post.image) return post.image;
-
-    // tenta pegar do content ou description
-    const text = post.content || post.description || "";
-
-    const match = text.match(/<img.*?src=["'](.*?)["']/);
-    if (match) return match[1];
-
-    // fallback
-    return "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=500&h=300&fit=crop";
-  }
-
   const visiblePosts = posts.filter(p => p.title && p.content).slice(0, displayCount);
   const hasMore = posts.filter(p => p.title && p.content).length > displayCount;
 

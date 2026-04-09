@@ -64,7 +64,7 @@ function NewsDetail() {
     // Adicionar novas meta tags Open Graph
     addMetaTag('og:title', post.title);
     addMetaTag('og:description', post.content.slice(0, 150) + '...');
-    addMetaTag('og:image', post.image || 'https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=500&h=300&fit=crop');
+    addMetaTag('og:image', getImageUrl(post.image) || 'https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=500&h=300&fit=crop');
     addMetaTag('og:url', pageUrl);
     addMetaTag('og:type', 'article');
     addMetaTag('og:site_name', 'Comunidade do Rock');
@@ -80,7 +80,7 @@ function NewsDetail() {
     addTwitterTag('twitter:card', 'summary_large_image');
     addTwitterTag('twitter:title', post.title);
     addTwitterTag('twitter:description', post.content.slice(0, 150) + '...');
-    addTwitterTag('twitter:image', post.image || 'https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=500&h=300&fit=crop');
+    addTwitterTag('twitter:image', getImageUrl(post.image) || 'https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=500&h=300&fit=crop');
     
     // Atualizar título da página
     document.title = `${post.title} - Comunidade do Rock`;
