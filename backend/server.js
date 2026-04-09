@@ -97,6 +97,19 @@ function decodeHtmlEntities(text) {
     .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)));
 }
 
+function generateSlug(text) {
+  if (!text) return "";
+  return text.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .substring(0, 80);
+}
+
+function generateSlug(t){if(!t)return"";return t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80);}
+
 function sanitizeImageUrl(url) {
   if (!url || url.includes("youtube.com/embed")) return "";
   let clean = url.trim();
@@ -380,7 +393,9 @@ app.delete("/api/posts/:id", async (req, res) => {
 
 // Bandas
 app.get("/api/bands", async (req, res) => {
-  res.json(await db.getAll("SELECT * FROM bands ORDER BY name ASC"));
+  const bands = await db.getAll("SELECT * FROM bands ORDER BY name ASC");
+  const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+  res.json(bands.map(b => ({ ...b, slug: mkSlug(b.name) })));
 });
 
 app.post("/api/bands", async (req, res) => {
