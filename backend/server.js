@@ -243,7 +243,7 @@ async function autoImportRss() {
     await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'");
   } catch (e) {}
 }
-setInterval(autoImportRss, 5000);
+setInterval(autoImportRss, 300000); // 5 minutos
 // --- ROTAS DA API ---
 
 // Autenticação
