@@ -174,12 +174,15 @@ function extractDateFromItem(item) {
 
 // --- LOGICA RSS AUTOMÁTICA ---
 
-// Validar se imagem é real e acessível
+// Validar se imagem é real e acessível (com timeout curto)
 async function isValidImage(imageUrl) {
   if (!imageUrl) return false;
   if (!imageUrl.match(/\.(jpg|jpeg|png|gif|webp)/i) && !imageUrl.includes("uploads") && !imageUrl.includes("wp-content") && !imageUrl.includes("img") && !imageUrl.includes("media") && !imageUrl.includes("images") && !imageUrl.includes("photo")) return false;
   try {
-    const res = await fetchFunc(imageUrl, { method: "HEAD", headers: { "User-Agent": "Mozilla/5.0" } });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetchFunc(imageUrl, { method: "HEAD", headers: { "User-Agent": "Mozilla/5.0" }, signal: controller.signal });
+    clearTimeout(timeout);
     if (!res.ok) return false;
     const ct = res.headers.get("content-type") || "";
     return ct.includes("image");
@@ -192,56 +195,68 @@ const BROWSER_HEADERS = {
   "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
 };
 
+let isImporting = false;
 async function autoImportRss() {
-  // Recarregar feeds do banco para pegar novos feeds adicionados
+  if (isImporting) return; // Evitar execuções sobrepostas
+  isImporting = true;
   try {
-    rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
-  } catch (e) { console.warn("Erro ao recarregar feeds:", e.message); }
-  for (const feed of rssFeeds) {
+    // Recarregar feeds do banco para pegar novos feeds adicionados
     try {
-      // Tentar URL direta primeiro, se falhar tentar via proxy
-      let xml = "";
+      rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
+    } catch (e) { console.warn("Erro ao recarregar feeds:", e.message); }
+    for (const feed of rssFeeds) {
       try {
-        const directRes = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
-        if (directRes.status === 200) {
-          xml = await directRes.text();
-        } else {
-          // Tentar via proxy RSS
+        // Tentar URL direta primeiro, se falhar tentar via proxy
+        let xml = "";
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 10000);
+          const directRes = await fetchFunc(feed.url, { headers: BROWSER_HEADERS, signal: controller.signal });
+          clearTimeout(timeout);
+          if (directRes.status === 200) {
+            xml = await directRes.text();
+          } else {
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
+            const proxyRes = await fetchFunc(proxyUrl);
+            if (proxyRes.status === 200) xml = await proxyRes.text();
+          }
+        } catch (err) {
           const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
-          const proxyRes = await fetchFunc(proxyUrl);
-          if (proxyRes.status === 200) xml = await proxyRes.text();
+          const proxyRes = await fetchFunc(proxyUrl).catch(() => null);
+          if (proxyRes?.status === 200) xml = await proxyRes.text();
         }
-      } catch (err) {
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
-        const proxyRes = await fetchFunc(proxyUrl).catch(() => null);
-        if (proxyRes?.status === 200) xml = await proxyRes.text();
-      }
-      const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
-      
-      for (const itemXml of items) {
-        const rawTitle = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
-        const title = decodeHtmlEntities(rawTitle);
-        const content = decodeHtmlEntities(extractContentFromItem(itemXml));
-        const image = extractImageFromItem(itemXml, content);
-        const link = extractLinkFromItem(itemXml);
+        const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+        
+        // Limitar a 15 itens por feed para não travar
+        for (const itemXml of items.slice(0, 15)) {
+          const rawTitle = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
+          const title = decodeHtmlEntities(rawTitle);
+          if (!title) continue;
 
+          // Verificar se já existe ANTES de validar imagem (evita HEAD requests desnecessários)
+          const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
+          if (exists) continue;
 
-        if (!title || !image) continue;
-        if (!(await isValidImage(image))) continue;
+          const content = decodeHtmlEntities(extractContentFromItem(itemXml));
+          const image = extractImageFromItem(itemXml, content);
+          const link = extractLinkFromItem(itemXml);
 
-        const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
-        if (!exists) {
+          if (!image) continue;
+          if (!(await isValidImage(image))) continue;
+
           await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)",
             [title, content, image, link, feed.name]);
           console.log(`✅ Importado: ${title.substring(0, 30)}`);
         }
-      }
-    } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
+      } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
+    }
+    // Limpar notícias sem imagem ou com imagem inválida
+    try {
+      await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'");
+    } catch (e) {}
+  } finally {
+    isImporting = false;
   }
-  // Limpar notícias sem imagem ou com imagem inválida
-  try {
-    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'");
-  } catch (e) {}
 }
 setInterval(autoImportRss, 300000); // 5 minutos
 // --- ROTAS DA API ---
@@ -393,6 +408,7 @@ app.delete("/api/posts/:id", async (req, res) => {
 
 // Bandas
 app.get("/api/bands", async (req, res) => {
+  res.set("Cache-Control", "public, max-age=30");
   const bands = await db.getAll("SELECT * FROM bands ORDER BY name ASC");
   const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
   res.json(bands.map(b => ({ ...b, slug: mkSlug(b.name) })));
@@ -831,20 +847,6 @@ app.get("/api/debug-rss", async (req, res) => {
 async function startServer() {
   await initDb();
   await loadFeeds();
-  // Limpar entidades HTML dos títulos e conteúdos existentes
-  try {
-    const allPosts = await db.getAll("SELECT id, title, content FROM posts");
-    for (const p of allPosts) {
-      const cleanTitle = decodeHtmlEntities(p.title);
-      const cleanContent = decodeHtmlEntities(p.content);
-      if (cleanTitle !== p.title || cleanContent !== p.content) {
-        await db.run("UPDATE posts SET title = $1, content = $2 WHERE id = $3", [cleanTitle, cleanContent, p.id]);
-      }
-    }
-    console.log("✅ Entidades HTML limpas dos posts existentes");
-  } catch (e) { console.warn("Erro ao limpar entidades:", e.message); }
-  // Resetar senha admin para 1234 (rodar uma vez)
-  await db.run("UPDATE users SET password = '1234' WHERE username = 'admin'").catch(() => {});
   // Remover admins duplicados
   const admins = await db.getAll("SELECT id FROM users WHERE username = 'admin' ORDER BY id ASC").catch(() => []);
   if (admins.length > 1) {
@@ -852,7 +854,8 @@ async function startServer() {
       await db.run("DELETE FROM users WHERE id = $1", [admins[i].id]).catch(() => {});
     }
   }
-  autoImportRss();
+  // Importar RSS após 10s para não travar o startup
+  setTimeout(autoImportRss, 10000);
   // Manter o servidor acordado (ping a cada 14 minutos)
   setInterval(() => {
     fetchFunc("https://comunidadedorock.onrender.com/api/posts").catch(() => {});
