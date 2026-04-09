@@ -109,6 +109,17 @@ function generateSlug(text) {
     .substring(0, 80);
 }
 
+function generateSlug(text) {
+  if (!text) return "";
+  return text.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .substring(0, 80);
+}
+
 function sanitizeImageUrl(url) {
   if (!url || url.includes("youtube.com/embed")) return "";
   let clean = url.trim();
@@ -227,14 +238,9 @@ async function autoImportRss() {
         const link = extractLinkFromItem(itemXml);
 
 
-<<<<<<< devin/1775179408-fix-images-and-admin
         if (!title || !image) continue;
         if (!(await isValidImage(image))) continue;
 
-=======
-          if (!title || !image) continue;
-        if (!(await isValidImage(image))) continue;
->>>>>>> main
         const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
         if (!exists) {
           await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)",
