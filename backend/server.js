@@ -367,7 +367,9 @@ app.delete("/api/user/:id", async (req, res) => {
 
 // Posts
 app.get("/api/posts", async (req, res) => {
-  res.json(await db.getAll("SELECT * FROM posts ORDER BY id DESC"));
+  const posts = await db.getAll("SELECT * FROM posts ORDER BY id DESC");
+  const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+  res.json(posts.map(p => ({ ...p, slug: mkSlug(p.title) })));
 });
 
 app.post("/api/posts", async (req, res) => {
