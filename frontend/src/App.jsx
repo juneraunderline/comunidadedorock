@@ -53,12 +53,12 @@ function App() {
       })
       .catch(err => { console.error("❌ Erro ao carregar posts:", err); setLoading(false); });
 
-    // Atualizar posts a cada 10 segundos para pegar novos que foram importados
+    // Atualizar posts a cada 30 segundos
     const interval = setInterval(() => {
       axios.get(`${API_URL}/api/posts`)
         .then(res => setPosts(res.data))
         .catch(err => console.error("❌ Erro ao atualizar posts:", err));
-    }, 10000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, []);

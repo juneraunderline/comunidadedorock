@@ -69,7 +69,7 @@ function Home({ posts }) {
     axios.get(`${API_URL}/api/events`)
       .then(res => setEvents(res.data));
 
-    // Atualizar a cada 5 segundos
+    // Atualizar a cada 30 segundos
     const interval = setInterval(() => {
       axios.get(`${API_URL}/api/bands`)
         .then(res => setBands(res.data));
@@ -79,7 +79,7 @@ function Home({ posts }) {
 
       axios.get(`${API_URL}/api/events`)
         .then(res => setEvents(res.data));
-    }, 5000);
+    }, 30000);
 
     // Limpar intervalo quando o componente desmontar
     return () => clearInterval(interval);
@@ -216,7 +216,7 @@ function Home({ posts }) {
               <div 
                 key={band.id} 
                 className="card"
-                onClick={() => navigate(`/bandas/${band.id}`)}
+                onClick={() => navigate(`/bandas/${band.slug || band.id}`)}
                 style={{ cursor: "pointer" }}
               >
                 <div className="card-image">

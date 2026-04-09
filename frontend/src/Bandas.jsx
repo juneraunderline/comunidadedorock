@@ -74,7 +74,7 @@ function Bandas() {
               <div 
                 key={band.id} 
                 className="card"
-                onClick={() => navigate(`/bandas/${band.id}`)}
+                onClick={() => navigate(`/bandas/${band.slug || band.id}`)}
                 style={{ cursor: "pointer" }}
               >
                 <div className="card-image">

@@ -12,7 +12,7 @@ function BandaDetail() {
   useEffect(() => {
     axios.get(`${API_URL}/api/bands`)
       .then(res => {
-        const selectedBand = res.data.find(b => b.id === parseInt(id));
+        const selectedBand = res.data.find(b => b.slug === id || b.id === parseInt(id));
         setBand(selectedBand);
         setLoading(false);
       });
