@@ -21,6 +21,9 @@ import Admin from "./Admin";
 import TestImages from "./TestImages";
 import Perfil from "./Perfil";
 import Login from "./Login";
+import Sobre from "./Sobre";
+import PoliticaPrivacidade from "./PoliticaPrivacidade";
+import TermosDeUso from "./TermosDeUso";
 
 function App() {
   const [posts, setPosts] = useState([]);
@@ -132,6 +135,9 @@ function App() {
           <Route path="/cadastrar-banda" element={<CadastrarBanda />} />
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/perfil" element={<Perfil user={user} setUser={handleLogin} />} />
+          <Route path="/sobre" element={<Sobre />} />
+          <Route path="/privacidade" element={<PoliticaPrivacidade />} />
+          <Route path="/termos" element={<TermosDeUso />} />
           <Route path="/admin" element={<Admin user={user} />} />
           <Route path="/test-images" element={<TestImages />} />
         </Routes>
@@ -160,6 +166,12 @@ function App() {
             <a href="https://www.youtube.com/@comunidadedorockbr" target="_blank" rel="noopener noreferrer" title="YouTube" style={{ color: "#999", fontSize: "24px", textDecoration: "none", transition: "color 0.3s" }} onMouseEnter={e => e.target.style.color = "#e9b61e"} onMouseLeave={e => e.target.style.color = "#999"}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
             </a>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginBottom: "12px", flexWrap: "wrap" }}>
+            <Link to="/sobre" style={{ color: "#888", fontSize: "12px", textDecoration: "none", transition: "color 0.3s" }}>Sobre</Link>
+            <Link to="/privacidade" style={{ color: "#888", fontSize: "12px", textDecoration: "none", transition: "color 0.3s" }}>Política de Privacidade</Link>
+            <Link to="/termos" style={{ color: "#888", fontSize: "12px", textDecoration: "none", transition: "color 0.3s" }}>Termos de Uso</Link>
+            <Link to="/contato" style={{ color: "#888", fontSize: "12px", textDecoration: "none", transition: "color 0.3s" }}>Contato</Link>
           </div>
           <p>© 2026 Comunidade do Rock. O melhor do rock independente brasileiro.</p>
         </footer>
