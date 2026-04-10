@@ -97,7 +97,7 @@ function Home({ posts }) {
         }}
       >
         <div className="hero-content">
-          <h2>COMUNIDADE<br /><span>DO ROCK</span></h2>
+          <img src={logo} alt="Comunidade do Rock" style={{ maxWidth: "320px", width: "80%", height: "auto", marginBottom: "24px", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.7))" }} />
           <p>O melhor do rock underground brasileiro em um só lugar. Descubra novas bandas, leia entrevistas exclusivas e fique por dentro das últimas notícias.</p>
           <div className="hero-buttons">
             <button className="btn btn-primary" onClick={() => navigate("/bandas")}>DESCOBRIR BANDAS →</button>
