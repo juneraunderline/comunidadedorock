@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
+import Comentarios from "./Comentarios";
 
 function BandaDetail() {
   const { id } = useParams();
@@ -137,6 +138,8 @@ function BandaDetail() {
                 Voltar às Bandas
               </button>
             </div>
+
+            <Comentarios pageType="band" pageId={band.id} />
           </div>
         </div>
       </section>

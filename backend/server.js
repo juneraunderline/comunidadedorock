@@ -52,6 +52,7 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS events (id SERIAL PRIMARY KEY, title TEXT, artist TEXT, date TEXT, time TEXT, location TEXT, city TEXT, state TEXT, image TEXT, ticket_link TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS interviews (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, content TEXT, image TEXT, date TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, display_name TEXT, avatar TEXT, role TEXT DEFAULT 'user', created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, page_type TEXT NOT NULL, page_id INTEGER NOT NULL, user_id INTEGER, user_name TEXT NOT NULL, user_avatar TEXT, content TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW())`);
 };
 
 // Carregar Feeds
@@ -515,6 +516,47 @@ app.put("/api/events/:id", async (req, res) => {
 app.delete("/api/events/:id", async (req, res) => {
   await db.run("DELETE FROM events WHERE id = $1", [req.params.id]);
   res.json({ success: true });
+});
+
+// Comentários
+app.get("/api/comments/:pageType/:pageId", async (req, res) => {
+  try {
+    const { pageType, pageId } = req.params;
+    const comments = await db.getAll(
+      "SELECT * FROM comments WHERE page_type = $1 AND page_id = $2 ORDER BY created_at DESC",
+      [pageType, parseInt(pageId)]
+    );
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/comments", async (req, res) => {
+  try {
+    const { page_type, page_id, user_id, user_name, user_avatar, content } = req.body;
+    if (!page_type || !page_id || !user_name || !content) {
+      return res.status(400).json({ error: "Campos obrigatórios: page_type, page_id, user_name, content" });
+    }
+    if (content.trim().length < 2) return res.status(400).json({ error: "Comentário muito curto" });
+    if (content.length > 1000) return res.status(400).json({ error: "Comentário muito longo (máx 1000 caracteres)" });
+    const result = await pool.query(
+      "INSERT INTO comments (page_type, page_id, user_id, user_name, user_avatar, content) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [page_type, parseInt(page_id), user_id || null, user_name, user_avatar || null, content.trim()]
+    );
+    res.json({ success: true, comment: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/comments/:id", async (req, res) => {
+  try {
+    await db.run("DELETE FROM comments WHERE id = $1", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Feeds RSS

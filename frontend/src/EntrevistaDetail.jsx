@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
+import Comentarios from "./Comentarios";
 
 function EntrevistaDetail() {
   const { id } = useParams();
@@ -133,6 +134,8 @@ function EntrevistaDetail() {
                 ← Voltar às Entrevistas
               </button>
             </div>
+
+            <Comentarios pageType="interview" pageId={interview.id} />
           </div>
         </div>
       </section>
