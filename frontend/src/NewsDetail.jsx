@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
+import Comentarios from "./Comentarios";
 
 function NewsDetail() {
   const { id } = useParams();
@@ -202,6 +203,8 @@ function NewsDetail() {
                 Voltar
               </button>
             </div>
+
+            <Comentarios pageType="post" pageId={post.id} />
           </div>
         </div>
       </section>
