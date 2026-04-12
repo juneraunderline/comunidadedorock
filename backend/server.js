@@ -265,16 +265,15 @@ setInterval(autoImportRss, 300000); // 5 minutos
 // Autenticação
 app.post("/api/register", async (req, res) => {
   try {
-    const { username, password, display_name, role } = req.body;
+    const { username, password, display_name } = req.body;
     if (!username || !password) return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
     if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
     if (password.length < 4) return res.status(400).json({ error: "Senha deve ter pelo menos 4 caracteres" });
     const exists = await db.getOne("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
     if (exists) return res.status(409).json({ error: "Usuário já existe" });
-    const userRole = role === "editor" ? "editor" : "user";
     const result = await pool.query(
       "INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, $4) RETURNING id, username, display_name, avatar, role, created_at",
-      [username.toLowerCase(), password, display_name || username, userRole]
+      [username.toLowerCase(), password, display_name || username, "user"]
     );
     res.json({ success: true, user: result.rows[0] });
   } catch (err) {
