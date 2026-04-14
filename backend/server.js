@@ -790,7 +790,7 @@ function resolveImage(img) {
   if (!img) return fallback;
   if (img.includes("fbcdn.net") || img.includes("facebook.com") || img.includes("scontent")) return fallback;
   if (img.startsWith("http")) return img;
-  return "https://comunidadedorock.onrender.com" + img;
+  return "https://comunidadedorock-api.fly.dev" + img;
 }
 function isCrawler(ua) {
   const l = (ua || "").toLowerCase();
@@ -899,7 +899,7 @@ async function startServer() {
   setTimeout(autoImportRss, 10000);
   // Manter o servidor acordado (ping a cada 14 minutos)
   setInterval(() => {
-    fetchFunc("https://comunidadedorock.onrender.com/api/posts").catch(() => {});
+    fetchFunc("https://comunidadedorock-api.fly.dev/api/posts").catch(() => {});
   }, 14 * 60 * 1000);
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => console.log(`🚀 Server ON: http://localhost:${PORT}`));
