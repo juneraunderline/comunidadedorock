@@ -1,0 +1,15 @@
+app = 'comunidadedorock-api'
+primary_region = 'gru'
+
+[build]
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+[env]
+  PORT = '3000'
+  NODE_ENV = 'production'
