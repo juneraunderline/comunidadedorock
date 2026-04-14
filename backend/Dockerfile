@@ -1,25 +1,12 @@
-FROM node:18-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
-# Backend
-COPY backend/package*.json ./backend/
-WORKDIR /app/backend
-RUN npm install
+COPY package.json ./
+RUN npm install --production
 
-# Build Frontend
-WORKDIR /app
-COPY frontend/package*.json ./frontend/
-WORKDIR /app/frontend
-RUN npm install
-RUN npm run build
+COPY . .
 
-# Setup Backend
-WORKDIR /app/backend
-COPY backend/ .
-
-# Expor porta
 EXPOSE 3000
 
-# Start Backend
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
