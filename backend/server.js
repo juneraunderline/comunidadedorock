@@ -21,7 +21,10 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // BANCO POSTGRESQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000
 });
 
 // Helper para queries
@@ -408,10 +411,15 @@ app.delete("/api/posts/:id", async (req, res) => {
 
 // Bandas
 app.get("/api/bands", async (req, res) => {
-  res.set("Cache-Control", "public, max-age=30");
-  const bands = await db.getAll("SELECT * FROM bands ORDER BY name ASC");
-  const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
-  res.json(bands.map(b => ({ ...b, slug: mkSlug(b.name) })));
+  try {
+    res.set("Cache-Control", "public, max-age=30");
+    const bands = await db.getAll("SELECT * FROM bands ORDER BY name ASC");
+    const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+    res.json(bands.map(b => ({ ...b, slug: mkSlug(b.name) })));
+  } catch (err) {
+    console.error("Erro ao buscar bandas:", err.message);
+    res.status(500).json({ error: "Erro ao carregar bandas" });
+  }
 });
 
 app.post("/api/bands", async (req, res) => {
