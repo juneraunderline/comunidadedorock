@@ -61,11 +61,19 @@ function Home({ posts }) {
   useEffect(() => {
     // Buscar bandas na primeira montagem
     axios.get(`${API_URL}/api/bands`)
-      .then(res => setBands(res.data));
+      .then(res => {
+        setBands(res.data);
+        setLoadingBands(false);
+      })
+      .catch(() => setLoadingBands(false));
 
     // Buscar entrevistas
     axios.get(`${API_URL}/api/interviews`)
-      .then(res => setInterviews(res.data));
+      .then(res => {
+        setInterviews(res.data);
+        setLoadingInterviews(false);
+      })
+      .catch(() => setLoadingInterviews(false));
 
     // Buscar eventos
     axios.get(`${API_URL}/api/events`)
