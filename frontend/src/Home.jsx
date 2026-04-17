@@ -59,8 +59,8 @@ function Home({ posts }) {
   }, [posts]);
 
   useEffect(() => {
-    // Buscar bandas na primeira montagem
-    axios.get(`${API_URL}/api/bands`)
+    // Buscar bandas na primeira montagem (ordenadas pelas mais recentes para a seção "BANDAS NOVAS")
+    axios.get(`${API_URL}/api/bands?sort=recent`)
       .then(res => {
         setBands(res.data);
         setLoadingBands(false);
@@ -81,7 +81,7 @@ function Home({ posts }) {
 
     // Atualizar a cada 30 segundos
     const interval = setInterval(() => {
-      axios.get(`${API_URL}/api/bands`)
+      axios.get(`${API_URL}/api/bands?sort=recent`)
         .then(res => setBands(res.data));
 
       axios.get(`${API_URL}/api/interviews`)
