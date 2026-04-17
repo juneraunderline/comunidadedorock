@@ -186,7 +186,11 @@ function Home({ posts }) {
           <button onClick={() => navigate("/entrevistas")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
         </div>
         <div className="grid grid-2">
-          {interviews.length > 0 ? (
+          {loadingInterviews ? (
+            <div style={{gridColumn: "1/-1", textAlign: "center", color: "#888", padding: "40px"}}>
+              🎤 Carregando entrevistas...
+            </div>
+          ) : interviews.length > 0 ? (
             <>
               {interviews.slice(0, 3).map((interview) => (
                 <div 
@@ -221,7 +225,11 @@ function Home({ posts }) {
           <button onClick={() => navigate("/bandas")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
         </div>
         <div className="grid grid-2">
-          {bands.length > 0 ? (
+          {loadingBands ? (
+            <div style={{gridColumn: "1/-1", textAlign: "center", color: "#888", padding: "40px"}}>
+              🎸 Carregando bandas...
+            </div>
+          ) : bands.length > 0 ? (
             bands.slice(0, 6).map(band => (
               <div 
                 key={band.id} 
