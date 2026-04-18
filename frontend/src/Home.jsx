@@ -59,25 +59,39 @@ function Home({ posts }) {
   }, [posts]);
 
   useEffect(() => {
-    // Buscar bandas na primeira montagem
-    axios.get(`${API_URL}/api/bands`)
-      .then(res => {
-        setBands(res.data);
-        setLoadingBands(false);
-      })
-      .catch(() => setLoadingBands(false));
+    // Funcao de retry automatico
+    const fetchWithRetry = (url, onSuccess, onError, retries = 5) => {
+      axios.get(url)
+        .then(res => onSuccess(res.data))
+        .catch(() => {
+          if (retries > 0) {
+            setTimeout(() => fetchWithRetry(url, onSuccess, onError, retries - 1), 3000);
+          } else if (onError) {
+            onError();
+          }
+        });
+    };
 
-    // Buscar entrevistas
-    axios.get(`${API_URL}/api/interviews`)
-      .then(res => {
-        setInterviews(res.data);
-        setLoadingInterviews(false);
-      })
-      .catch(() => setLoadingInterviews(false));
+    // Buscar bandas na primeira montagem (com retry)
+    fetchWithRetry(
+      `${API_URL}/api/bands`,
+      (data) => { setBands(data); setLoadingBands(false); },
+      () => setLoadingBands(false)
+    );
 
-    // Buscar eventos
-    axios.get(`${API_URL}/api/events`)
-      .then(res => setEvents(res.data));
+    // Buscar entrevistas (com retry)
+    fetchWithRetry(
+      `${API_URL}/api/interviews`,
+      (data) => { setInterviews(data); setLoadingInterviews(false); },
+      () => setLoadingInterviews(false)
+    );
+
+    // Buscar eventos (com retry)
+    fetchWithRetry(
+      `${API_URL}/api/events`,
+      (data) => setEvents(data),
+      null
+    );
 
     // Atualizar a cada 30 segundos
     const interval = setInterval(() => {
