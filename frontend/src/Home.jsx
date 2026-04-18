@@ -72,13 +72,12 @@ function Home({ posts }) {
         });
     };
 
-    // Buscar bandas na primeira montagem (com retry)
+    // Buscar bandas (com retry, ordenadas pelas mais recentes)
     fetchWithRetry(
-      `${API_URL}/api/bands`,
+      `${API_URL}/api/bands?sort=recent`,
       (data) => { setBands(data); setLoadingBands(false); },
       () => setLoadingBands(false)
     );
-
     // Buscar entrevistas (com retry)
     fetchWithRetry(
       `${API_URL}/api/interviews`,
@@ -95,7 +94,7 @@ function Home({ posts }) {
 
     // Atualizar a cada 30 segundos
     const interval = setInterval(() => {
-      axios.get(`${API_URL}/api/bands`)
+      axios.get(`${API_URL}/api/bands?sort=recent`)
         .then(res => setBands(res.data));
 
       axios.get(`${API_URL}/api/interviews`)

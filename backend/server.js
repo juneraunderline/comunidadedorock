@@ -49,7 +49,9 @@ const db = {
 // Inicialização de Tabelas
 const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS posts (id SERIAL PRIMARY KEY, title TEXT, content TEXT, image TEXT, link TEXT, source TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
-  await db.run(`CREATE TABLE IF NOT EXISTS bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT)`);
+  await db.run(`CREATE TABLE IF NOT EXISTS bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  // Garante que bancos antigos (criados antes da coluna created_at existir) recebam a coluna.
+  await db.run(`ALTER TABLE bands ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`);
   await db.run(`CREATE TABLE IF NOT EXISTS pending_bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, submitted_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS rss_feeds (id SERIAL PRIMARY KEY, name TEXT NOT NULL, url TEXT NOT NULL UNIQUE, logo TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS events (id SERIAL PRIMARY KEY, title TEXT, artist TEXT, date TEXT, time TEXT, location TEXT, city TEXT, state TEXT, image TEXT, ticket_link TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
@@ -412,8 +414,12 @@ app.delete("/api/posts/:id", async (req, res) => {
 // Bandas
 app.get("/api/bands", async (req, res) => {
   try {
-    res.set("Cache-Control", "public, max-age=30");
-    const bands = await db.getAll("SELECT * FROM bands ORDER BY name ASC");
+    // Sem cache pra que bandas recém-aprovadas apareçam imediatamente no próximo poll do frontend.
+    res.set("Cache-Control", "no-store");
+    const orderBy = req.query.sort === "recent"
+      ? "created_at DESC NULLS LAST, id DESC"
+      : "name ASC";
+    const bands = await db.getAll(`SELECT * FROM bands ORDER BY ${orderBy}`);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
     res.json(bands.map(b => ({ ...b, slug: mkSlug(b.name) })));
   } catch (err) {
@@ -458,7 +464,8 @@ app.get("/api/pending-bands", async (req, res) => {
 app.post("/api/approve-band/:id", async (req, res) => {
   const band = await db.getOne("SELECT * FROM pending_bands WHERE id = $1", [req.params.id]);
   if (!band) return res.status(404).send();
-  await db.run(`INSERT INTO bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+  // created_at = NOW() na aprovação para que a banda apareça como "nova" na Home.
+  await db.run(`INSERT INTO bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, NOW())`,
     [band.name, band.genre, band.city, band.state, band.year, band.members, band.biography, band.contact, band.image, band.instagram, band.facebook, band.youtube, band.spotify, band.bandcamp, band.site]);
   await db.run("DELETE FROM pending_bands WHERE id = $1", [req.params.id]);
   res.json({ success: true });
