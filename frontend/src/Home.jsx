@@ -135,7 +135,7 @@ function Home({ posts }) {
         <p style={{ textAlign: "center", fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Publicidade</p>
         <a href="https://www.instagram.com/loco_pub/" target="_blank" rel="noopener noreferrer">
           <img
-            src="https://res.cloudinary.com/dazqhi4ov/image/upload/v1776633831/70cb5a26-331a-40f9-9a09-811f240c37ae_czutnl.png"
+            src="https://res.cloudinary.com/dazqhi4ov/image/upload/c_crop,g_center,w_1200,h_400/v1776636678/824d6e4e-b0ab-4e0c-808d-0bb53065189d_bjukjn.png"
             alt="Loco Pub"
             style={{ width: "100%", maxWidth: "728px", display: "block", margin: "0 auto", borderRadius: "12px", cursor: "pointer" }}
           />
