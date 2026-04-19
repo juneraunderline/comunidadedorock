@@ -47,14 +47,25 @@ function App() {
   };
 
   useEffect(() => {
-    // Buscar posts na montagem
-    axios.get(`${API_URL}/api/posts`)
-      .then(res => {
-        console.log("🔄 App.jsx - Posts carregados:", res.data.length);
-        setPosts(res.data);
-        setLoading(false);
-      })
-      .catch(err => { console.error("❌ Erro ao carregar posts:", err); setLoading(false); });
+    // Funcao de retry automatico
+    const fetchWithRetry = (url, onSuccess, onError, retries = 5) => {
+      axios.get(url)
+        .then(res => onSuccess(res.data))
+        .catch(() => {
+          if (retries > 0) {
+            setTimeout(() => fetchWithRetry(url, onSuccess, onError, retries - 1), 3000);
+          } else if (onError) {
+            onError();
+          }
+        });
+    };
+
+    // Buscar posts na montagem (com retry)
+    fetchWithRetry(
+      `${API_URL}/api/posts`,
+      (data) => { setPosts(data); setLoading(false); },
+      () => setLoading(false)
+    );
 
     // Atualizar posts a cada 30 segundos
     const interval = setInterval(() => {
