@@ -274,9 +274,9 @@ function Home({ posts }) {
           <h2>PRÓXIMOS <span className="highlight">EVENTOS</span></h2>
           <button onClick={() => navigate("/eventos")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
         </div>
-        {events.length > 0 ? (
-          <div className="events-grid">
-            {events.slice(0, 3).map(event => (
+        {events.filter(ev => new Date(ev.date + "T23:59:59") >= new Date()).length > 0 ? (
+          <div className="grid grid-2">
+            {events.filter(ev => new Date(ev.date + "T23:59:59") >= new Date()).slice(0, 3).map(event => (
               <div
                 key={event.id}
                 className="event-card"
