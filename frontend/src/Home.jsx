@@ -136,7 +136,7 @@ function Home({ posts }) {
           <img
             src="https://res.cloudinary.com/dazqhi4ov/image/upload/v1776633831/70cb5a26-331a-40f9-9a09-811f240c37ae_czutnl.png"
             alt="Loco Pub"
-            style={{ width: "100%", borderRadius: "12px", cursor: "pointer" }}
+            style={{ width: "100%", maxWidth: "728px", display: "block", margin: "0 auto", borderRadius: "12px", cursor: "pointer" }}
           />
         </a>
       </section>
