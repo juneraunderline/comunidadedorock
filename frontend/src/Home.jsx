@@ -336,7 +336,7 @@ function Home({ posts }) {
                       </a>
                     ) : (
                       <button className="btn btn-primary btn-buy-tickets" disabled style={{ opacity: 0.6, cursor: "not-allowed" }} onClick={e => e.stopPropagation()}>
-                        {diffDays === 0 ? "Evento e hoje!" : diffDays === 1 ? "Falta 1 dia para o evento" : "Faltam " + diffDays + " dias para o evento"}
+                        {diffDays === 0 ? "Evento Gratuito - Hoje!" : diffDays === 1 ? "Evento Gratuito - Falta 1 dia" : "Evento Gratuito - Faltam " + diffDays + " dias"}
                       </button>
                     );
                   })()}
