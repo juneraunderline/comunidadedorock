@@ -17,6 +17,30 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Upload de imagem via base64
+const path = require("path");
+const fs = require("fs");
+const crypto = require("crypto");
+const imagesDir = path.join(__dirname, "public", "images");
+if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir, { recursive: true });
+app.use("/images", express.static(imagesDir));
+app.post("/api/upload-image", (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) return res.status(400).json({ error: "Imagem obrigatoria" });
+    const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (!matches) return res.status(400).json({ error: "Formato invalido" });
+    const ext = matches[1] === "jpeg" ? "jpg" : matches[1];
+    const data = Buffer.from(matches[2], "base64");
+    const hash = crypto.createHash("md5").update(data).digest("hex");
+    const filename = hash + "." + ext;
+    const filepath = path.join(imagesDir, filename);
+    fs.writeFileSync(filepath, data);
+    res.json({ success: true, path: "/images/" + filename });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // BANCO POSTGRESQL
 const pool = new Pool({

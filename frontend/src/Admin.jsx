@@ -57,6 +57,22 @@ export default function Admin({ user: currentUser }) {
   const isAdmin = currentUser?.role === "admin";
   const isEditor = currentUser?.role === "editor";
 
+  const handleImageUpload = (file, setter, field) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      axios.post(`${API_URL}/api/upload-image`, { image: reader.result })
+        .then(res => {
+          if (res.data.path) {
+            setter(prev => ({ ...prev, [field]: res.data.path }));
+            alert("Imagem enviada com sucesso!");
+          }
+        })
+        .catch(() => alert("Erro ao enviar imagem"));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const fetchData = () => {
     axios.get(`${API_URL}/api/posts`).then(res => setPosts(res.data));
     axios.get(`${API_URL}/api/bands`).then(res => setBands(res.data));
@@ -1604,6 +1620,7 @@ export default function Admin({ user: currentUser }) {
                 onChange={(e) => setEditingEvent({...editingEvent, image: e.target.value})}
                 placeholder="URL da imagem"
               />
+              <input type="file" accept="image/*" style={{ marginTop: "8px" }} onChange={(e) => handleImageUpload(e.target.files[0], setEditingEvent, "image")} />
             </div>
             <div className="form-group">
               <label>Link de Ingressos</label>
@@ -1710,6 +1727,7 @@ export default function Admin({ user: currentUser }) {
                 onChange={(e) => setNewEvent({...newEvent, image: e.target.value})}
                 placeholder="URL da imagem"
               />
+              <input type="file" accept="image/*" style={{ marginTop: "8px" }} onChange={(e) => handleImageUpload(e.target.files[0], setNewEvent, "image")} />
             </div>
             <div className="form-group">
               <label>Link de Ingressos</label>
