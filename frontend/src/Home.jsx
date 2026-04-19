@@ -129,6 +129,18 @@ function Home({ posts }) {
         </div>
       </div>
 
+
+      {/* BANNER DIVULGACAO */}
+      <section className="section" style={{ paddingTop: "10px", paddingBottom: "10px" }}>
+        <a href="https://www.instagram.com/loco_pub/" target="_blank" rel="noopener noreferrer">
+          <img
+            src="https://res.cloudinary.com/dazqhi4ov/image/upload/v1776633831/70cb5a26-331a-40f9-9a09-811f240c37ae_czutnl.png"
+            alt="Loco Pub"
+            style={{ width: "100%", borderRadius: "12px", cursor: "pointer" }}
+          />
+        </a>
+      </section>
+
       {/* NOTÍCIAS */}
       <section className="section">
         <div className="section-header">
