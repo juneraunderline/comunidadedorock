@@ -93,26 +93,28 @@ function Eventos() {
                     </p>
                   )}
                   
-                  {event.ticket_link ? (
-                    <a
-                      href={event.ticket_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary btn-buy-tickets"
-                      onClick={e => e.stopPropagation()}
-                    >
-                      🎫 Comprar Ingresso
-                    </a>
-                  ) : (
-                    <button
-                      className="btn btn-primary btn-buy-tickets"
-                      disabled
-                      style={{ opacity: 0.6, cursor: 'not-allowed' }}
-                      onClick={e => e.stopPropagation()}
-                    >
-                      🎫 Link de Venda
-                    </button>
-                  )}
+                  {(() => {
+                    const eventDate = new Date(event.date + "T23:59:59");
+                    const now = new Date();
+                    const isPast = eventDate < now;
+                    const diffDays = Math.ceil((eventDate - now) / 86400000);
+                    if (isPast) {
+                      return (
+                        <button className="btn btn-buy-tickets" disabled style={{ opacity: 0.6, cursor: "not-allowed", background: "#666" }} onClick={e => e.stopPropagation()}>
+                          Evento realizado em {new Date(event.date + "T00:00:00").toLocaleDateString("pt-BR")}
+                        </button>
+                      );
+                    }
+                    return event.ticket_link ? (
+                      <a href={event.ticket_link} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-buy-tickets" onClick={e => e.stopPropagation()}>
+                        Comprar Ingresso - {diffDays === 0 ? "Hoje!" : diffDays === 1 ? "Falta 1 dia" : "Faltam " + diffDays + " dias"}
+                      </a>
+                    ) : (
+                      <button className="btn btn-primary btn-buy-tickets" disabled style={{ opacity: 0.6, cursor: "not-allowed" }} onClick={e => e.stopPropagation()}>
+                        {diffDays === 0 ? "Evento e hoje!" : diffDays === 1 ? "Falta 1 dia para o evento" : "Faltam " + diffDays + " dias para o evento"}
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             ))}
