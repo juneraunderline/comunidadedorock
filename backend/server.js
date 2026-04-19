@@ -24,19 +24,18 @@ const crypto = require("crypto");
 const imagesDir = path.join(__dirname, "public", "images");
 if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir, { recursive: true });
 app.use("/images", express.static(imagesDir));
-app.post("/api/upload-image", (req, res) => {
+const cloudinary = require("cloudinary").v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "dazqhi4ov",
+  api_key: process.env.CLOUDINARY_API_KEY || "814323694122532",
+  api_secret: process.env.CLOUDINARY_API_SECRET || "x2J8Vvl4Cbr2ESL5UgOb5LGYTAg"
+});
+app.post("/api/upload-image", async (req, res) => {
   try {
     const { image } = req.body;
     if (!image) return res.status(400).json({ error: "Imagem obrigatoria" });
-    const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
-    if (!matches) return res.status(400).json({ error: "Formato invalido" });
-    const ext = matches[1] === "jpeg" ? "jpg" : matches[1];
-    const data = Buffer.from(matches[2], "base64");
-    const hash = crypto.createHash("md5").update(data).digest("hex");
-    const filename = hash + "." + ext;
-    const filepath = path.join(imagesDir, filename);
-    fs.writeFileSync(filepath, data);
-    res.json({ success: true, path: "/images/" + filename });
+    const result = await cloudinary.uploader.upload(image, { folder: "comunidadedorock" });
+    res.json({ success: true, path: result.secure_url });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
