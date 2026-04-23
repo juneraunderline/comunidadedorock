@@ -16,6 +16,7 @@ function Home({ posts }) {
   const [displayCount, setDisplayCount] = useState(6);
   const [brokenImages, setBrokenImages] = useState(new Set());
 
+  const [bannerIdx, setBannerIdx] = useState(0);
   const formatDatePT = (dateString) => {
     if (!dateString) return "Data desconhecida";
     
@@ -43,6 +44,11 @@ function Home({ posts }) {
   const handleImageError = (id) => {
     setBrokenImages(prev => new Set(prev).add(id));
   };
+
+  useEffect(() => {
+    const timer = setInterval(() => setBannerIdx(prev => (prev + 1) % 2), 4000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     // Log dos posts recebidos
@@ -133,10 +139,10 @@ function Home({ posts }) {
       {/* BANNER DIVULGACAO */}
       <section className="section" style={{ paddingTop: "10px", paddingBottom: "10px" }}>
         <p style={{ textAlign: "center", fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Publicidade</p>
-        <a href="https://www.instagram.com/loco_pub/" target="_blank" rel="noopener noreferrer">
+        <a href={["https://www.instagram.com/loco_pub/", "https://www.instagram.com/lamuertetattoo/"][bannerIdx]} target="_blank" rel="noopener noreferrer">
           <img
-            src="https://res.cloudinary.com/dazqhi4ov/image/upload/e_trim:20/v1776636678/824d6e4e-b0ab-4e0c-808d-0bb53065189d_bjukjn.png"
-            alt="Loco Pub"
+            src={["https://res.cloudinary.com/dazqhi4ov/image/upload/e_trim:20/v1776636678/824d6e4e-b0ab-4e0c-808d-0bb53065189d_bjukjn.png", "https://res.cloudinary.com/dazqhi4ov/image/upload/e_trim:20/v1776902068/lamuertetattoo_uvis7q.png"][bannerIdx]}
+            alt={["Loco Pub", "La Muerte Tattoo"][bannerIdx]}
             style={{ width: "100%", maxWidth: "500px", display: "block", margin: "0 auto", borderRadius: "12px", cursor: "pointer" }}
           />
         </a>
