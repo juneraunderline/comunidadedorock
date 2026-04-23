@@ -206,7 +206,7 @@ function Home({ posts }) {
       <section className="section" style={{ paddingTop: "10px", paddingBottom: "10px" }}>
         <p style={{ textAlign: "center", fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Publicidade</p>
         <a href="https://www.instagram.com/lamuertestudiotattoo/" target="_blank" rel="noopener noreferrer">
-          <img src="https://res.cloudinary.com/dazqhi4ov/image/upload/e_trim:20/v1776902068/lamuertetattoo_uvis7q.png" alt="La Muerte Tattoo" style={{ width: "100%", maxWidth: "500px", display: "block", margin: "0 auto", borderRadius: "12px", cursor: "pointer" }} />
+          <img src="https://res.cloudinary.com/dazqhi4ov/image/upload/e_trim:20/v1776903446/lamuertetattoo_fikugw.png" alt="La Muerte Tattoo" style={{ width: "100%", maxWidth: "500px", display: "block", margin: "0 auto", borderRadius: "12px", cursor: "pointer" }} />
         </a>
       </section>
       {/* ENTREVISTAS */}
