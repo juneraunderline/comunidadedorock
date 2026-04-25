@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import API_URL, { getImageUrl } from "./config/api";
+import API_URL from "./config/api";
 
 function Eventos() {
   const [events, setEvents] = useState([]);
-  const [lightboxImage, setLightboxImage] = useState(null);
 
   useEffect(() => {
     axios.get(`${API_URL}/api/events`)
@@ -47,11 +46,11 @@ function Eventos() {
                 key={event.id}
                 className="event-card"
                 style={{ cursor: 'pointer' }}
-                onClick={() => navigate(`/eventos/${event.slug || event.id}`)}
+                onClick={() => navigate(`/eventos/${event.id}`)}
               >
                 <div className="event-image-wrapper">
                   {event.image ? (
-                    <img src={getImageUrl(event.image)} alt={event.title} className="event-image" />
+                    <img src={event.image} alt={event.title} className="event-image" />
                   ) : (
                     <div className="event-image-placeholder">🎸</div>
                   )}
@@ -114,69 +113,9 @@ function Eventos() {
                       🎫 Link de Venda
                     </button>
                   )}
-
-                  {event.image && (
-                    <div
-                      className="event-flyer"
-                      title="Clique no cartaz para ampliar"
-                      style={{ marginTop: '16px', cursor: 'zoom-in' }}
-                      onClick={e => {
-                        e.stopPropagation();
-                        setLightboxImage(getImageUrl(event.image));
-                      }}
-                    >
-                      <img
-                        src={getImageUrl(event.image)}
-                        alt={`Cartaz: ${event.title}`}
-                        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '8px' }}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
-          </div>
-        )}
-
-        {lightboxImage && (
-          <div
-            onClick={() => setLightboxImage(null)}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0, 0, 0, 0.92)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 9999,
-              cursor: 'zoom-out',
-              padding: '20px',
-            }}
-          >
-            <img
-              src={lightboxImage}
-              alt="Cartaz ampliado"
-              style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain', borderRadius: '8px' }}
-            />
-            <button
-              onClick={e => { e.stopPropagation(); setLightboxImage(null); }}
-              style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                background: 'rgba(255, 255, 255, 0.15)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '50%',
-                width: '44px',
-                height: '44px',
-                fontSize: '24px',
-                cursor: 'pointer',
-              }}
-              aria-label="Fechar"
-            >
-              ✕
-            </button>
           </div>
         )}
       </section>
