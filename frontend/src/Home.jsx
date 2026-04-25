@@ -353,7 +353,7 @@ function Home({ posts }) {
                         {diffDays === 0 ? "🔥 É HOJE! - Comprar Ingresso" : diffDays === 1 ? "Comprar Ingresso - Falta 1 dia" : "Comprar Ingresso - Faltam " + diffDays + " dias"}
                       </a>
                     ) : (
-                      <button className="btn btn-primary btn-buy-tickets" disabled style={{ opacity: 0.6, cursor: "not-allowed" }} onClick={e => e.stopPropagation()}>
+                      <button className="btn btn-primary btn-buy-tickets" disabled style={{ opacity: diffDays === 0 ? 1 : 0.6, cursor: "not-allowed" }} onClick={e => e.stopPropagation()}>
                         {diffDays === 0 ? "🔥 É HOJE! - Evento Gratuito" : diffDays === 1 ? "Evento Gratuito - Falta 1 dia" : "Evento Gratuito - Faltam " + diffDays + " dias"}
                       </button>
                     );
