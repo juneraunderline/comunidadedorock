@@ -5,6 +5,7 @@ import API_URL, { getImageUrl } from "./config/api";
 
 function Eventos() {
   const [events, setEvents] = useState([]);
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   useEffect(() => {
     axios.get(`${API_URL}/api/events`)
@@ -48,6 +49,19 @@ function Eventos() {
                 style={{ cursor: 'pointer' }}
                 onClick={() => navigate(`/eventos/${event.slug || event.id}`)}
               >
+                <div className="event-image-wrapper">
+                  {event.image ? (
+                    <img src={getImageUrl(event.image)} alt={event.title} className="event-image" />
+                  ) : (
+                    <div className="event-image-placeholder">🎸</div>
+                  )}
+                  <div className="event-badge">{formatWeekday(event.date)}</div>
+                  <div className="event-date-badge">
+                    <span className="date-day">{new Date(event.date + "T00:00:00").getDate()}</span>
+                    <span className="date-month">{new Date(event.date + "T00:00:00").toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase()}</span>
+                  </div>
+                </div>
+                
                 <div className="event-content">
                   <h3 className="event-title">{event.title}</h3>
                   
@@ -100,26 +114,69 @@ function Eventos() {
                       🎫 Link de Venda
                     </button>
                   )}
-                </div>
 
-                <div
-                  className="event-image-wrapper"
-                  title="Clique para ver todas as informações do evento"
-                  onClick={() => navigate(`/eventos/${event.id}`)}
-                >
-                  {event.image ? (
-                    <img src={getImageUrl(event.image)} alt={event.title} className="event-image" />
-                  ) : (
-                    <div className="event-image-placeholder">🎸</div>
+                  {event.image && (
+                    <div
+                      className="event-flyer"
+                      title="Clique no cartaz para ampliar"
+                      style={{ marginTop: '16px', cursor: 'zoom-in' }}
+                      onClick={e => {
+                        e.stopPropagation();
+                        setLightboxImage(getImageUrl(event.image));
+                      }}
+                    >
+                      <img
+                        src={getImageUrl(event.image)}
+                        alt={`Cartaz: ${event.title}`}
+                        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '8px' }}
+                      />
+                    </div>
                   )}
-                  <div className="event-badge">{formatWeekday(event.date)}</div>
-                  <div className="event-date-badge">
-                    <span className="date-day">{new Date(event.date + "T00:00:00").getDate()}</span>
-                    <span className="date-month">{new Date(event.date + "T00:00:00").toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase()}</span>
-                  </div>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {lightboxImage && (
+          <div
+            onClick={() => setLightboxImage(null)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.92)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 9999,
+              cursor: 'zoom-out',
+              padding: '20px',
+            }}
+          >
+            <img
+              src={lightboxImage}
+              alt="Cartaz ampliado"
+              style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain', borderRadius: '8px' }}
+            />
+            <button
+              onClick={e => { e.stopPropagation(); setLightboxImage(null); }}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'rgba(255, 255, 255, 0.15)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '50%',
+                width: '44px',
+                height: '44px',
+                fontSize: '24px',
+                cursor: 'pointer',
+              }}
+              aria-label="Fechar"
+            >
+              ✕
+            </button>
           </div>
         )}
       </section>
