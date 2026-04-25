@@ -48,19 +48,6 @@ function Eventos() {
                 style={{ cursor: 'pointer' }}
                 onClick={() => navigate(`/eventos/${event.slug || event.id}`)}
               >
-                <div className="event-image-wrapper">
-                  {event.image ? (
-                    <img src={getImageUrl(event.image)} alt={event.title} className="event-image" />
-                  ) : (
-                    <div className="event-image-placeholder">🎸</div>
-                  )}
-                  <div className="event-badge">{formatWeekday(event.date)}</div>
-                  <div className="event-date-badge">
-                    <span className="date-day">{new Date(event.date + "T00:00:00").getDate()}</span>
-                    <span className="date-month">{new Date(event.date + "T00:00:00").toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase()}</span>
-                  </div>
-                </div>
-                
                 <div className="event-content">
                   <h3 className="event-title">{event.title}</h3>
                   
@@ -113,6 +100,23 @@ function Eventos() {
                       🎫 Link de Venda
                     </button>
                   )}
+                </div>
+
+                <div
+                  className="event-image-wrapper"
+                  title="Clique para ver todas as informações do evento"
+                  onClick={() => navigate(`/eventos/${event.id}`)}
+                >
+                  {event.image ? (
+                    <img src={getImageUrl(event.image)} alt={event.title} className="event-image" />
+                  ) : (
+                    <div className="event-image-placeholder">🎸</div>
+                  )}
+                  <div className="event-badge">{formatWeekday(event.date)}</div>
+                  <div className="event-date-badge">
+                    <span className="date-day">{new Date(event.date + "T00:00:00").getDate()}</span>
+                    <span className="date-month">{new Date(event.date + "T00:00:00").toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase()}</span>
+                  </div>
                 </div>
               </div>
             ))}
