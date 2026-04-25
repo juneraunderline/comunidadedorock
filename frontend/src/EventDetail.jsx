@@ -8,6 +8,7 @@ function EventDetail() {
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
     axios.get(`${API_URL}/api/events`)
@@ -50,8 +51,27 @@ function EventDetail() {
       </div>
       <div className="event-card" style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
         {event.image && (
-          <div style={{ width: '100%', height: '380px', overflow: 'hidden', borderRadius: '8px', marginBottom: '20px' }}>
+          <div
+            title="Clique para ampliar o cartaz"
+            style={{ width: '100%', height: '380px', overflow: 'hidden', borderRadius: '8px', marginBottom: '20px', cursor: 'zoom-in' }}
+            onClick={() => setZoomed(true)}
+          >
             <img src={getImageUrl(event.image)} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        )}
+        {zoomed && event.image && (
+          <div
+            onClick={() => setZoomed(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, cursor: 'zoom-out', padding: '20px' }}
+          >
+            <img src={getImageUrl(event.image)} alt={event.title} style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain', borderRadius: '8px' }} />
+            <button
+              onClick={e => { e.stopPropagation(); setZoomed(false); }}
+              style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: '50%', width: '44px', height: '44px', fontSize: '24px', cursor: 'pointer' }}
+              aria-label="Fechar"
+            >
+              ✕
+            </button>
           </div>
         )}
         <div style={{ background: '#16161b', padding: '20px', borderRadius: '8px' }}>
