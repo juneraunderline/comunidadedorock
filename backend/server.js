@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
 
@@ -263,8 +263,7 @@ async function autoImportRss() {
           if (!title) continue;
 
           // Verificar se já existe ANTES de validar imagem (evita HEAD requests desnecessários)
-          const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
-          if (exists) continue;
+          if (await postAlreadyExists(title, link)) continue;
 
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const image = extractImageFromItem(itemXml, content);
@@ -654,8 +653,7 @@ app.post("/api/import-rss", async (req, res) => {
           const link = extractLinkFromItem(itemXml);
           if (!title || !image) continue;
           if (!(await isValidImage(image))) continue;
-          const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
-          if (!exists) {
+          if (!(await postAlreadyExists(title, link))) {
             await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
             imported++;
           }
@@ -685,8 +683,7 @@ app.post("/api/import-rss-single", async (req, res) => {
       const link = extractLinkFromItem(itemXml);
       if (!title || !image) continue;
       if (!(await isValidImage(image))) continue;
-      const exists = await db.getOne("SELECT id FROM posts WHERE title = $1", [title]);
-      if (!exists) {
+      if (!(await postAlreadyExists(title, link))) {
         await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
         imported++;
       }
@@ -792,6 +789,15 @@ app.post("/api/test-rss-images", async (req, res) => {
 
 
 
+// Endpoint manual de limpeza de duplicatas
+app.post("/api/cleanup-duplicates", async (req, res) => {
+  try {
+    const result = await cleanupDuplicatePosts();
+    res.json({ success: true, ...result, message: `${result.total} duplicatas removidas` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 // --- OPEN GRAPH HELPERS ---
 function buildOgHtml(title, description, image, ogUrl, type, siteUrl) {
   const safeImg = (image || "").replace('http://', 'https://');
@@ -926,6 +932,7 @@ app.get("/api/debug-rss", async (req, res) => {
 async function startServer() {
   await initDb();
   await loadFeeds();
+  await cleanupDuplicatePosts();
   // Remover admins duplicados
   const admins = await db.getAll("SELECT id FROM users WHERE username = 'admin' ORDER BY id ASC").catch(() => []);
   if (admins.length > 1) {
