@@ -33,8 +33,15 @@ function Sobre() {
           <h3 style={{ color: "#e9b61e", margin: "32px 0 12px", fontSize: "20px" }}>Para bandas</h3>
           <p>Se você tem uma banda de rock e quer divulgar seu trabalho, a Comunidade do Rock é o lugar certo. Cadastre sua banda gratuitamente e alcance novos fãs. Aceitamos bandas de todos os subgêneros do rock — do punk ao metal, do indie ao progressivo.</p>
 
-          <h3 style={{ color: "#e9b61e", margin: "32px 0 12px", fontSize: "20px" }}>Contato</h3>
-          <p>Quer falar com a gente? Sugestões, parcerias, divulgação de eventos ou qualquer outra coisa — estamos sempre abertos. Acesse nossa página de <a href="/contato" style={{ color: "#e9b61e" }}>Contato</a>.</p>
+          <h3 style={{ color: "#e9b61e", margin: "32px 0 12px", fontSize: "20px" }}>Transparência e Identidade</h3>
+          <p>A <strong>Comunidade do Rock</strong> é um projeto editorial independente liderado por <strong>Junera Lopes</strong>. Nosso compromisso é com a verdade e com o fomento da cultura rock no Brasil, respeitando sempre os direitos autorais e a propriedade intelectual de todos os artistas e portais citados.</p>
+
+          <h3 style={{ color: "#e9b61e", margin: "32px 0 12px", fontSize: "20px" }}>Contato e Expediente</h3>
+          <p>Para sugestões de pauta, parcerias comerciais, solicitações de remoção de conteúdo ou divulgação de eventos, utilize os canais abaixo:</p>
+          <ul style={{ paddingLeft: "24px", marginBottom: "16px" }}>
+            <li><strong>E-mail Editorial:</strong> <a href="mailto:junior.lopes@yahoo.com" style={{ color: "#e9b61e" }}>junior.lopes@yahoo.com</a></li>
+            <li><strong>Formulário:</strong> Acesse nossa página de <a href="/contato" style={{ color: "#e9b61e" }}>Contato</a></li>
+          </ul>
 
           <div style={{ textAlign: "center", marginTop: "48px", padding: "30px", background: "#16161b", borderRadius: "8px", border: "1px solid #2a2a33" }}>
             <p style={{ fontSize: "16px", color: "#fff", marginBottom: "8px", fontWeight: "700" }}>🤘 Rock nunca morre.</p>
