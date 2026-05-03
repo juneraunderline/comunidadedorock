@@ -2,17 +2,27 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
-import logo from "./assets/logo.png";
+import logo from "./assets/logo.webp";
 import hero from "./assets/hero-stage.webp";
 import Portal from "./Portal";
 
 function Home({ posts }) {
   const navigate = useNavigate();
   const [bands, setBands] = useState([]);
-  const [interviews, setInterviews] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [loadingBands, setLoadingBands] = useState(true);
-  const [loadingInterviews, setLoadingInterviews] = useState(true);
+	  const [interviews, setInterviews] = useState([]);
+	  const [events, setEvents] = useState([]);
+	  const [loadingBands, setLoadingBands] = useState(true);
+	  const [loadingInterviews, setLoadingInterviews] = useState(true);
+	  const [loadingEvents, setLoadingEvents] = useState(true);
+	  const loadingPosts = posts.length === 0;
+
+	  const SkeletonCard = () => (
+	    <div className="card skeleton-card">
+	      <div className="skeleton skeleton-image"></div>
+	      <div className="skeleton skeleton-text"></div>
+	      <div className="skeleton skeleton-text short"></div>
+	    </div>
+	  );
   const [displayCount, setDisplayCount] = useState(6);
   const [brokenImages, setBrokenImages] = useState(new Set());
 
@@ -86,11 +96,11 @@ function Home({ posts }) {
     );
 
     // Buscar eventos (com retry)
-    fetchWithRetry(
-      `${API_URL}/api/events`,
-      (data) => setEvents(data),
-      null
-    );
+	    fetchWithRetry(
+	      `${API_URL}/api/events`,
+	      (data) => { setEvents(data); setLoadingEvents(false); },
+	      () => setLoadingEvents(false)
+	    );
 
     // Atualizar a cada 30 segundos
     const interval = setInterval(() => {
@@ -147,9 +157,16 @@ function Home({ posts }) {
           <button onClick={() => navigate("/noticias")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
         </div>
         <div className="grid grid-2">
-          {posts.length > 0 ? (
-            <>
-              {posts.slice(0, displayCount).map((p, idx) => (
+	          {loadingPosts ? (
+	            <>
+	              <SkeletonCard />
+	              <SkeletonCard />
+	              <SkeletonCard />
+	              <SkeletonCard />
+	            </>
+	          ) : posts.length > 0 ? (
+	            <>
+	              {posts.slice(0, displayCount).map((p, idx) => (
                 <div 
                   key={p.id} 
                   className="card"
@@ -219,11 +236,12 @@ function Home({ posts }) {
           <button onClick={() => navigate("/entrevistas")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
         </div>
         <div className="grid grid-2">
-          {loadingInterviews ? (
-            <div style={{gridColumn: "1/-1", textAlign: "center", color: "#888", padding: "40px"}}>
-              Carregando entrevistas...
-            </div>
-          ) : interviews.length > 0 ? (
+	          {loadingInterviews ? (
+	            <>
+	              <SkeletonCard />
+	              <SkeletonCard />
+	            </>
+	          ) : interviews.length > 0 ? (
             <>
               {interviews.slice(0, 3).map((interview) => (
                 <div 
@@ -258,11 +276,12 @@ function Home({ posts }) {
           <button onClick={() => navigate("/bandas")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
         </div>
         <div className="grid grid-2">
-          {loadingBands ? (
-            <div style={{gridColumn: "1/-1", textAlign: "center", color: "#888", padding: "40px"}}>
-              Carregando bandas...
-            </div>
-          ) : bands.length > 0 ? (
+	          {loadingBands ? (
+	            <>
+	              <SkeletonCard />
+	              <SkeletonCard />
+	            </>
+	          ) : bands.length > 0 ? (
             bands.slice(0, 6).map(band => (
               <div 
                 key={band.id} 
@@ -294,8 +313,13 @@ function Home({ posts }) {
           <h2>PRÓXIMOS <span className="highlight">EVENTOS</span></h2>
           <button onClick={() => navigate("/eventos")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
         </div>
-        {events.filter(ev => new Date(ev.date + "T23:59:59") >= new Date()).length > 0 ? (
-          <div className="grid grid-2">
+        {loadingEvents ? (
+	          <div className="grid grid-2">
+	            <SkeletonCard />
+	            <SkeletonCard />
+	          </div>
+	        ) : events.filter(ev => new Date(ev.date + "T23:59:59") >= new Date()).length > 0 ? (
+	          <div className="grid grid-2">
             {events.filter(ev => new Date(ev.date + "T23:59:59") >= new Date()).slice(0, 3).map(event => (
               <div
                 key={event.id}
