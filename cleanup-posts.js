@@ -23,7 +23,23 @@ db.serialize(() => {
     }
   });
 
-  // 3. Contar posts restantes
+  // 3. Deletar posts duplicados por título (mantendo o mais recente)
+  db.run(`
+    DELETE FROM posts 
+    WHERE id NOT IN (
+      SELECT MAX(id) 
+      FROM posts 
+      GROUP BY LOWER(TRIM(title))
+    )
+  `, function(err) {
+    if (err) {
+      console.error('❌ Erro ao deletar duplicatas:', err);
+    } else {
+      console.log(`✅ ${this.changes} posts duplicados por título foram deletados`);
+    }
+  });
+
+  // 4. Contar posts restantes
   db.all("SELECT COUNT(*) as total FROM posts", [], (err, rows) => {
     if (err) {
       console.error('❌ Erro ao contar posts:', err);
