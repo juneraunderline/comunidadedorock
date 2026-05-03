@@ -82,25 +82,29 @@ function Home({ posts }) {
         });
     };
 
-    // Buscar bandas (com retry, ordenadas pelas mais recentes)
-    fetchWithRetry(
-      `${API_URL}/api/bands?sort=recent`,
-      (data) => { setBands(data); setLoadingBands(false); },
-      () => setLoadingBands(false)
-    );
-    // Buscar entrevistas (com retry)
-    fetchWithRetry(
-      `${API_URL}/api/interviews`,
-      (data) => { setInterviews(data); setLoadingInterviews(false); },
-      () => setLoadingInterviews(false)
-    );
+    // Disparar todas as buscas em paralelo para não travar uma na outra
+    const loadData = () => {
+      // Buscar bandas (com retry, ordenadas pelas mais recentes)
+      fetchWithRetry(
+        `${API_URL}/api/bands?sort=recent&limit=6`,
+        (data) => { setBands(data); setLoadingBands(false); },
+        () => setLoadingBands(false)
+      );
+      // Buscar entrevistas (com retry)
+      fetchWithRetry(
+        `${API_URL}/api/interviews`,
+        (data) => { setInterviews(data); setLoadingInterviews(false); },
+        () => setLoadingInterviews(false)
+      );
+      // Buscar eventos (com retry)
+      fetchWithRetry(
+        `${API_URL}/api/events`,
+        (data) => { setEvents(data); setLoadingEvents(false); },
+        () => setLoadingEvents(false)
+      );
+    };
 
-    // Buscar eventos (com retry)
-	    fetchWithRetry(
-	      `${API_URL}/api/events`,
-	      (data) => { setEvents(data); setLoadingEvents(false); },
-	      () => setLoadingEvents(false)
-	    );
+    loadData();
 
     // Atualizar a cada 30 segundos
     const interval = setInterval(() => {
@@ -290,7 +294,13 @@ function Home({ posts }) {
                 style={{ cursor: "pointer" }}
               >
                 <div className="card-image">
-                  <img src={getImageUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={band.name} />
+                  <img 
+                    src={band.image?.includes('cloudinary') 
+                      ? band.image.replace('/upload/', '/upload/c_thumb,w_400,g_face,f_auto,q_auto/') 
+                      : getImageUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=400&h=400&fit=crop"} 
+                    alt={band.name} 
+                    loading="lazy"
+                  />
                 </div>
                 <div className="card-content">
                   <h3>{band.name}</h3>

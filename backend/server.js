@@ -441,7 +441,8 @@ app.get("/api/bands", async (req, res) => {
     const orderBy = req.query.sort === "recent"
       ? "created_at DESC NULLS LAST, id DESC"
       : "name ASC";
-    const bands = await db.getAll(`SELECT * FROM bands ORDER BY ${orderBy}`);
+    const limit = req.query.limit ? `LIMIT ${parseInt(req.query.limit)}` : "";
+    const bands = await db.getAll(`SELECT * FROM bands ORDER BY ${orderBy} ${limit}`);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
     res.json(bands.map(b => ({ ...b, slug: mkSlug(b.name) })));
   } catch (err) {
