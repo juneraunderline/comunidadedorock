@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 import logo from "./assets/logo.png";
-import hero from "./assets/hero-stage.jpg";
+import hero from "./assets/hero-stage.webp";
 import Portal from "./Portal";
 
 function Home({ posts }) {
@@ -119,6 +119,8 @@ function Home({ posts }) {
           backgroundImage: `url(${hero})`
         }}
       >
+        {/* Link invisível para pré-carregamento com prioridade alta */}
+        <link rel="preload" as="image" href={hero} fetchpriority="high" />
         <div className="hero-content">
           <img src={logo} alt="Comunidade do Rock" style={{ maxWidth: "320px", width: "80%", height: "auto", marginBottom: "24px", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.7))" }} />
           <p>O melhor do rock underground brasileiro em um só lugar. Descubra novas bandas, leia entrevistas exclusivas e fique por dentro das últimas notícias.</p>
@@ -134,7 +136,7 @@ function Home({ posts }) {
       <section className="section" style={{ paddingTop: "10px", paddingBottom: "10px" }}>
         <p style={{ textAlign: "center", fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Publicidade</p>
         <a href="https://www.instagram.com/loco_pub/" target="_blank" rel="noopener noreferrer">
-          <img src="https://res.cloudinary.com/dazqhi4ov/image/upload/e_trim:20/v1776636678/824d6e4e-b0ab-4e0c-808d-0bb53065189d_bjukjn.png" alt="Loco Pub" style={{ width: "100%", maxWidth: "500px", display: "block", margin: "0 auto", borderRadius: "12px", cursor: "pointer" }} />
+          <img src="https://res.cloudinary.com/dazqhi4ov/image/upload/c_scale,w_800,f_auto,q_auto/e_trim:20/v1776636678/824d6e4e-b0ab-4e0c-808d-0bb53065189d_bjukjn.png" alt="Loco Pub" style={{ width: "100%", maxWidth: "500px", display: "block", margin: "0 auto", borderRadius: "12px", cursor: "pointer" }} />
         </a>
       </section>
 
@@ -159,9 +161,10 @@ function Home({ posts }) {
                 >
                   <div className="card-image">
                     {p.image ? (
-                      <img 
-                        src={getImageUrl(p.image)} 
-                        alt={p.title}
+<img 
+	                        src={getImageUrl(p.image)} 
+	                        alt={p.title}
+	                        loading="lazy"
                         onError={() => {
                           console.log("❌ Erro ao carregar imagem:", p.image);
                           handleImageError(p.id);
@@ -206,7 +209,7 @@ function Home({ posts }) {
       <section className="section" style={{ paddingTop: "10px", paddingBottom: "10px" }}>
         <p style={{ textAlign: "center", fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Publicidade</p>
         <a href="https://www.instagram.com/lamuertestudiotattoo/" target="_blank" rel="noopener noreferrer">
-          <img src="https://res.cloudinary.com/dazqhi4ov/image/upload/e_trim:20/v1776903446/lamuertetattoo_fikugw.png" alt="La Muerte Tattoo" style={{ width: "100%", maxWidth: "500px", display: "block", margin: "0 auto", borderRadius: "12px", cursor: "pointer" }} />
+          <img src="https://res.cloudinary.com/dazqhi4ov/image/upload/c_scale,w_800,f_auto,q_auto/e_trim:20/v1776903446/lamuertetattoo_fikugw.png" alt="La Muerte Tattoo" style={{ width: "100%", maxWidth: "500px", display: "block", margin: "0 auto", borderRadius: "12px", cursor: "pointer" }} />
         </a>
       </section>
       {/* ENTREVISTAS */}
@@ -230,7 +233,7 @@ function Home({ posts }) {
                   style={{ cursor: "pointer" }}
                 >
                   <div className="card-image">
-                    <img src={getImageUrl(interview.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={interview.title} />
+                    <img src={getImageUrl(interview.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={interview.title} loading="lazy" />
                   </div>
                   <div className="card-content">
                     <h3>{interview.title}</h3>
