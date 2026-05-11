@@ -6,20 +6,21 @@ import API_URL, { getImageUrl } from "./config/api";
 function Bandas() {
   const navigate = useNavigate();
   const [bands, setBands] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [genreFilter, setGenreFilter] = useState("");
 
   useEffect(() => {
+    // Buscar bandas na primeira montagem
     axios.get(`${API_URL}/api/bands`)
-      .then(res => { setBands(res.data); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(res => setBands(res.data));
 
+    // Atualizar a cada 5 segundos
     const interval = setInterval(() => {
       axios.get(`${API_URL}/api/bands`)
         .then(res => setBands(res.data));
-    }, 60000);
+    }, 5000);
 
+    // Limpar intervalo quando o componente desmontar
     return () => clearInterval(interval);
   }, []);
 
@@ -71,11 +72,7 @@ function Bandas() {
         )}
 
         <div className="grid grid-4">
-          {loading ? (
-            <div style={{gridColumn: "1/-1", textAlign: "center", color: "#888", padding: "40px"}}>
-              Carregando bandas...
-            </div>
-          ) : filtered.length > 0 ? (
+          {filtered.length > 0 ? (
             filtered.map(band => (
               <div 
                 key={band.id} 
