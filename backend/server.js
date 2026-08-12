@@ -409,9 +409,46 @@ app.delete("/api/user/:id", async (req, res) => {
 
 // Posts
 app.get("/api/posts", async (req, res) => {
-  const posts = await db.getAll("SELECT * FROM posts ORDER BY id DESC");
-  const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
-  res.json(posts.map(p => ({ ...p, slug: mkSlug(p.title) })));
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+    const search = req.query.search || null;
+    const source = req.query.source || null;
+    
+    let query = "SELECT * FROM posts WHERE 1=1";
+    let params = [];
+    let paramIdx = 1;
+    
+    if (search) {
+      query += ` AND (title ILIKE $${paramIdx} OR content ILIKE $${paramIdx})`;
+      params.push(`%${search}%`);
+      paramIdx++;
+    }
+    
+    if (source) {
+      if (source === "__manual__") {
+        query += " AND (source IS NULL OR source = '')";
+      } else {
+        query += ` AND source ILIKE $${paramIdx}`;
+        params.push(`%${source}%`);
+        paramIdx++;
+      }
+    }
+    
+    query += " ORDER BY id DESC";
+    
+    if (limit !== null) {
+      query += ` LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
+      params.push(limit, offset);
+    }
+    
+    const posts = await db.getAll(query, params);
+    const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+    
+    res.json(posts.map(p => ({ ...p, slug: mkSlug(p.title) })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post("/api/posts", async (req, res) => {

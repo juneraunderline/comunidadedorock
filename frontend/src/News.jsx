@@ -5,15 +5,18 @@ import API_URL, { getImageUrl } from "./config/api";
 
 function News() {
   const [allPosts, setAllPosts] = useState([]);
-  const [displayCount, setDisplayCount] = useState(8);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [brokenImages, setBrokenImages] = useState(new Set());
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
   const [searchParams] = useSearchParams();
+  const [hasMore, setHasMore] = useState(true);
+  const [sources, setSources] = useState([]);
   const navigate = useNavigate();
   
   const portalFilter = searchParams.get('portal');
+  const PAGE_SIZE = 8;
 
   const formatDatePT = (dateString) => {
     if (!dateString) return "Data desconhecida";
@@ -39,39 +42,56 @@ function News() {
     return `${day}/${month}/${year} às ${hours}:${mins}`;
   };
 
+  // Carregar fontes RSS para o filtro
   useEffect(() => {
-    axios.get(`${API_URL}/api/posts`)
-      .then(res => setAllPosts(res.data))
+    axios.get(`${API_URL}/api/rss-feeds`)
+      .then(res => setSources(res.data.map(f => f.name).sort()))
+      .catch(err => console.error("Erro ao carregar fontes:", err));
+  }, []);
+
+  // Buscar posts iniciais ou quando filtros mudam
+  useEffect(() => {
+    setLoading(true);
+    const filter = portalFilter || sourceFilter;
+    const params = {
+      limit: PAGE_SIZE,
+      offset: 0,
+      search: search || undefined,
+      source: filter || undefined
+    };
+
+    axios.get(`${API_URL}/api/posts`, { params })
+      .then(res => {
+        setAllPosts(res.data);
+        setHasMore(res.data.length === PAGE_SIZE);
+        setLoading(false);
+      })
       .catch(err => {
         console.error("Erro ao buscar posts:", err);
         setError(err.message);
+        setLoading(false);
       });
-  }, []);
+  }, [search, sourceFilter, portalFilter]);
 
-  // Aplicar filtro do portal (query param) ao montar
-  useEffect(() => {
-    if (portalFilter) setSourceFilter(portalFilter);
-  }, [portalFilter]);
+  const loadMore = () => {
+    const filter = portalFilter || sourceFilter;
+    const params = {
+      limit: PAGE_SIZE,
+      offset: allPosts.length,
+      search: search || undefined,
+      source: filter || undefined
+    };
 
-  // Extrair fontes únicas para o select
-  const sources = [...new Set(allPosts.map(p => p.source).filter(Boolean))].sort();
-  const hasManualPosts = allPosts.some(p => !p.source);
+    axios.get(`${API_URL}/api/posts`, { params })
+      .then(res => {
+        setAllPosts(prev => [...prev, ...res.data]);
+        setHasMore(res.data.length === PAGE_SIZE);
+      })
+      .catch(err => console.error("Erro ao carregar mais posts:", err));
+  };
 
-  // Filtrar posts
-  const filtered = allPosts.filter(p => {
-    if (!p.title || !p.content) return false;
-    const matchSearch = !search || p.title.toLowerCase().includes(search.toLowerCase());
-    let matchSource = true;
-    if (sourceFilter === "__manual__") {
-      matchSource = !p.source;
-    } else if (sourceFilter) {
-      matchSource = p.source && p.source.toLowerCase().includes(sourceFilter.toLowerCase());
-    }
-    return matchSearch && matchSource;
-  });
-
-  const visiblePosts = filtered.slice(0, displayCount);
-  const hasMore = filtered.length > displayCount;
+  const visiblePosts = allPosts;
+  const hasManualPosts = true;
 
   const handleImageError = (id) => {
     setBrokenImages(prev => new Set(prev).add(id));
@@ -80,8 +100,15 @@ function News() {
   const clearFilters = () => {
     setSearch("");
     setSourceFilter("");
-    setDisplayCount(8);
   };
+
+  const SkeletonCard = () => (
+    <div className="card skeleton-card">
+      <div className="skeleton skeleton-image"></div>
+      <div className="skeleton skeleton-text"></div>
+      <div className="skeleton skeleton-text short"></div>
+    </div>
+  );
 
   return (
     <div>
@@ -96,12 +123,12 @@ function News() {
             type="text"
             placeholder="🔍 Buscar por título..."
             value={search}
-            onChange={e => { setSearch(e.target.value); setDisplayCount(8); }}
+            onChange={e => { setSearch(e.target.value); }}
             style={{ flex: 1, minWidth: "200px", padding: "10px 14px", background: "#10101a", border: "1px solid #2a2a33", borderRadius: "8px", color: "#fff", fontSize: "14px" }}
           />
           <select
             value={sourceFilter}
-            onChange={e => { setSourceFilter(e.target.value); setDisplayCount(8); }}
+            onChange={e => { setSourceFilter(e.target.value); }}
             style={{ padding: "10px 14px", background: "#10101a", border: "1px solid #2a2a33", borderRadius: "8px", color: "#fff", fontSize: "14px", minWidth: "200px" }}
           >
             <option value="">Todas as fontes</option>
@@ -113,9 +140,9 @@ function News() {
           )}
         </div>
 
-        {(search || sourceFilter) && (
+        {(search || sourceFilter) && !loading && (
           <p style={{ color: "#888", marginBottom: "16px", fontSize: "13px" }}>
-            {filtered.length} notícia{filtered.length !== 1 ? "s" : ""} encontrada{filtered.length !== 1 ? "s" : ""}
+            {allPosts.length} notícia{allPosts.length !== 1 ? "s" : ""} encontrada{allPosts.length !== 1 ? "s" : ""}
             {sourceFilter && sourceFilter !== "__manual__" && <> de <strong>{sourceFilter}</strong></>}
             {sourceFilter === "__manual__" && <> <strong>publicadas manualmente</strong></>}
           </p>
@@ -127,7 +154,16 @@ function News() {
           </div>
         )}
         <div className="grid grid-2">
-          {filtered.length > 0 ? (
+          {loading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : visiblePosts.length > 0 ? (
             <>
               {visiblePosts.map((p, idx) => (
                 <div 
@@ -166,7 +202,7 @@ function News() {
                 <div style={{gridColumn: "1/-1", textAlign: "center", padding: "20px"}}>
                   <button 
                     className="btn btn-primary"
-                    onClick={() => setDisplayCount(displayCount + 8)}
+                    onClick={loadMore}
                     style={{ marginTop: "20px" }}
                   >
                     Ver Mais ↓

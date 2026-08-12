@@ -60,16 +60,16 @@ function App() {
         });
     };
 
-    // Buscar posts na montagem (com retry)
+    // Buscar apenas os posts necessários para a Home inicialmente (melhora performance)
     fetchWithRetry(
-      `${API_URL}/api/posts`,
+      `${API_URL}/api/posts?limit=12`,
       (data) => { setPosts(data); setLoading(false); },
       () => setLoading(false)
     );
 
     // Atualizar posts a cada 30 segundos
     const interval = setInterval(() => {
-      axios.get(`${API_URL}/api/posts`)
+      axios.get(`${API_URL}/api/posts?limit=12`)
         .then(res => setPosts(res.data))
         .catch(err => console.error("❌ Erro ao atualizar posts:", err));
     }, 30000);
