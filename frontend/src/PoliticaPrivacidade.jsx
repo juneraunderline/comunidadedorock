@@ -6,7 +6,7 @@ function PoliticaPrivacidade() {
           <h2>POLÍTICA DE <span className="highlight">PRIVACIDADE</span></h2>
         </div>
         <div style={{ maxWidth: "800px", margin: "0 auto", color: "#ccc", lineHeight: "1.9", fontSize: "15px" }}>
-          <p style={{ color: "#888", marginBottom: "24px" }}>Última atualização: Janeiro de 2026</p>
+          <p style={{ color: "#888", marginBottom: "24px" }}>Última atualização: Outubro de 2026</p>
 
           <h3 style={{ color: "#e9b61e", margin: "32px 0 12px", fontSize: "20px" }}>1. Informações que coletamos</h3>
           <p>O site <strong>Comunidade do Rock</strong> (comunidadedorock.com.br) coleta as seguintes informações:</p>
@@ -23,11 +23,11 @@ function PoliticaPrivacidade() {
             <li>Exibir e gerenciar o cadastro de bandas na plataforma</li>
             <li>Responder mensagens enviadas pelo formulário de contato</li>
             <li>Melhorar a experiência de navegação no site</li>
-            <li>Exibir anúncios personalizados através do Google AdSense</li>
+            <li>Exibir anúncios através do Google AdSense, quando o site estiver aprovado e habilitado para monetização</li>
           </ul>
 
           <h3 style={{ color: "#e9b61e", margin: "32px 0 12px", fontSize: "20px" }}>3. Google AdSense e Cookies</h3>
-          <p>Este site utiliza o Google AdSense para exibição de anúncios. O Google pode utilizar cookies para exibir anúncios com base em visitas anteriores ao nosso site ou a outros sites na internet. Você pode desativar o uso de cookies para publicidade personalizada acessando as <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" style={{ color: "#e9b61e" }}>Configurações de Anúncios do Google</a>.</p>
+          <p>Este site utiliza a tecnologia do Google AdSense e poderá exibir anúncios quando o domínio estiver aprovado e habilitado no programa. Quando os anúncios personalizados estiverem habilitados, o Google e seus parceiros poderão utilizar cookies ou tecnologias semelhantes para personalizar anúncios com base em visitas anteriores ao nosso site ou a outros sites na internet. Você pode desativar o uso de cookies para publicidade personalizada acessando as <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" style={{ color: "#e9b61e" }}>Configurações de Anúncios do Google</a>.</p>
           <p style={{ marginTop: "12px" }}>Terceiros, incluindo o Google, podem usar cookies, web beacons e outras tecnologias de armazenamento para coletar ou receber informações do nosso site e de outros locais na internet, e usar essas informações para fornecer serviços de medição e segmentar anúncios.</p>
 
           <h3 style={{ color: "#e9b61e", margin: "32px 0 12px", fontSize: "20px" }}>4. Compartilhamento de dados</h3>
