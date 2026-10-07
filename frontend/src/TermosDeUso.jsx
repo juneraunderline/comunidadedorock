@@ -6,7 +6,7 @@ function TermosDeUso() {
           <h2>TERMOS DE <span className="highlight">USO</span></h2>
         </div>
         <div style={{ maxWidth: "800px", margin: "0 auto", color: "#ccc", lineHeight: "1.9", fontSize: "15px" }}>
-          <p style={{ color: "#888", marginBottom: "24px" }}>Última atualização: Janeiro de 2026</p>
+          <p style={{ color: "#888", marginBottom: "24px" }}>Última atualização: Outubro de 2026</p>
 
           <h3 style={{ color: "#e9b61e", margin: "32px 0 12px", fontSize: "20px" }}>1. Aceitação dos termos</h3>
           <p>Ao acessar e utilizar o site <strong>Comunidade do Rock</strong> (comunidadedorock.com.br), você concorda com estes Termos de Uso. Se não concordar, por favor, não utilize o site.</p>
@@ -29,8 +29,9 @@ function TermosDeUso() {
           <ul style={{ paddingLeft: "24px", marginBottom: "16px" }}>
             <li>As informações fornecidas são verdadeiras e de sua responsabilidade</li>
             <li>Possui autorização para divulgar o nome, imagem e dados da banda</li>
-            <li>Concorda que o cadastro será analisado antes da publicação</li>
+            <li>Concorda que o cadastro será analisado antes da publicação e poderá ser recusado, editado ou removido quando necessário</li>
           </ul>
+          <p>O usuário também se compromete a não enviar material ilegal, enganoso, ofensivo, discriminatório, que viole direitos autorais ou que contenha publicidade não autorizada. A equipe poderá moderar, recusar ou remover conteúdo enviado por usuários e contas que violem estas regras.</p>
 
           <h3 style={{ color: "#e9b61e", margin: "32px 0 12px", fontSize: "20px" }}>5. Conta de usuário</h3>
           <p>Ao criar uma conta, você é responsável por manter a confidencialidade da sua senha e por todas as atividades realizadas com sua conta. Reservamo-nos o direito de suspender ou encerrar contas que violem estes termos.</p>
