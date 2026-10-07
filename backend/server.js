@@ -217,19 +217,34 @@ function extractRawContent(item) {
 }
 
 function extractContentFromItem(item) {
-  let content = extractRawContent(item)
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/\\s+/g, " ")
-    .trim();
+  const raw = extractRawContent(item)
+    .replace(/<script[\\s\\S]*?<\\/script>/gi, " ")
+    .replace(/<style[\\s\\S]*?<\\/style>/gi, " ");
 
-  if (content.length <= 10) return null;
+  // RSS: usar somente o primeiro parágrafo real da notícia.
+  // Isso evita reproduzir a matéria inteira e mantém o resumo fiel à fonte.
+  const paragraphMatches = raw.match(/<p\\b[^>]*>[\\s\\S]*?<\\/p>/gi) || [];
+  let content = paragraphMatches
+    .map(p => p.replace(/<[^>]+>/g, " "))
+    .map(p => decodeHtmlEntities(p).replace(/\\s+/g, " ").trim())
+    .find(p => p.length > 10);
 
-  // RSS é usado como agregação de notícias: armazenamos apenas um resumo
-  // para não reproduzir integralmente o conteúdo do site de origem.
+  // Alguns feeds não usam <p>; nesse caso, usa o texto limpo como fallback.
+  if (!content) {
+    content = decodeHtmlEntities(raw.replace(/<[^>]+>/g, " "))
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\\s+/g, " ")
+      .trim();
+  }
+
+  if (!content || content.length <= 10) return null;
+
+  // Mantém o resumo em até 200 caracteres, sempre terminando em "...".
   const maxLength = 200;
   if (content.length > maxLength) {
-    content = content.slice(0, maxLength).replace(/\\s+\\S*$/, "").trim() + "...";
+    content = content.slice(0, maxLength - 3).replace(/\\s+\\S*$/, "").trim() + "...";
+  } else {
+    content = content.replace(/[.\\s]+$/, "") + "...";
   }
 
   return content;
