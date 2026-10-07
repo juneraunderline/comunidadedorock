@@ -208,7 +208,6 @@ function News() {
                     {p.source && <small className="card-source-label" style={{display: "block", color: "#999", fontSize: "12px", marginBottom: "8px"}}>Fonte: {p.source}</small>}
                     {!p.source && <small className="card-source-label" style={{display: "block", color: "#e9b61e", fontSize: "12px", marginBottom: "8px"}}>📝 Publicação própria</small>}
                     <h3>{p.title}</h3>
-                    <p>{p.link ? getNewsSummary(p.content) : (p.content || "")}</p>
                     {p.link && (
                       <a
                         href={p.link}
