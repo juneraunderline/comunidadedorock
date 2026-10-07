@@ -842,10 +842,14 @@ app.post("/api/reimport-rss", async (req, res) => {
           if (!(await isValidImage(image))) continue;
           const existing = await db.getOne("SELECT id, image FROM posts WHERE title = $1", [title]);
           if (existing) {
-            if (image && !existing.image) {
-              await db.run("UPDATE posts SET image = $1 WHERE id = $2", [image, existing.id]);
-              updated++;
-            }
+            // Reimportação também atualiza o conteúdo para o resumo seguro
+            // gerado por extractContentFromItem(), evitando manter cópias
+            // integrais de matérias importadas anteriormente.
+            await db.run(
+              "UPDATE posts SET content = $1, link = $2, source = $3, image = COALESCE(image, $4) WHERE id = $5",
+              [content, link, feed.name, image, existing.id]
+            );
+            updated++;
           } else {
             await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
             created++;
