@@ -173,6 +173,22 @@ function NewsDetail() {
               )}
             </div>
             
+            <div className="news-detail-actions">
+              {post.link && (
+                <a 
+                  href={post.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="btn btn-primary"
+                >
+                  Leia Mais no Site Original →
+                </a>
+              )}
+              <button className="btn btn-outline" onClick={() => navigate("/noticias")}>
+                Voltar
+              </button>
+            </div>
+
             <div className="news-detail-share">
               <span>Compartilhe:</span>
               <button 
@@ -209,22 +225,6 @@ function NewsDetail() {
                 title="Compartilhar no Telegram"
               >
                 <i>✈</i> Telegram
-              </button>
-            </div>
-            
-            <div className="news-detail-actions">
-              {post.link && (
-                <a 
-                  href={post.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="btn btn-primary"
-                >
-                  Leia Mais no Site Original →
-                </a>
-              )}
-              <button className="btn btn-outline" onClick={() => navigate("/noticias")}>
-                Voltar
               </button>
             </div>
 
