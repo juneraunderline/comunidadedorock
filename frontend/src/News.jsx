@@ -3,6 +3,20 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 
+function getNewsSummary(content) {
+  if (!content) return "";
+
+  const container = document.createElement("div");
+  container.innerHTML = content;
+  const paragraph = container.querySelector("p");
+  const text = (paragraph?.textContent || container.textContent || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\.{3,}\s*$/, "");
+
+  return text ? `${text}...` : "";
+}
+
 function News() {
   const [allPosts, setAllPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -194,7 +208,7 @@ function News() {
                     {p.source && <small className="card-source-label" style={{display: "block", color: "#999", fontSize: "12px", marginBottom: "8px"}}>Fonte: {p.source}</small>}
                     {!p.source && <small className="card-source-label" style={{display: "block", color: "#e9b61e", fontSize: "12px", marginBottom: "8px"}}>📝 Publicação própria</small>}
                     <h3>{p.title}</h3>
-                    <p>{(p.content || "").slice(0, 200)}{(p.content || "").length > 200 ? "..." : ""}</p>
+                    <p>{p.link ? getNewsSummary(p.content) : (p.content || "")}</p>
                     {p.link && (
                       <a
                         href={p.link}
