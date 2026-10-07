@@ -147,6 +147,11 @@ function NewsDetail() {
             
             <div className="news-detail-text">
               <div dangerouslySetInnerHTML={{ __html: post.content }} />
+              {post.link && (
+                <p style={{ marginTop: "18px", color: "#888", fontSize: "14px" }}>
+                  Este conteúdo é um resumo publicado pela Comunidade do Rock. Para ler a matéria completa, acesse o site da fonte.
+                </p>
+              )}
             </div>
             
             <div className="news-detail-share">
