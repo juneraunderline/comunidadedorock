@@ -217,24 +217,35 @@ function extractRawContent(item) {
 }
 
 function extractContentFromItem(item) {
-  let content = extractRawContent(item)
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/\\s+/g, " ")
-    .trim();
+  const raw = extractRawContent(item)
+    .replace(/<script[\\s\\S]*?<\\/script>/gi, " ")
+    .replace(/<style[\\s\\S]*?<\\/style>/gi, " ");
 
-  if (content.length <= 10) return null;
+  // Para as notícias do RSS, publicar somente o primeiro parágrafo real.
+  // Assim a página da Comunidade do Rock não reproduz a matéria inteira.
+  const paragraphMatches = raw.match(/<p\\b[^>]*>[\\s\\S]*?<\\/p>/gi) || [];
 
-  // RSS é usado como agregação de notícias: armazenamos apenas um resumo
-  // para não reproduzir integralmente o conteúdo do site de origem.
-  const maxLength = 600;
-  if (content.length > maxLength) {
-    content = content.slice(0, maxLength).replace(/\\s+\\S*$/, "").trim() + "...";
+  let content = paragraphMatches
+    .map((paragraph) => paragraph.replace(/<[^>]+>/g, " "))
+    .map((paragraph) => decodeHtmlEntities(paragraph).replace(/\\s+/g, " ").trim())
+    .find((paragraph) => paragraph.length > 10);
+
+  // Alguns feeds não usam <p>. Nesse caso, pega o primeiro bloco de texto.
+  if (!content) {
+    const firstBlock = raw
+      .split(/<br\\s*\\/?>|<\\/div>|<\\/section>|<\\/article>/i)
+      .map((block) => block.replace(/<[^>]+>/g, " "))
+      .map((block) => decodeHtmlEntities(block).replace(/\\s+/g, " ").trim())
+      .find((block) => block.length > 10);
+
+    content = firstBlock || "";
   }
 
-  return content;
-}
+  if (!content || content.length <= 10) return null;
 
+  // Mantém o parágrafo completo, sem cortar arbitrariamente no meio da notícia.
+  return content.replace(/[.\\s]+$/, "") + "...";
+}
 function extractImageFromItem(item, content) {
   // Pegar o HTML bruto do conteúdo (com tags, antes de limpar)
   const rawHtml = extractRawContent(item);
