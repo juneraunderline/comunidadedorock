@@ -1,6 +1,6 @@
-// API Configuration - produção usa o backend oficial hospedado no Fly.io
+// API Configuration - backend oficial no Vercel.
 // Em desenvolvimento, VITE_API_URL pode sobrescrever esta URL.
-const API_URL = import.meta.env.VITE_API_URL || "https://comunidadedorock-api.fly.dev";
+const API_URL = import.meta.env.VITE_API_URL || "https://comunidadedorock-api.vercel.app";
 
 // Converte caminhos relativos de imagem (/images/...) para URL completa do backend
 export function getImageUrl(imagePath) {
