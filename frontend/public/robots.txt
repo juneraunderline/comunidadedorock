@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.comunidadedorock.com.br/sitemap.xml
+Sitemap: https://comunidadedorock.com.br/sitemap.xml
