@@ -4,6 +4,20 @@ import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 import Comentarios from "./Comentarios";
 
+function getNewsSummary(content) {
+  if (!content) return "";
+
+  const container = document.createElement("div");
+  container.innerHTML = content;
+  const paragraph = container.querySelector("p");
+  const text = (paragraph?.textContent || container.textContent || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\.{3,}\s*$/, "");
+
+  return text ? `${text}...` : "";
+}
+
 function NewsDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -49,6 +63,7 @@ function NewsDetail() {
   }, [id]);
 
   const updateMetaTags = (post) => {
+    const summary = getNewsSummary(post.content);
     const pageUrl = window.location.href;
     
     // Remover meta tags antigas
@@ -64,7 +79,7 @@ function NewsDetail() {
     
     // Adicionar novas meta tags Open Graph
     addMetaTag('og:title', post.title);
-    addMetaTag('og:description', post.content.slice(0, 150) + '...');
+    addMetaTag('og:description', summary.slice(0, 160));
     addMetaTag('og:image', getImageUrl(post.image) || 'https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=500&h=300&fit=crop');
     addMetaTag('og:url', pageUrl);
     addMetaTag('og:type', 'article');
@@ -80,7 +95,7 @@ function NewsDetail() {
     
     addTwitterTag('twitter:card', 'summary_large_image');
     addTwitterTag('twitter:title', post.title);
-    addTwitterTag('twitter:description', post.content.slice(0, 150) + '...');
+    addTwitterTag('twitter:description', summary.slice(0, 160));
     addTwitterTag('twitter:image', getImageUrl(post.image) || 'https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=500&h=300&fit=crop');
     
     // Atualizar título da página
@@ -146,11 +161,15 @@ function NewsDetail() {
             </div>
             
             <div className="news-detail-text">
-              <div dangerouslySetInnerHTML={{ __html: post.content }} />
-              {post.link && (
-                <p style={{ marginTop: "18px", color: "#888", fontSize: "14px" }}>
-                  Este conteúdo é um resumo publicado pela Comunidade do Rock. Para ler a matéria completa, acesse o site da fonte.
-                </p>
+              {post.link ? (
+                <>
+                  <p>{getNewsSummary(post.content)}</p>
+                  <p style={{ marginTop: "18px", color: "#888", fontSize: "14px" }}>
+                    Este conteúdo é um resumo publicado pela Comunidade do Rock. Para ler a matéria completa, acesse o site da fonte.
+                  </p>
+                </>
+              ) : (
+                <div dangerouslySetInnerHTML={{ __html: post.content }} />
               )}
             </div>
             
