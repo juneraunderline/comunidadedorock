@@ -116,6 +116,7 @@ async function ensureInitialized() {
     initializationPromise = (async () => {
       await initDb();
       await loadFeeds();
+      await cleanupDuplicatePosts();
       return true;
     })().catch(err => {
       initializationPromise = null;
