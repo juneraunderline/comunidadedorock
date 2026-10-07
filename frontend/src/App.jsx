@@ -18,7 +18,6 @@ import EventDetail from "./EventDetail";
 import Contato from "./Contato";
 import CadastrarBanda from "./CadastrarBanda";
 import Admin from "./Admin";
-import TestImages from "./TestImages";
 import Perfil from "./Perfil";
 import Login from "./Login";
 import Sobre from "./Sobre";
@@ -150,7 +149,6 @@ function App() {
           <Route path="/privacidade" element={<PoliticaPrivacidade />} />
           <Route path="/termos" element={<TermosDeUso />} />
           <Route path="/admin" element={<Admin user={user} />} />
-          <Route path="/test-images" element={<TestImages />} />
         </Routes>
 
         {/* FOOTER */}
