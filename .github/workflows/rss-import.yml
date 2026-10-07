@@ -1,0 +1,27 @@
+name: Importar RSS periodicamente
+
+on:
+  schedule:
+    - cron: "7/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  import-rss:
+    name: Importar notícias RSS
+    runs-on: ubuntu-slim
+    steps:
+      - name: Chamar backend
+        env:
+          BACKEND_URL: ${{ secrets.COMUNIDADE_ROCK_BACKEND_URL }}
+          CRON_SECRET: ${{ secrets.COMUNIDADE_ROCK_CRON_SECRET }}
+        run: |
+          if [ -z "$BACKEND_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Configure os secrets COMUNIDADE_ROCK_BACKEND_URL e COMUNIDADE_ROCK_CRON_SECRET."
+            exit 1
+          fi
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$BACKEND_URL/api/cron/rss"
