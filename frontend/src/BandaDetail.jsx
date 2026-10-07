@@ -11,7 +11,7 @@ function BandaDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/bands`)
+    axios.get(`${API_URL}/api/bands?full=1`)
       .then(res => {
         const selectedBand = res.data.find(b => b.slug === id || b.id === parseInt(id));
         setBand(selectedBand);
