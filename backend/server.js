@@ -545,14 +545,18 @@ app.delete("/api/posts/:id", async (req, res) => {
 // Bandas
 app.get("/api/bands", async (req, res) => {
   try {
-    // Sem cache pra que bandas recém-aprovadas apareçam imediatamente no próximo poll do frontend.
-    res.set("Cache-Control", "no-store");
+    const full = req.query.full === "1";
     const orderBy = req.query.sort === "recent"
       ? "created_at DESC NULLS LAST, id DESC"
       : "name ASC";
-    const limit = req.query.limit ? `LIMIT ${parseInt(req.query.limit)}` : "";
-    const bands = await db.getAll(`SELECT * FROM bands ORDER BY ${orderBy} ${limit}`);
+    const limit = req.query.limit ? Math.max(1, Math.min(parseInt(req.query.limit) || 0, 100)) : null;
+    const fields = full
+      ? "*"
+      : "id, name, genre, city, state, year, image, instagram, facebook, youtube, spotify, bandcamp, site, created_at";
+    const limitSql = limit ? `LIMIT ${limit}` : "";
+    const bands = await db.getAll(`SELECT ${fields} FROM bands ORDER BY ${orderBy} ${limitSql}`);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+    res.set("Cache-Control", full ? "no-store" : "public, s-maxage=30, stale-while-revalidate=120");
     res.json(bands.map(b => ({ ...b, slug: mkSlug(b.name) })));
   } catch (err) {
     console.error("Erro ao buscar bandas:", err.message);
