@@ -1044,7 +1044,7 @@ app.get("/api/debug-rss", async (req, res) => {
 app.get("/api/cron/rss", async (req, res) => {
   try {
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
+    if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
       return res.status(401).json({ error: "Não autorizado" });
     }
     await autoImportRss();
