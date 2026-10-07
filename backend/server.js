@@ -26,9 +26,9 @@ if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir, { recursive: true });
 app.use("/images", express.static(imagesDir));
 const cloudinary = require("cloudinary").v2;
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "dazqhi4ov",
-  api_key: process.env.CLOUDINARY_API_KEY || "814323694122532",
-  api_secret: process.env.CLOUDINARY_API_SECRET || "x2J8Vvl4Cbr2ESL5UgOb5LGYTAg"
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 app.post("/api/upload-image", async (req, res) => {
   try {
@@ -106,6 +106,54 @@ async function loadFeeds() {
 }
 
 // --- FUNÇÕES AUXILIARES ---
+
+// Evita depender do estado de memória de uma máquina/instância.
+// Em Vercel, a função pode ser criada e encerrada entre requisições.
+let initializationPromise = null;
+
+async function ensureInitialized() {
+  if (!initializationPromise) {
+    initializationPromise = (async () => {
+      await initDb();
+      await loadFeeds();
+      return true;
+    })().catch(err => {
+      initializationPromise = null;
+      throw err;
+    });
+  }
+  return initializationPromise;
+}
+
+async function postAlreadyExists(title, link) {
+  if (link) {
+    const byLink = await db.getOne("SELECT id FROM posts WHERE link = $1 LIMIT 1", [link]);
+    if (byLink) return true;
+  }
+  if (title) {
+    const byTitle = await db.getOne("SELECT id FROM posts WHERE title = $1 LIMIT 1", [title]);
+    if (byTitle) return true;
+  }
+  return false;
+}
+
+async function cleanupDuplicatePosts() {
+  const duplicateGroups = await db.getAll(
+    "SELECT title, COUNT(*)::int AS total FROM posts WHERE title IS NOT NULL AND title <> '' GROUP BY title HAVING COUNT(*) > 1"
+  );
+  let total = 0;
+  for (const group of duplicateGroups) {
+    const rows = await db.getAll(
+      "SELECT id FROM posts WHERE title = $1 ORDER BY id ASC",
+      [group.title]
+    );
+    for (const row of rows.slice(1)) {
+      await db.run("DELETE FROM posts WHERE id = $1", [row.id]);
+      total++;
+    }
+  }
+  return { total };
+}
 
 function decodeHtmlEntities(text) {
   if (!text) return text;
@@ -220,6 +268,17 @@ async function isValidImage(imageUrl) {
   } catch (e) { return false; }
 }
 
+// Inicializa o banco sob demanda na primeira requisição.
+app.use(async (req, res, next) => {
+  try {
+    await ensureInitialized();
+    next();
+  } catch (err) {
+    console.error("❌ Falha ao inicializar backend:", err);
+    res.status(503).json({ error: "Banco de dados indisponível" });
+  }
+});
+
 const BROWSER_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
   "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -265,11 +324,11 @@ async function autoImportRss() {
           if (!title) continue;
 
           // Verificar se já existe ANTES de validar imagem (evita HEAD requests desnecessários)
+          const link = extractLinkFromItem(itemXml);
           if (await postAlreadyExists(title, link)) continue;
 
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const image = extractImageFromItem(itemXml, content);
-          const link = extractLinkFromItem(itemXml);
 
           if (!image) continue;
           if (!(await isValidImage(image))) continue;
@@ -885,7 +944,8 @@ function resolveImage(img) {
   if (!img) return fallback;
   if (img.includes("fbcdn.net") || img.includes("facebook.com") || img.includes("scontent")) return fallback;
   if (img.startsWith("http")) return img;
-  return "https://comunidadedorock-api.fly.dev" + img;
+  const publicApiUrl = (process.env.PUBLIC_API_URL || "").replace(/\/$/, "");
+  return publicApiUrl ? publicApiUrl + img : img;
 }
 function isCrawler(ua) {
   const l = (ua || "").toLowerCase();
@@ -979,28 +1039,32 @@ app.get("/api/debug-rss", async (req, res) => {
   }
 });
 
-// Inicializar banco e iniciar servidor
-async function startServer() {
-  await initDb();
-  await loadFeeds();
-  await cleanupDuplicatePosts();
-  // Remover admins duplicados
-  const admins = await db.getAll("SELECT id FROM users WHERE username = 'admin' ORDER BY id ASC").catch(() => []);
-  if (admins.length > 1) {
-    for (let i = 1; i < admins.length; i++) {
-      await db.run("DELETE FROM users WHERE id = $1", [admins[i].id]).catch(() => {});
+// Inicialização compatível com Vercel e desenvolvimento local.
+// Em produção serverless, o banco é inicializado sob demanda pelo middleware acima.
+app.get("/api/cron/rss", async (req, res) => {
+  try {
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ error: "Não autorizado" });
     }
+    await autoImportRss();
+    res.json({ success: true, message: "Importação RSS concluída" });
+  } catch (err) {
+    console.error("Erro no cron RSS:", err);
+    res.status(500).json({ error: err.message });
   }
-  // Importar RSS após 10s para não travar o startup
-  setTimeout(autoImportRss, 10000);
-  // Manter o servidor acordado (ping a cada 14 minutos)
-  setInterval(() => {
-    fetchFunc("https://comunidadedorock-api.fly.dev/api/posts").catch(() => {});
-  }, 14 * 60 * 1000);
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`🚀 Server ON: http://localhost:${PORT}`));
-}
-startServer().catch(err => {
-  console.error("❌ Erro ao iniciar servidor:", err);
-  process.exit(1);
 });
+
+module.exports = app;
+
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  ensureInitialized()
+    .then(() => {
+      app.listen(PORT, () => console.log(`🚀 Server ON: http://localhost:${PORT}`));
+    })
+    .catch(err => {
+      console.error("❌ Erro ao iniciar servidor:", err);
+      process.exit(1);
+    });
+}
