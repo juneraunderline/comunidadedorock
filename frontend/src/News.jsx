@@ -194,7 +194,19 @@ function News() {
                     {p.source && <small className="card-source-label" style={{display: "block", color: "#999", fontSize: "12px", marginBottom: "8px"}}>Fonte: {p.source}</small>}
                     {!p.source && <small className="card-source-label" style={{display: "block", color: "#e9b61e", fontSize: "12px", marginBottom: "8px"}}>📝 Publicação própria</small>}
                     <h3>{p.title}</h3>
-                    <p>{(p.content || "").slice(0, 100)}...</p>
+                    <p>{(p.content || "").slice(0, 200)}{(p.content || "").length > 200 ? "..." : ""}</p>
+                    {p.link && (
+                      <a
+                        href={p.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ marginTop: "12px", display: "inline-flex", textDecoration: "none" }}
+                      >
+                        Leia Mais →
+                      </a>
+                    )}
                   </div>
                 </div>
               ))}
