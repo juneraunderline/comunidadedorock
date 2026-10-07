@@ -108,7 +108,7 @@ function Home({ posts }) {
 
     // Atualizar a cada 30 segundos
     const interval = setInterval(() => {
-      axios.get(`${API_URL}/api/bands?sort=recent`)
+      axios.get(`${API_URL}/api/bands?sort=recent&limit=6`)
         .then(res => setBands(res.data));
 
       axios.get(`${API_URL}/api/interviews`)
