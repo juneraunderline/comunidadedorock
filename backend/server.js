@@ -227,7 +227,7 @@ function extractContentFromItem(item) {
 
   // RSS é usado como agregação de notícias: armazenamos apenas um resumo
   // para não reproduzir integralmente o conteúdo do site de origem.
-  const maxLength = 600;
+  const maxLength = 200;
   if (content.length > maxLength) {
     content = content.slice(0, maxLength).replace(/\\s+\\S*$/, "").trim() + "...";
   }
