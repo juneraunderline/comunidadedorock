@@ -595,7 +595,7 @@ export default function Admin({ user: currentUser }) {
       const res = await axios.post(`${API_URL}/api/reimport-rss`, { feeds: rssFeeds });
 
       if (res.data && res.data.success) {
-        alert(`Imagens atualizadas em ${res.data.updated} notícia(s) e ${res.data.created} novas criadas!`);
+        alert(`Reimportação concluída: ${res.data.updated} notícia(s) atualizadas com resumo seguro e ${res.data.created} novas criadas!`);
         fetchData();
       } else {
         alert("Não foi possível reimportar feeds");
