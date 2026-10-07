@@ -217,8 +217,22 @@ function extractRawContent(item) {
 }
 
 function extractContentFromItem(item) {
-  let content = extractRawContent(item).replace(/<[^>]+>/g, "").trim();
-  return content.length > 10 ? content : null;
+  let content = extractRawContent(item)
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\\s+/g, " ")
+    .trim();
+
+  if (content.length <= 10) return null;
+
+  // RSS é usado como agregação de notícias: armazenamos apenas um resumo
+  // para não reproduzir integralmente o conteúdo do site de origem.
+  const maxLength = 600;
+  if (content.length > maxLength) {
+    content = content.slice(0, maxLength).replace(/\\s+\\S*$/, "").trim() + "...";
+  }
+
+  return content;
 }
 
 function extractImageFromItem(item, content) {
