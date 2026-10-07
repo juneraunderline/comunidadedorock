@@ -21,7 +21,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
-const imagesDir = path.join(__dirname, "public", "images");
+const imagesDir = process.env.VERCEL ? path.join("/tmp", "comunidadedorock-images") : path.join(__dirname, "public", "images");
 if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir, { recursive: true });
 app.use("/images", express.static(imagesDir));
 const cloudinary = require("cloudinary").v2;
