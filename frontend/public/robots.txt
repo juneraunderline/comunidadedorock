@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
+Disallow: /admin
+Disallow: /login
+Disallow: /perfil
+
 Sitemap: https://comunidadedorock.com.br/sitemap.xml
