@@ -221,31 +221,35 @@ function extractContentFromItem(item) {
     .replace(/<script[\\s\\S]*?<\\/script>/gi, " ")
     .replace(/<style[\\s\\S]*?<\\/style>/gi, " ");
 
-  // Para as notícias do RSS, publicar somente o primeiro parágrafo real.
-  // Assim a página da Comunidade do Rock não reproduz a matéria inteira.
+  // RSS: usar somente o primeiro parágrafo real da notícia.
+  // Isso evita reproduzir a matéria inteira e mantém o resumo fiel à fonte.
   const paragraphMatches = raw.match(/<p\\b[^>]*>[\\s\\S]*?<\\/p>/gi) || [];
-
   let content = paragraphMatches
-    .map((paragraph) => paragraph.replace(/<[^>]+>/g, " "))
-    .map((paragraph) => decodeHtmlEntities(paragraph).replace(/\\s+/g, " ").trim())
-    .find((paragraph) => paragraph.length > 10);
+    .map(p => p.replace(/<[^>]+>/g, " "))
+    .map(p => decodeHtmlEntities(p).replace(/\\s+/g, " ").trim())
+    .find(p => p.length > 10);
 
-  // Alguns feeds não usam <p>. Nesse caso, pega o primeiro bloco de texto.
+  // Alguns feeds não usam <p>; nesse caso, usa o texto limpo como fallback.
   if (!content) {
-    const firstBlock = raw
-      .split(/<br\\s*\\/?>|<\\/div>|<\\/section>|<\\/article>/i)
-      .map((block) => block.replace(/<[^>]+>/g, " "))
-      .map((block) => decodeHtmlEntities(block).replace(/\\s+/g, " ").trim())
-      .find((block) => block.length > 10);
-
-    content = firstBlock || "";
+    content = decodeHtmlEntities(raw.replace(/<[^>]+>/g, " "))
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\\s+/g, " ")
+      .trim();
   }
 
   if (!content || content.length <= 10) return null;
 
-  // Mantém o parágrafo completo, sem cortar arbitrariamente no meio da notícia.
-  return content.replace(/[.\\s]+$/, "") + "...";
+  // Mantém o resumo em até 200 caracteres, sempre terminando em "...".
+  const maxLength = 200;
+  if (content.length > maxLength) {
+    content = content.slice(0, maxLength - 3).replace(/\\s+\\S*$/, "").trim() + "...";
+  } else {
+    content = content.replace(/[.\\s]+$/, "") + "...";
+  }
+
+  return content;
 }
+
 function extractImageFromItem(item, content) {
   // Pegar o HTML bruto do conteúdo (com tags, antes de limpar)
   const rawHtml = extractRawContent(item);
