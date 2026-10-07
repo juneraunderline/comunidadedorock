@@ -287,6 +287,17 @@ async function autoImportRss() {
   }
 }
 setInterval(autoImportRss, 300000); // 5 minutos
+// Diagnóstico seguro do backend/banco de produção
+app.get("/api/health", async (req, res) => {
+  try {
+    await pool.query("SELECT 1");
+    res.json({ status: "ok", database: "connected" });
+  } catch (err) {
+    console.error("Health check - banco:", err.message);
+    res.status(503).json({ status: "error", database: "unavailable" });
+  }
+});
+
 // --- ROTAS DA API ---
 
 // Autenticação
