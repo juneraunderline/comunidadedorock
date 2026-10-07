@@ -202,7 +202,6 @@ function Home({ posts }) {
                   <div className="card-content">
                     <small className="card-date" style={{ marginBottom: "6px" }}>{formatDatePT(p.created_at)}</small>
                     <h3>{p.title}</h3>
-                    <p>{(p.content || "").slice(0, 200)}{(p.content || "").length > 200 ? "..." : ""}</p>
                     {p.link && (
                       <a
                         href={p.link}
