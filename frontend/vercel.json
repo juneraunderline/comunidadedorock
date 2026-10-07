@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/og/:path*", "destination": "https://comunidadedorock.onrender.com/og/:path*" },
+    { "source": "/og/:path*", "destination": "https://comunidadedorock-api.vercel.app/og/:path*" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
