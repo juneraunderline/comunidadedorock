@@ -1,0 +1,70 @@
+name: Migrar Neon para Railway
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Instalar cliente PostgreSQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Verificar origem e destino
+        env:
+          SOURCE_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          TARGET_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+        run: |
+          test -n "$SOURCE_DATABASE_URL" || { echo "NEON_DATABASE_URL não configurada"; exit 1; }
+          test -n "$TARGET_DATABASE_URL" || { echo "RAILWAY_DATABASE_URL não configurada"; exit 1; }
+          echo "Conexões configuradas."
+
+      - name: Testar conexão com Neon
+        env:
+          SOURCE_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          psql "$SOURCE_DATABASE_URL" -v ON_ERROR_STOP=1 -c "SELECT current_database(), current_user;"
+
+      - name: Testar conexão com Railway
+        env:
+          TARGET_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+        run: |
+          psql "$TARGET_DATABASE_URL" -v ON_ERROR_STOP=1 -c "SELECT current_database(), current_user;"
+
+      - name: Migrar estrutura e dados
+        env:
+          SOURCE_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          TARGET_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+        run: |
+          pg_dump "$SOURCE_DATABASE_URL" \
+            --no-owner \
+            --no-acl \
+            --format=plain \
+            --file=/tmp/comunidade-do-rock.sql
+
+          psql "$TARGET_DATABASE_URL" -v ON_ERROR_STOP=1 \
+            -f /tmp/comunidade-do-rock.sql
+
+      - name: Validar tabelas migradas
+        env:
+          TARGET_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+        run: |
+          psql "$TARGET_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT
+            table_name,
+            (xpath('/row/c/text()', query_to_xml(
+              format('SELECT count(*) AS c FROM %I', table_name),
+              true, true, ''
+            )))[1]::text::bigint AS rows
+          FROM information_schema.tables
+          WHERE table_schema = 'public'
+            AND table_type = 'BASE TABLE'
+          ORDER BY table_name;
+          SQL
+
+      - name: Concluído
+        run: echo "Migração Neon -> Railway concluída."
