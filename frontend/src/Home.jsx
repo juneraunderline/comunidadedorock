@@ -70,7 +70,7 @@ function Home({ posts }) {
 
   useEffect(() => {
     // Funcao de retry automatico
-    const fetchWithRetry = (url, onSuccess, onError, retries = 5) => {
+    const fetchWithRetry = (url, onSuccess, onError, retries = 1) => {
       axios.get(url)
         .then(res => onSuccess(res.data))
         .catch(() => {
