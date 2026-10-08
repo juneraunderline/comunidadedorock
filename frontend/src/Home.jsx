@@ -92,13 +92,13 @@ function Home({ posts }) {
       );
       // Buscar entrevistas (com retry)
       fetchWithRetry(
-        `${API_URL}/api/interviews`,
+        `${API_URL}/api/interviews?limit=3`,
         (data) => { setInterviews(data); setLoadingInterviews(false); },
         () => setLoadingInterviews(false)
       );
       // Buscar eventos (com retry)
       fetchWithRetry(
-        `${API_URL}/api/events`,
+        `${API_URL}/api/events?limit=3`,
         (data) => { setEvents(data); setLoadingEvents(false); },
         () => setLoadingEvents(false)
       );
@@ -106,20 +106,8 @@ function Home({ posts }) {
 
     loadData();
 
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(() => {
-      axios.get(`${API_URL}/api/bands?sort=recent&limit=6`)
-        .then(res => setBands(res.data));
+    // Sem polling contínuo: as listagens públicas são servidas com cache.
 
-      axios.get(`${API_URL}/api/interviews`)
-        .then(res => setInterviews(res.data));
-
-      axios.get(`${API_URL}/api/events`)
-        .then(res => setEvents(res.data));
-    }, 30000);
-
-    // Limpar intervalo quando o componente desmontar
-    return () => clearInterval(interval);
   }, []);
 
   return (
