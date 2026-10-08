@@ -15,12 +15,8 @@ function Bandas() {
       .then(res => { setBands(res.data); setLoading(false); })
       .catch(() => setLoading(false));
 
-    const interval = setInterval(() => {
-      axios.get(`${API_URL}/api/bands`)
-        .then(res => setBands(res.data));
-    }, 60000);
+    // Sem polling contínuo: a listagem pública usa cache.
 
-    return () => clearInterval(interval);
   }, []);
 
   const genres = [...new Set(bands.map(b => b.genre).filter(Boolean))].sort();
