@@ -342,9 +342,13 @@ async function extractImageFromArticlePage(link) {
     const html = await response.text();
 
     const getMeta = (name) => {
-      const r1 = new RegExp('<meta[^>]+(?:property|name)=["\\\\\\']' + name + '["\\\\\\'][^>]+content=["\\\\\\']([^"\\\\\\']+)["\\\\\\'][^>]*>', 'i');
-      const r2 = new RegExp('<meta[^>]+content=["\\\\\\']([^"\\\\\\']+)["\\\\\\'][^>]+(?:property|name)=["\\\\\\']' + name + '["\\\\\\'][^>]*>', 'i');
-      return html.match(r1)?.[1] || html.match(r2)?.[1] || null;
+      const tags = html.match(/<meta\\b[^>]*>/gi) || [];
+      for (const tag of tags) {
+        const key = tag.match(/\\b(?:property|name)\\s*=\\s*["']([^"']+)["']/i)?.[1];
+        const content = tag.match(/\\bcontent\\s*=\\s*["']([^"']+)["']/i)?.[1];
+        if (key?.toLowerCase() === name.toLowerCase() && content) return content;
+      }
+      return null;
     };
 
     // JSON-LD do próprio artigo costuma apontar para a imagem destacada.
