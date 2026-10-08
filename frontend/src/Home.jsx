@@ -86,7 +86,7 @@ function Home({ posts }) {
     const loadData = () => {
       // Buscar bandas (com retry, ordenadas pelas mais recentes)
       fetchWithRetry(
-        `${API_URL}/api/bands?sort=recent&limit=6`,
+        `${API_URL}/api/bands?sort=recent&limit=3`,
         (data) => { setBands(data); setLoadingBands(false); },
         () => setLoadingBands(false)
       );
@@ -273,7 +273,7 @@ function Home({ posts }) {
 	              <SkeletonCard />
 	            </>
 	          ) : bands.length > 0 ? (
-            bands.slice(0, 6).map(band => (
+            bands.slice(0, 3).map(band => (
               <div 
                 key={band.id} 
                 className="card"
