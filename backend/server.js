@@ -475,7 +475,7 @@ async function autoImportRss() {
     isImporting = false;
   }
 }
-setInterval(autoImportRss, 300000); // 5 minutos
+// Não executar importação RSS em loop dentro da Vercel Serverless Function.\n// A importação é disparada exclusivamente pelo endpoint /api/cron/rss via GitHub Actions.\n// Isso evita chamadas externas contínuas que podem derrubar a Function e fazer o conteúdo da API parecer indisponível.
 // Diagnóstico seguro do backend/banco de produção
 app.get("/api/health", async (req, res) => {
   try {
