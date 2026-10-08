@@ -2,6 +2,20 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 
+function normalizeInstagramUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^\/\//.test(raw)) return `https:${raw}`;
+
+  const username = raw
+    .replace(/^\/+/, "")
+    .replace(/^(?:www\.)?instagram\.com\//i, "")
+    .replace(/^@/, "")
+    .replace(/\/$/, "");
+  return username ? `https://www.instagram.com/${username}/` : "";
+}
+
 export default function Admin({ user: currentUser }) {
   const [posts, setPosts] = useState([]);
   const [bands, setBands] = useState([]);
@@ -308,7 +322,7 @@ export default function Admin({ user: currentUser }) {
       biography: editingBand.biography,
       contact: editingBand.contact,
       image: editingBand.image,
-      instagram: editingBand.instagram,
+      instagram: normalizeInstagramUrl(editingBand.instagram),
       facebook: editingBand.facebook,
       youtube: editingBand.youtube,
       spotify: editingBand.spotify,
