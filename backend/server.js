@@ -680,7 +680,57 @@ app.delete("/api/posts/:id", async (req, res) => {
 });
 
 // Bandas
+app.get("/api/band-genres", async (req, res) => {
+  try {
+    res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=900");
+    const rows = await db.getAll("SELECT DISTINCT genre FROM bands WHERE genre IS NOT NULL AND TRIM(genre) <> '' ORDER BY genre ASC");
+    res.json(rows.map(row => row.genre));
+  } catch (err) {
+    console.error("Erro ao buscar gêneros:", err.message);
+    res.status(500).json({ error: "Erro ao carregar gêneros" });
+  }
+});
+
+// Detalhe público: busca somente a banda solicitada, sem baixar a tabela inteira.
+app.get("/api/bands/:id", async (req, res) => {
+  try {
+    const key = req.params.id;
+    let band = null;
+    if (/^\\d+$/.test(key)) {
+      band = await db.getOne("SELECT * FROM bands WHERE id = $1", [Number(key)]);
+    } else {
+      const slugExpression = "regexp_replace(regexp_replace(translate(lower(name), 'áàâãäéèêëíìîïóòôõöúùûüçñ', 'aaaaaeeeeiiiiooooouuuucn'), '[^a-z0-9]+', '-', 'g'), '(^-+|-+$)', '', 'g')";
+      band = await db.getOne(`SELECT * FROM bands WHERE ${slugExpression} = $1 LIMIT 1`, [key]);
+    }
+    if (!band) return res.status(404).json({ error: "Banda não encontrada" });
+    const slug = band.name ? band.name.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9\\s-]/g,"").replace(/\\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+    res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=900");
+    res.json({ ...band, slug });
+  } catch (err) {
+    console.error("Erro ao buscar banda:", err.message);
+    res.status(500).json({ error: "Erro ao carregar banda" });
+  }
+});
+
 app.get("/api/bands", async (req, res) => {
+  try {
+    const full = req.query.full === "1";
+    const orderBy = req.query.sort === "recent"
+      ? "created_at DESC NULLS LAST, id DESC"
+      : "name ASC";
+    const requestedLimit = parseInt(req.query.limit, 10);
+    const limit = full ? null : Math.max(1, Math.min(Number.isFinite(requestedLimit) && requestedLimit > 0 ? requestedLimit : 12, 50));
+    const requestedOffset = parseInt(req.query.offset, 10);
+    const offset = Number.isFinite(requestedOffset) && requestedOffset > 0 ? Math.min(requestedOffset, 100000) : 0;
+    const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 100) : "";
+    const genre = typeof req.query.genre === "string" ? req.query.genre.trim().slice(0, 100) : "";
+    const fields = full
+      ? "*"
+      : "id, name, genre, city, state, year, image, instagram, facebook, youtube, spotify, bandcamp, site, created_at";
+    const conditions = [];
+    const params = [];
+    if (search) {
+      params.push(`%${search.replace(/[\\%_]/g, "\\app.get("/api/bands", async (req, res) => {
   try {
     const full = req.query.full === "1";
     const orderBy = req.query.sort === "recent"
@@ -693,6 +743,30 @@ app.get("/api/bands", async (req, res) => {
     const limitSql = limit ? `LIMIT ${limit}` : "";
     const bands = await db.getAll(`SELECT ${fields} FROM bands ORDER BY ${orderBy} ${limitSql}`);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+    res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
+    res.json(bands.map(b => ({ ...b, slug: mkSlug(b.name) })));
+  } catch (err) {
+    console.error("Erro ao buscar bandas:", err.message);
+    res.status(500).json({ error: "Erro ao carregar bandas" });
+  }
+});")}%`);
+      conditions.push(`(name ILIKE ${params.length} ESCAPE '\\\\' OR genre ILIKE ${params.length} ESCAPE '\\\\' OR city ILIKE ${params.length} ESCAPE '\\\\')`);
+    }
+    if (genre) {
+      params.push(genre);
+      conditions.push(`genre = ${params.length}`);
+    }
+    let sql = `SELECT ${fields} FROM bands`;
+    if (conditions.length) sql += " WHERE " + conditions.join(" AND ");
+    sql += ` ORDER BY ${orderBy}`;
+    if (limit) {
+      params.push(limit);
+      sql += ` LIMIT ${params.length}`;
+      params.push(offset);
+      sql += ` OFFSET ${params.length}`;
+    }
+    const bands = await db.getAll(sql, params);
+    const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9\\s-]/g,"").replace(/\\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
     res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
     res.json(bands.map(b => ({ ...b, slug: mkSlug(b.name) })));
   } catch (err) {
