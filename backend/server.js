@@ -653,7 +653,7 @@ app.get("/api/posts", async (req, res) => {
     const posts = await db.getAll(query, params);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
     
-    res.set("Cache-Control", full ? "no-store" : "public, s-maxage=60, stale-while-revalidate=300");
+    res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
     res.json(posts.map(p => ({ ...p, slug: mkSlug(p.title) })));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -693,7 +693,7 @@ app.get("/api/bands", async (req, res) => {
     const limitSql = limit ? `LIMIT ${limit}` : "";
     const bands = await db.getAll(`SELECT ${fields} FROM bands ORDER BY ${orderBy} ${limitSql}`);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
-    res.set("Cache-Control", full ? "no-store" : "public, s-maxage=30, stale-while-revalidate=120");
+    res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
     res.json(bands.map(b => ({ ...b, slug: mkSlug(b.name) })));
   } catch (err) {
     console.error("Erro ao buscar bandas:", err.message);
@@ -760,7 +760,7 @@ app.get("/api/interviews", async (req, res) => {
   const fields = full ? "*" : "id, title, artist, image, date, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 300) AS summary";
   const limitSql = limit ? `LIMIT ${limit}` : "";
   const interviews = await db.getAll(`SELECT ${fields} FROM interviews ORDER BY id DESC ${limitSql}`);
-  res.set("Cache-Control", full ? "no-store" : "public, s-maxage=60, stale-while-revalidate=300");
+  res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
   res.json(interviews);
 });
 
@@ -791,7 +791,7 @@ app.get("/api/events", async (req, res) => {
   const limitSql = limit ? `LIMIT ${limit}` : "";
   const events = await db.getAll(`SELECT ${fields} FROM events ORDER BY date ASC ${limitSql}`);
   const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
-  res.set("Cache-Control", full ? "no-store" : "public, s-maxage=60, stale-while-revalidate=300");
+  res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
   res.json(events.map(e => ({ ...e, slug: mkSlug(e.title) })));
 });
 
@@ -824,6 +824,7 @@ app.get("/api/comments/:pageType/:pageId", async (req, res) => {
       "SELECT * FROM comments WHERE page_type = $1 AND page_id = $2 ORDER BY created_at DESC",
       [pageType, parseInt(pageId)]
     );
+    res.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=30");
     res.json(comments);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -858,7 +859,10 @@ app.delete("/api/comments/:id", async (req, res) => {
 });
 
 // Feeds RSS
-app.get("/api/rss-feeds", (req, res) => res.json(rssFeeds));
+app.get("/api/rss-feeds", (req, res) => {
+  res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=900");
+  res.json(rssFeeds);
+});
 
 app.post("/api/rss-feeds", async (req, res) => {
   const { name, url, logo } = req.body;
