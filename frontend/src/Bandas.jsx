@@ -5,6 +5,13 @@ import API_URL, { getImageUrl } from "./config/api";
 
 const PAGE_SIZE = 3;
 
+// Entrega miniaturas leves na grade, sem alterar a imagem original da página da banda.
+function getBandThumbnailUrl(image) {
+  const url = getImageUrl(image);
+  if (!url || !url.includes("res.cloudinary.com/") || !url.includes("/upload/")) return url;
+  return url.replace("/upload/", "/upload/f_auto,q_auto,w_480,c_limit/");
+}
+
 function Bandas() {
   const navigate = useNavigate();
   const [bands, setBands] = useState([]);
@@ -126,7 +133,7 @@ function Bandas() {
                 style={{ cursor: "pointer" }}
               >
                 <div className="card-image">
-                  <img src={getImageUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={band.name} loading="lazy" />
+                  <img src={getBandThumbnailUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"} alt={band.name} loading="lazy" />
                 </div>
                 <div className="card-content">
                   <h3>{band.name}</h3>
