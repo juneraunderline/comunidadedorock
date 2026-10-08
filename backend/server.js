@@ -342,17 +342,17 @@ async function extractImageFromArticlePage(link) {
     const html = await response.text();
 
     const getMeta = (name) => {
-      const tags = html.match(/<meta\\b[^>]*>/gi) || [];
+      const tags = html.match(/<meta\b[^>]*>/gi) || [];
       for (const tag of tags) {
-        const key = tag.match(/\\b(?:property|name)\\s*=\\s*["']([^"']+)["']/i)?.[1];
-        const content = tag.match(/\\bcontent\\s*=\\s*["']([^"']+)["']/i)?.[1];
+        const key = tag.match(/\b(?:property|name)\s*=\s*["']([^"']+)["']/i)?.[1];
+        const content = tag.match(/\bcontent\s*=\s*["']([^"']+)["']/i)?.[1];
         if (key?.toLowerCase() === name.toLowerCase() && content) return content;
       }
       return null;
     };
 
     // JSON-LD do próprio artigo costuma apontar para a imagem destacada.
-    const ldMatches = [...html.matchAll(/<script[^>]+type=["']application\/ld\\+json["'][^>]*>([\\s\\S]*?)<\/script>/gi)];
+    const ldMatches = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
     for (const match of ldMatches) {
       try {
         const data = JSON.parse(match[1].trim());
@@ -374,8 +374,8 @@ async function extractImageFromArticlePage(link) {
 
     // Fallback: imagem do conteúdo do artigo, incluindo lazy-load.
     const articleHtml =
-      html.match(/<article[\\s\\S]*?<\\/article>/i)?.[0] ||
-      html.match(/<main[\\s\\S]*?<\\/main>/i)?.[0] ||
+      html.match(/<article[\s\S]*?<\/article>/i)?.[0] ||
+      html.match(/<main[\s\S]*?<\/main>/i)?.[0] ||
       html;
 
     const imageMatch = articleHtml.match(
