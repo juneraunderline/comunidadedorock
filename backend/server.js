@@ -753,7 +753,7 @@ app.delete("/api/pending-bands/:id", async (req, res) => {
 app.get("/api/interviews", async (req, res) => {
   const full = req.query.full === "1";
   const limit = req.query.limit ? Math.max(1, Math.min(parseInt(req.query.limit) || 0, 50)) : null;
-  const fields = full ? "*" : "id, title, artist, image, date, created_at";
+  const fields = full ? "*" : "id, title, artist, image, date, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 300) AS summary";
   const limitSql = limit ? `LIMIT ${limit}` : "";
   const interviews = await db.getAll(`SELECT ${fields} FROM interviews ORDER BY id DESC ${limitSql}`);
   res.set("Cache-Control", full ? "no-store" : "public, s-maxage=60, stale-while-revalidate=300");
@@ -783,7 +783,7 @@ app.delete("/api/interviews/:id", async (req, res) => {
 app.get("/api/events", async (req, res) => {
   const full = req.query.full === "1";
   const limit = req.query.limit ? Math.max(1, Math.min(parseInt(req.query.limit) || 0, 100)) : null;
-  const fields = full ? "*" : "id, title, artist, date, time, location, city, state, image, ticket_link, description, created_at";
+  const fields = full ? "*" : "id, title, artist, date, time, location, city, state, image, ticket_link, LEFT(COALESCE(description, ''), 300) AS description, created_at";
   const limitSql = limit ? `LIMIT ${limit}` : "";
   const events = await db.getAll(`SELECT ${fields} FROM events ORDER BY date ASC ${limitSql}`);
   const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
