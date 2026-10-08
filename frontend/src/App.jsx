@@ -66,14 +66,8 @@ function App() {
       () => setLoading(false)
     );
 
-    // Atualizar posts a cada 30 segundos
-    const interval = setInterval(() => {
-      axios.get(`${API_URL}/api/posts?limit=12`)
-        .then(res => setPosts(res.data))
-        .catch(err => console.error("❌ Erro ao atualizar posts:", err));
-    }, 30000);
-
-    return () => clearInterval(interval);
+    // Sem polling contínuo: a API pública usa cache na borda.
+    return undefined;
   }, []);
 
   return (
