@@ -49,7 +49,7 @@ function Entrevistas() {
                 <div className="card-content">
                   <h3>{interview.title}</h3>
                   <p><strong>{interview.artist}</strong></p>
-                  <p>{interview.content ? interview.content.substring(0, 80) : "Sem descrição"}...</p>
+                  <p>{interview.summary ? interview.summary.replace(/<[^>]+>/g, "").substring(0, 80) : "Sem descrição"}...</p>
                   <small>Publicado em {interview.date || new Date(interview.created_at).toLocaleDateString("pt-BR")}</small>
                 </div>
               </div>
