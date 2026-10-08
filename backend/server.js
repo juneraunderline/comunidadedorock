@@ -116,7 +116,8 @@ async function ensureInitialized() {
     initializationPromise = (async () => {
       await initDb();
       await loadFeeds();
-      await cleanupDuplicatePosts();
+      // A limpeza de duplicatas não deve rodar em toda requisição/cold start.
+      // Ela é executada somente pelo endpoint manual /api/cleanup-duplicates.
       return true;
     })().catch(err => {
       initializationPromise = null;
