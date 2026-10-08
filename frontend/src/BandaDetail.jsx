@@ -11,12 +11,21 @@ function BandaDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/bands?full=1`)
+    let active = true;
+    setLoading(true);
+    setBand(null);
+    axios.get(`${API_URL}/api/bands/${encodeURIComponent(id)}`)
       .then(res => {
-        const selectedBand = res.data.find(b => b.slug === id || b.id === parseInt(id));
-        setBand(selectedBand);
+        if (!active) return;
+        setBand(res.data);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setBand(null);
         setLoading(false);
       });
+    return () => { active = false; };
   }, [id]);
 
   if (loading) {
