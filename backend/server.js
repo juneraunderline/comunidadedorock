@@ -285,29 +285,103 @@ async function isValidImage(imageUrl) {
 
 async function extractImageFromArticlePage(link) {
   if (!link || !/^https?:\/\//i.test(link)) return null;
+
   try {
+    const url = new URL(link);
+    const slug = url.pathname.split("/").filter(Boolean).pop();
+
+    // Para WordPress, a forma mais confiável é consultar a API REST
+    // e pegar exatamente a imagem destacada (featured_media) daquele post.
+    if (slug) {
+      try {
+        const wpController = new AbortController();
+        const wpTimeout = setTimeout(() => wpController.abort(), 6000);
+        const wpPostsUrl = new URL("/wp-json/wp/v2/posts", url.origin);
+        wpPostsUrl.searchParams.set("slug", slug);
+        wpPostsUrl.searchParams.set("_fields", "featured_media");
+        const wpResponse = await fetchFunc(wpPostsUrl.href, {
+          headers: BROWSER_HEADERS,
+          signal: wpController.signal
+        });
+        clearTimeout(wpTimeout);
+
+        if (wpResponse.ok) {
+          const posts = await wpResponse.json();
+          const mediaId = posts?.[0]?.featured_media;
+          if (mediaId) {
+            const mediaController = new AbortController();
+            const mediaTimeout = setTimeout(() => mediaController.abort(), 6000);
+            const mediaResponse = await fetchFunc(
+              new URL("/wp-json/wp/v2/media/" + mediaId, url.origin).href,
+              { headers: BROWSER_HEADERS, signal: mediaController.signal }
+            );
+            clearTimeout(mediaTimeout);
+
+            if (mediaResponse.ok) {
+              const media = await mediaResponse.json();
+              const featured = sanitizeImageUrl(media?.source_url);
+              if (featured) return featured;
+            }
+          }
+        }
+      } catch (e) {
+        // Continua com os métodos HTML abaixo como fallback.
+      }
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 7000);
-    const response = await fetchFunc(link, { headers: BROWSER_HEADERS, signal: controller.signal });
+    const response = await fetchFunc(link, {
+      headers: BROWSER_HEADERS,
+      signal: controller.signal
+    });
     clearTimeout(timeout);
     if (!response.ok) return null;
 
     const html = await response.text();
+
     const getMeta = (name) => {
-      const r1 = new RegExp('<meta[^>]+(?:property|name)=["\\\']' + name + '["\\\'][^>]+content=["\\\']([^"\\\']+)["\\\'][^>]*>', 'i');
-      const r2 = new RegExp('<meta[^>]+content=["\\\']([^"\\\']+)["\\\'][^>]+(?:property|name)=["\\\']' + name + '["\\\'][^>]*>', 'i');
+      const r1 = new RegExp('<meta[^>]+(?:property|name)=["\\\\\\']' + name + '["\\\\\\'][^>]+content=["\\\\\\']([^"\\\\\\']+)["\\\\\\'][^>]*>', 'i');
+      const r2 = new RegExp('<meta[^>]+content=["\\\\\\']([^"\\\\\\']+)["\\\\\\'][^>]+(?:property|name)=["\\\\\\']' + name + '["\\\\\\'][^>]*>', 'i');
       return html.match(r1)?.[1] || html.match(r2)?.[1] || null;
     };
 
-    let image =
-      getMeta("og:image") ||
-      getMeta("twitter:image") ||
-      html.match(/<article[\s\S]*?<img[^>]+src=["']([^"']+)["']/i)?.[1] ||
-      html.match(/<main[\s\S]*?<img[^>]+src=["']([^"']+)["']/i)?.[1];
+    // JSON-LD do próprio artigo costuma apontar para a imagem destacada.
+    const ldMatches = [...html.matchAll(/<script[^>]+type=["']application\/ld\\+json["'][^>]*>([\\s\\S]*?)<\/script>/gi)];
+    for (const match of ldMatches) {
+      try {
+        const data = JSON.parse(match[1].trim());
+        const nodes = Array.isArray(data) ? data : [data, ...(Array.isArray(data?.["@graph"]) ? data["@graph"] : [])];
+        for (const node of nodes) {
+          const image = node?.image;
+          const candidates = Array.isArray(image) ? image : [image];
+          for (const candidate of candidates) {
+            const value = typeof candidate === "string" ? candidate : candidate?.url || candidate?.contentUrl;
+            if (value) {
+              const absolute = new URL(value, link).href;
+              const clean = sanitizeImageUrl(absolute);
+              if (clean) return clean;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Fallback: imagem do conteúdo do artigo, incluindo lazy-load.
+    const articleHtml =
+      html.match(/<article[\\s\\S]*?<\\/article>/i)?.[0] ||
+      html.match(/<main[\\s\\S]*?<\\/main>/i)?.[0] ||
+      html;
+
+    const imageMatch = articleHtml.match(
+      /<img[^>]+(?:data-src|data-lazy-src|data-original|src)=["']([^"']+)["']/i
+    );
+    let image = imageMatch?.[1] || getMeta("twitter:image") || getMeta("og:image");
 
     if (image) {
       try { image = new URL(image, link).href; } catch (e) {}
     }
+
     return sanitizeImageUrl(image) || null;
   } catch (e) {
     return null;
