@@ -32,6 +32,31 @@ function Perfil({ user, setUser }) {
     }
   }, [user?.id, navigate]);
 
+  const handleAvatarUpload = async (file) => {
+    if (!file) return;
+    setMsg("");
+    setError("");
+    if (!file.type.startsWith("image/")) return setError("Selecione uma imagem válida.");
+    if (file.size > 5 * 1024 * 1024) return setError("A foto deve ter no máximo 5 MB.");
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const upload = await axios.post(`${API_URL}/api/upload-image`, { image: reader.result });
+          if (!upload.data.path) throw new Error("Upload não retornou o endereço da imagem.");
+          setAvatar(upload.data.path);
+          setMsg("Foto enviada. Clique em Salvar Perfil para confirmar.");
+        } catch (err) {
+          setError(err.response?.data?.error || "Erro ao enviar a foto.");
+        }
+      };
+      reader.onerror = () => setError("Não foi possível ler a foto.");
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setError("Erro ao preparar a foto.");
+    }
+  };
+
   const saveProfile = async () => {
     setMsg("");
     setError("");
@@ -98,6 +123,19 @@ function Perfil({ user, setUser }) {
             {!avatar && (user.display_name || user.username || "U").charAt(0).toUpperCase()}
           </div>
           <p style={{ color: "#999", fontSize: "13px" }}>@{user.username}</p>
+          <label style={{
+            display: "inline-block", marginTop: "8px", background: "#252532",
+            color: "#fff", padding: "8px 14px", borderRadius: "6px",
+            cursor: "pointer", fontSize: "12px", fontWeight: "700"
+          }}>
+            📷 Escolher foto
+            <input
+              type="file"
+              accept="image/*"
+              onChange={e => handleAvatarUpload(e.target.files?.[0])}
+              style={{ display: "none" }}
+            />
+          </label>
           <p style={{ color: "#666", fontSize: "12px" }}>Membro desde {new Date(user.created_at).toLocaleDateString("pt-BR")}</p>
           {(user.role === "admin" || user.role === "editor") && (
             <a
