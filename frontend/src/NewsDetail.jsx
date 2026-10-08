@@ -49,7 +49,7 @@ function NewsDetail() {
   };
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/posts`)
+    axios.get(`${API_URL}/api/posts?full=1`)
       .then(res => {
         const selectedPost = res.data.find(p => p.slug === id || p.id === parseInt(id));
         setPost(selectedPost);
