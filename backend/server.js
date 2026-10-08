@@ -107,6 +107,35 @@ async function loadFeeds() {
 
 // --- FUNÇÕES AUXILIARES ---
 
+// Migra imagens antigas salvas em base64 para URLs do Cloudinary, lote a lote.
+async function migrateLegacyBandImage(band) {
+  const original = band?.image;
+  if (!original || typeof original !== "string" || /^https?:\/\//i.test(original)) return original || null;
+
+  let uploadSource = original;
+  if (!/^data:image\//i.test(uploadSource)) {
+    const compact = uploadSource.replace(/\s/g, "");
+    if (compact.length < 50000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(compact)) return original;
+    uploadSource = "data:image/jpeg;base64," + compact;
+  }
+
+  try {
+    const result = await cloudinary.uploader.upload(uploadSource, {
+      folder: "comunidadedorock/bandas",
+      public_id: "band-" + band.id,
+      overwrite: true,
+      resource_type: "image"
+    });
+    const url = result.secure_url;
+    await db.run("UPDATE bands SET image = $1 WHERE id = $2 AND image = $3", [url, band.id, original]);
+    return url;
+  } catch (err) {
+    console.warn("Não foi possível migrar a imagem da banda " + band.id + ":", err.message);
+    return original;
+  }
+}
+
+
 // Evita depender do estado de memória de uma máquina/instância.
 // Em Vercel, a função pode ser criada e encerrada entre requisições.
 let initializationPromise = null;
@@ -703,6 +732,7 @@ app.get("/api/bands/:id", async (req, res) => {
       band = await db.getOne(`SELECT * FROM bands WHERE ${slugExpression} = $1 LIMIT 1`, [key]);
     }
     if (!band) return res.status(404).json({ error: "Banda não encontrada" });
+    band.image = await migrateLegacyBandImage(band);
     const slug = band.name ? band.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
     res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=900");
     res.json({ ...band, slug });
@@ -748,8 +778,14 @@ app.get("/api/bands", async (req, res) => {
     }
     const bands = await db.getAll(sql, params);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+    // Migra somente o lote pedido; assim o JSON deixa de carregar fotos base64 enormes.
+    const responseBands = [];
+    for (const band of bands) {
+      const image = full ? band.image : await migrateLegacyBandImage(band);
+      responseBands.push({ ...band, image, slug: mkSlug(band.name) });
+    }
     res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
-    res.json(bands.map(b => ({ ...b, slug: mkSlug(b.name) })));
+    res.json(responseBands);
   } catch (err) {
     console.error("Erro ao buscar bandas:", err.message);
     res.status(500).json({ error: "Erro ao carregar bandas" });
