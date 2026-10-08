@@ -74,11 +74,11 @@ export default function Admin({ user: currentUser }) {
   };
 
   const fetchData = () => {
-    axios.get(`${API_URL}/api/posts`).then(res => setPosts(res.data));
+    axios.get(`${API_URL}/api/posts?full=1`).then(res => setPosts(res.data));
     axios.get(`${API_URL}/api/bands?full=1`).then(res => setBands(res.data));
     axios.get(`${API_URL}/api/pending-bands`).then(res => setPendingBands(res.data));
-    axios.get(`${API_URL}/api/interviews`).then(res => setInterviews(res.data));
-    axios.get(`${API_URL}/api/events`).then(res => setEvents(res.data));
+    axios.get(`${API_URL}/api/interviews?full=1`).then(res => setInterviews(res.data));
+    axios.get(`${API_URL}/api/events?full=1`).then(res => setEvents(res.data));
     axios.get(`${API_URL}/api/rss-feeds`).then(res => setRssFeeds(res.data));
     axios.get(`${API_URL}/api/users`).then(res => setAllUsers(res.data)).catch(() => {});
   };
