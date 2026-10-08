@@ -369,10 +369,7 @@ async function autoImportRss() {
           const title = decodeHtmlEntities(rawTitle);
           if (!title) continue;
 
-          // Verificar se já existe ANTES de validar imagem (evita HEAD requests desnecessários)
           const link = extractLinkFromItem(itemXml);
-          if (await postAlreadyExists(title, link)) continue;
-
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const rssImage = extractImageFromItem(itemXml, content);
           const articleImage = await extractImageFromArticlePage(link);
@@ -380,6 +377,15 @@ async function autoImportRss() {
 
           if (!image) continue;
           if (!(await isValidImage(image))) continue;
+
+          const existing = await db.getOne("SELECT id, image FROM posts WHERE title = $1 OR link = $2 LIMIT 1", [title, link]);
+          if (existing) {
+            if (existing.image !== image) {
+              await db.run("UPDATE posts SET image = $1 WHERE id = $2", [image, existing.id]);
+              console.log(`🖼️ Imagem corrigida: ${title.substring(0, 30)}`);
+            }
+            continue;
+          }
 
           await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)",
             [title, content, image, link, feed.name]);
