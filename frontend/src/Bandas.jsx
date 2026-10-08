@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 3;
 
 function Bandas() {
   const navigate = useNavigate();
@@ -164,7 +164,7 @@ function Bandas() {
               disabled={loadingMore}
               style={{ minWidth: "190px", opacity: loadingMore ? 0.7 : 1 }}
             >
-              {loadingMore ? "Carregando..." : "Carregar mais bandas"}
+              {loadingMore ? "Carregando..." : "Ver mais bandas"}
             </button>
           </div>
         )}
