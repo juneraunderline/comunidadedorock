@@ -30,7 +30,7 @@ function Bandas() {
     setHasMore(false);
 
     const timer = setTimeout(() => {
-      const params = { limit: PAGE_SIZE, offset: 0 };
+      const params = { limit: PAGE_SIZE, offset: 0, sort: "recent" };
       if (search.trim()) params.search = search.trim();
       if (genreFilter) params.genre = genreFilter;
 
@@ -60,7 +60,7 @@ function Bandas() {
     setLoadingMore(true);
     setError("");
     try {
-      const params = { limit: PAGE_SIZE, offset: bands.length };
+      const params = { limit: PAGE_SIZE, offset: bands.length, sort: "recent" };
       if (search.trim()) params.search = search.trim();
       if (genreFilter) params.genre = genreFilter;
       const res = await axios.get(`${API_URL}/api/bands`, { params });
