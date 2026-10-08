@@ -283,6 +283,37 @@ async function isValidImage(imageUrl) {
   } catch (e) { return false; }
 }
 
+async function extractImageFromArticlePage(link) {
+  if (!link || !/^https?:\/\//i.test(link)) return null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 7000);
+    const response = await fetchFunc(link, { headers: BROWSER_HEADERS, signal: controller.signal });
+    clearTimeout(timeout);
+    if (!response.ok) return null;
+
+    const html = await response.text();
+    const getMeta = (name) => {
+      const r1 = new RegExp('<meta[^>]+(?:property|name)=["\\\']' + name + '["\\\'][^>]+content=["\\\']([^"\\\']+)["\\\'][^>]*>', 'i');
+      const r2 = new RegExp('<meta[^>]+content=["\\\']([^"\\\']+)["\\\'][^>]+(?:property|name)=["\\\']' + name + '["\\\'][^>]*>', 'i');
+      return html.match(r1)?.[1] || html.match(r2)?.[1] || null;
+    };
+
+    let image =
+      getMeta("og:image") ||
+      getMeta("twitter:image") ||
+      html.match(/<article[\s\S]*?<img[^>]+src=["']([^"']+)["']/i)?.[1] ||
+      html.match(/<main[\s\S]*?<img[^>]+src=["']([^"']+)["']/i)?.[1];
+
+    if (image) {
+      try { image = new URL(image, link).href; } catch (e) {}
+    }
+    return sanitizeImageUrl(image) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // Inicializa o banco sob demanda na primeira requisição.
 app.use(async (req, res, next) => {
   try {
@@ -343,7 +374,9 @@ async function autoImportRss() {
           if (await postAlreadyExists(title, link)) continue;
 
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
-          const image = extractImageFromItem(itemXml, content);
+          const rssImage = extractImageFromItem(itemXml, content);
+          const articleImage = await extractImageFromArticlePage(link);
+          const image = articleImage || rssImage;
 
           if (!image) continue;
           if (!(await isValidImage(image))) continue;
@@ -778,8 +811,10 @@ app.post("/api/import-rss", async (req, res) => {
         for (const itemXml of items) {
           const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
-          const image = extractImageFromItem(itemXml, content);
+          const rssImage = extractImageFromItem(itemXml, content);
           const link = extractLinkFromItem(itemXml);
+          const articleImage = await extractImageFromArticlePage(link);
+          const image = articleImage || rssImage;
           if (!title || !image) continue;
           if (!(await isValidImage(image))) continue;
           if (!(await postAlreadyExists(title, link))) {
@@ -808,8 +843,10 @@ app.post("/api/import-rss-single", async (req, res) => {
     for (const itemXml of items) {
       const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
       const content = decodeHtmlEntities(extractContentFromItem(itemXml));
-      const image = extractImageFromItem(itemXml, content);
+      const rssImage = extractImageFromItem(itemXml, content);
       const link = extractLinkFromItem(itemXml);
+      const articleImage = await extractImageFromArticlePage(link);
+      const image = articleImage || rssImage;
       if (!title || !image) continue;
       if (!(await isValidImage(image))) continue;
       if (!(await postAlreadyExists(title, link))) {
@@ -847,7 +884,7 @@ app.post("/api/reimport-rss", async (req, res) => {
             // gerado por extractContentFromItem(), evitando manter cópias
             // integrais de matérias importadas anteriormente.
             await db.run(
-              "UPDATE posts SET content = $1, link = $2, source = $3, image = COALESCE(image, $4) WHERE id = $5",
+              "UPDATE posts SET content = $1, link = $2, source = $3, image = $4 WHERE id = $5",
               [content, link, feed.name, image, existing.id]
             );
             updated++;
