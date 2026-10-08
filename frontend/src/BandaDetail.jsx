@@ -4,6 +4,32 @@ import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 import Comentarios from "./Comentarios";
 
+function normalizeSocialUrl(value, platform) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  // URLs completas devem ser preservadas; nomes de usuário viram links absolutos.
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^\/\//.test(raw)) return `https:${raw}`;
+
+  const cleaned = raw.replace(/^\/+/, "").replace(/^@/, "");
+  const hostByPlatform = {
+    instagram: "https://www.instagram.com/",
+    facebook: "https://www.facebook.com/",
+    youtube: "https://www.youtube.com/",
+    spotify: "https://open.spotify.com/",
+    bandcamp: "https://bandcamp.com/"
+  };
+
+  // Corrige valores antigos como /@badluv, que o navegador trataria como caminho do próprio site.
+  if (platform === "instagram") {
+    const instagramPath = cleaned.replace(/^www\.instagram\.com\//i, "").replace(/^instagram\.com\//i, "");
+    return `https://www.instagram.com/${instagramPath.replace(/^@/, "").replace(/\/$/, "")}/`;
+  }
+
+  return `${hostByPlatform[platform] || "https://"}${cleaned}`;
+}
+
 function BandaDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -93,7 +119,7 @@ function BandaDetail() {
               <h3>Redes Sociais</h3>
               <div className="social-links">
                 {band.instagram && (
-                  <a href={band.instagram} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                  <a href={normalizeSocialUrl(band.instagram, "instagram")} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
                     📷 Instagram
                   </a>
                 )}
