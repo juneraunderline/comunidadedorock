@@ -707,7 +707,7 @@ app.get("/api/posts", async (req, res) => {
       }
     }
     
-    query += " ORDER BY id DESC";
+    query += " ORDER BY created_at DESC NULLS LAST, id DESC";
     
     if (limit !== null) {
       query += ` LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
@@ -717,7 +717,7 @@ app.get("/api/posts", async (req, res) => {
     const posts = await db.getAll(query, params);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
     
-    res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.json(posts.map(p => ({ ...p, slug: mkSlug(p.title) })));
   } catch (err) {
     res.status(500).json({ error: err.message });
