@@ -1181,7 +1181,11 @@ app.get("/api/releases", async (req, res) => {
     const fields = full ? "*" : "id, title, artist, type, release_date, image, spotify, youtube, LEFT(COALESCE(description, ''), 300) AS description, created_at";
     const limitSql = limit ? `LIMIT ${limit}` : "";
     const releases = await db.getAll(`SELECT ${fields} FROM releases ORDER BY COALESCE(release_date, created_at::date::text) DESC, id DESC ${limitSql}`);
-    res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.set("CDN-Cache-Control", "no-store");
+    res.set("Vercel-CDN-Cache-Control", "no-store");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
     res.json(releases);
   } catch (err) { console.error("Erro ao buscar lançamentos:", err.message); res.status(500).json({ error: "Erro ao carregar lançamentos" }); }
 });
@@ -1197,7 +1201,19 @@ app.put("/api/releases/:id", async (req, res) => {
   await db.run("UPDATE releases SET title=$1, artist=$2, type=$3, release_date=$4, image=$5, spotify=$6, youtube=$7, description=$8 WHERE id=$9",[r.title,r.artist,r.type||"Single",r.release_date||null,r.image||null,r.spotify||null,r.youtube||null,r.description||null,req.params.id]);
   res.json({success:true});
 });
-app.delete("/api/releases/:id", async (req,res)=>{ try { const result = await db.run("DELETE FROM releases WHERE id=$1",[req.params.id]); res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate"); res.json({success:true}); } catch(err) { console.error("Erro ao excluir lançamento:", err.message); res.status(500).json({error:"Erro ao excluir lançamento"}); } });
+app.delete("/api/releases/:id", async (req, res) => {
+  try {
+    const result = await db.query("DELETE FROM releases WHERE id = $1 RETURNING id", [req.params.id]);
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.set("CDN-Cache-Control", "no-store");
+    res.set("Vercel-CDN-Cache-Control", "no-store");
+    if (result.rowCount === 0) return res.status(404).json({ error: "Lançamento não encontrado no banco de dados" });
+    return res.status(200).json({ success: true, deletedId: result.rows[0].id });
+  } catch (err) {
+    console.error("Erro ao excluir lançamento:", err.message);
+    return res.status(500).json({ error: "Erro ao excluir lançamento", detail: err.message });
+  }
+});
 
 // Eventos
 app.get("/api/events", async (req, res) => {
