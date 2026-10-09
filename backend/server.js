@@ -144,22 +144,40 @@ async function migrateLegacyBandImage(band, table = "bands") {
 
       if (!imageBuffer.length) return original;
 
-      // Uma saída padronizada e leve para imagens antigas e novas em Base64.
-      let optimized = await sharp(imageBuffer, { limitInputPixels: 100000000 })
-        .rotate()
-        .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
-        .flatten({ background: "#ffffff" })
-        .jpeg({ quality: 78, mozjpeg: true })
-        .toBuffer();
-
-      if (optimized.length > 9 * 1024 * 1024) {
-        optimized = await sharp(optimized)
-          .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
-          .jpeg({ quality: 62, mozjpeg: true })
+      // Comprime em tentativas progressivas para ficar abaixo do limite do Cloudinary.
+      // Reprocessa sempre a imagem original e mantém margem abaixo do limite de 10 MB.
+      const compressionAttempts = [
+        { width: 1600, quality: 76 },
+        { width: 1400, quality: 68 },
+        { width: 1200, quality: 60 },
+        { width: 1000, quality: 54 },
+        { width: 800, quality: 48 },
+        { width: 640, quality: 42 },
+        { width: 480, quality: 38 }
+      ];
+      let optimized = null;
+      for (const attempt of compressionAttempts) {
+        const candidate = await sharp(imageBuffer, { limitInputPixels: 100000000 })
+          .rotate()
+          .resize({
+            width: attempt.width,
+            height: attempt.width,
+            fit: "inside",
+            withoutEnlargement: true
+          })
+          .flatten({ background: "#ffffff" })
+          .jpeg({ quality: attempt.quality, mozjpeg: true })
           .toBuffer();
+
+        if (!optimized || candidate.length < optimized.length) optimized = candidate;
+        if (candidate.length <= 7 * 1024 * 1024) {
+          optimized = candidate;
+          break;
+        }
       }
-      if (optimized.length > 9 * 1024 * 1024) {
-        throw new Error("Imagem continua acima de 9 MB após a compressão");
+
+      if (!optimized || optimized.length > 7 * 1024 * 1024) {
+        throw new Error("Não foi possível reduzir a imagem para menos de 7 MB");
       }
       uploadSource = "data:image/jpeg;base64," + optimized.toString("base64");
     }
