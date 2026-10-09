@@ -224,7 +224,7 @@ function CadastrarBanda() {
             <button type="submit" className="btn btn-primary" style={{width: "100%"}}>Cadastrar banda</button>
           </form>
           {message && <p style={{marginTop: "20px", textAlign: "center", color: message.includes("Erro") ? "red" : "green"}}>{message}</p>}
-        </div>
+        </div></div>
       </section>
     </div>
   );
