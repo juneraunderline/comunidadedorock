@@ -532,8 +532,20 @@ app.use(async (req, res, next) => {
     await ensureInitialized();
     next();
   } catch (err) {
-    console.error("❌ Falha ao inicializar backend:", err);
-    res.status(503).json({ error: "Banco de dados indisponível" });
+    const code = typeof err.code === "string" ? err.code : "UNKNOWN";
+    const detail = String(err.message || "Erro sem mensagem").slice(0, 300);
+    console.error("❌ Falha ao inicializar backend:", {
+      stage: initializationStage,
+      code,
+      detail
+    });
+    // Retorna diagnóstico sem expor DATABASE_URL ou credenciais.
+    res.status(503).json({
+      error: "Banco de dados indisponível",
+      stage: initializationStage,
+      code,
+      detail
+    });
   }
 });
 
@@ -564,6 +576,8 @@ async function getFeedItems(feedUrl) {
   const domain = siteUrl.hostname.replace(/^www\./i, "");
   const apiCandidates = [
     new URL("/wp-json/wp/v2/posts?per_page=10&_embed=1", siteUrl.origin).href,
+    // WordPress sem pretty permalinks pode exigir o parâmetro rest_route.
+    new URL("/?rest_route=/wp/v2/posts&per_page=10&_embed=1", siteUrl.origin).href,
     "https://public-api.wordpress.com/wp/v2/sites/" + encodeURIComponent(domain) + "/posts?per_page=10&_embed=1"
   ];
   let lastApiError = null;
