@@ -1956,7 +1956,7 @@ body {
 .release-placeholder{font-size:52px;opacity:.35}
 .release-content{flex:1 1 auto;min-width:0;padding:22px;display:flex;flex-direction:column;justify-content:center;overflow-wrap:anywhere;word-break:normal}
 .release-content small{color:#e9b61e;font-weight:700;text-transform:uppercase;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
-.release-content h3{color:#fff;font-size:20px;line-height:1.3;text-transform:uppercase;margin:5px 0 12px;overflow-wrap:anywhere;word-break:normal}
+.release-content h3{color:#fff;font-size:17px;line-height:1.3;text-transform:uppercase;margin:5px 0 12px;white-space:nowrap;overflow-wrap:normal;word-break:keep-all;letter-spacing:0;max-width:100%}
 .release-content p{color:#999;font-size:12px;line-height:1.5;margin-bottom:12px}
 .release-actions{display:flex;gap:8px;flex-wrap:wrap;min-width:0}
 .release-actions a{color:#fff;background:#24242c;border:1px solid #35353d;border-radius:4px;padding:7px 10px;font-size:11px;font-weight:800;text-decoration:none}
@@ -2061,7 +2061,7 @@ body {
   .release-image img { width:100%; height:190px; min-height:190px; object-fit:cover; }
   .release-content { width:100%; min-width:0; padding:16px; }
   .release-content small { font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
-  .release-content h3 { max-width:100%; font-size:18px; line-height:1.3; overflow-wrap:anywhere; }
+  .release-content h3 { max-width:100%; font-size:15px; line-height:1.3; white-space:nowrap; overflow-wrap:normal; word-break:keep-all; letter-spacing:0; }
   .release-actions { width:100%; min-width:0; }
   .release-actions a { flex:0 1 auto; max-width:100%; text-align:center; overflow-wrap:anywhere; }
 
