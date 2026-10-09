@@ -369,7 +369,7 @@ function Home({ posts }) {
           {loadingReleases ? <><SkeletonCard /><SkeletonCard /></> : releases.length ? releases.slice(0,4).map(r => (
             <div className="release-card" key={r.id}>
               <div className="release-image">{r.image ? <img src={getImageUrl(r.image)} alt={r.title} loading="lazy" /> : <div className="release-placeholder">🎧</div>}<span>{r.type || "Single"}</span></div>
-              <div className="release-content"><small>{r.artist}{r.release_date ? " · " + new Date(r.release_date + "T00:00:00").toLocaleDateString("pt-BR") : ""}</small><h3>{r.title}</h3><div className="release-actions">{r.spotify && <a href={r.spotify} target="_blank" rel="noopener noreferrer">🎧 Spotify</a>}{r.youtube && <a href={r.youtube} target="_blank" rel="noopener noreferrer">▶ YouTube</a>}</div></div>
+              <div className="release-content"><small>{r.artist}{r.release_date ? " " + new Date(r.release_date + "T00:00:00").toLocaleDateString("pt-BR") : ""}</small><h3>{r.title}</h3><div className="release-actions">{r.spotify && <a href={r.spotify} target="_blank" rel="noopener noreferrer">🎧 Spotify</a>}{r.youtube && <a href={r.youtube} target="_blank" rel="noopener noreferrer">▶ YouTube</a>}</div></div>
             </div>
           )) : <div style={{gridColumn:"1/-1",textAlign:"center",color:"#888",padding:"30px"}}>Novos lançamentos das bandas independentes aparecerão aqui.</div>}
         </div>
