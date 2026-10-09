@@ -1099,6 +1099,34 @@ export default function Admin({ user: currentUser }) {
       <section className="admin-card">
         <h2>GERENCIAR BANDAS</h2>
 
+        <div className="bands-pending-section">
+          <h3>Bandas Pendentes ({pendingBands.length})</h3>
+          {pendingBands.length === 0 && <p>Nenhuma banda pendente</p>}
+          {pendingBands.map(b => (
+            <div key={b.id} className="post-item">
+              <div className="post-preview">
+                {b.image && <img src={getImageUrl(b.image)} alt={b.name} />}
+                <div className="post-info">
+                  <h4>{b.name}</h4>
+                  <p><strong>{b.genre}</strong> - {b.city}/{b.state}</p>
+                  {b.year && <p>Formação: {b.year}</p>}
+                  <p>{b.biography ? b.biography.substring(0, 100) : "Sem descrição"}...</p>
+                  {b.instagram && <small>📷 {b.instagram}</small>}
+                  {b.contact && <small> · 📧 {b.contact}</small>}
+                </div>
+              </div>
+              <div className="post-actions">
+                <button className="btn btn-primary" onClick={() => approveBand(b.id)}>✅ Aprovar</button>
+                <button className="btn btn-outline" onClick={() => {
+                  if (confirm(`Rejeitar a banda ${b.name}?`)) {
+                    axios.delete(`${API_URL}/api/pending-bands/${b.id}`).then(() => fetchData()).catch(() => alert("Erro ao rejeitar"));
+                  }
+                }}>❌ Rejeitar</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {editingBand && (
           <div className="edit-post-form">
             <h3>Editando Banda</h3>
@@ -1431,33 +1459,7 @@ export default function Admin({ user: currentUser }) {
           </>
         )}
 
-        <div className="bands-pending-section">
-          <h3>Bandas Pendentes ({pendingBands.length})</h3>
-          {pendingBands.length === 0 && <p>Nenhuma banda pendente</p>}
-          {pendingBands.map(b => (
-            <div key={b.id} className="post-item">
-              <div className="post-preview">
-                {b.image && <img src={getImageUrl(b.image)} alt={b.name} />}
-                <div className="post-info">
-                  <h4>{b.name}</h4>
-                  <p><strong>{b.genre}</strong> - {b.city}/{b.state}</p>
-                  {b.year && <p>Formação: {b.year}</p>}
-                  <p>{b.biography ? b.biography.substring(0, 100) : "Sem descrição"}...</p>
-                  {b.instagram && <small>📷 {b.instagram}</small>}
-                  {b.contact && <small> · 📧 {b.contact}</small>}
-                </div>
-              </div>
-              <div className="post-actions">
-                <button className="btn btn-primary" onClick={() => approveBand(b.id)}>✅ Aprovar</button>
-                <button className="btn btn-outline" onClick={() => {
-                  if (confirm(`Rejeitar a banda ${b.name}?`)) {
-                    axios.delete(`${API_URL}/api/pending-bands/${b.id}`).then(() => fetchData()).catch(() => alert("Erro ao rejeitar"));
-                  }
-                }}>❌ Rejeitar</button>
-              </div>
-            </div>
-          ))}
-        </div>
+
       </section>
       )}
 
