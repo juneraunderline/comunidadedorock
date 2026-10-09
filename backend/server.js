@@ -574,6 +574,48 @@ async function getFeedItems(feedUrl) {
   catch { throw rssError || new Error("Endereço do feed inválido"); }
 
   const domain = siteUrl.hostname.replace(/^www\./i, "");
+
+  // Alguns portais usam CMS próprio e não oferecem API WordPress.
+  // Se o RSS/API falhar, tenta ler os links públicos da página de notícias.
+  const pageCandidates = [
+    new URL("/noticias/", siteUrl.origin).href,
+    siteUrl.origin + "/"
+  ];
+  for (const pageUrl of pageCandidates) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      let response;
+      try {
+        response = await fetchFunc(pageUrl, { headers: BROWSER_HEADERS, signal: controller.signal });
+      } finally { clearTimeout(timeout); }
+      if (!response.ok) continue;
+      const html = await response.text();
+      const found = [];
+      const seen = new Set();
+      const anchorRegex = /<a\\b[^>]*href=["']([^"'#]+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+      let match;
+      while ((match = anchorRegex.exec(html)) && found.length < 20) {
+        let link;
+        try { link = new URL(match[1], pageUrl); } catch { continue; }
+        if (link.hostname.replace(/^www\\./i, "") !== domain) continue;
+        const title = match[2].replace(/<script[\\s\\S]*?<\\/script>/gi, "")
+          .replace(/<style[\\s\\S]*?<\\/style>/gi, "")
+          .replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim();
+        const path = link.pathname.replace(/\\/$/, "");
+        if (title.length < 18 || path.length < 8 || seen.has(link.href)) continue;
+        if (/\\/(noticias|destaques|contato|sobre|anuncie|promocoes|page)\\/?$/i.test(path)) continue;
+        seen.add(link.href);
+        const safeTitle = title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        found.push("<item><title>" + safeTitle + "</title><link>" +
+          link.href.replace(/&/g, "&amp;") + "</link></item>");
+      }
+      if (found.length) return found;
+    } catch (err) {
+      // Tenta a próxima página pública.
+    }
+  }
+
   const apiCandidates = [
     new URL("/wp-json/wp/v2/posts?per_page=10&_embed=1", siteUrl.origin).href,
     // WordPress sem pretty permalinks pode exigir o parâmetro rest_route.
