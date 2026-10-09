@@ -2063,8 +2063,13 @@ body {
   .release-content p { font-size:12px; line-height:1.5; }
   .release-actions a { flex:1 1 auto; text-align:center; }
 
-  .clip-feature { width:100%; min-height:0; padding:20px 16px; }
-  .clip-feature h3 { font-size:24px; line-height:1.15; }
+  .clip-feature { width:100%; min-height:0; padding:24px 16px; }
+  .clip-info { align-items:center; text-align:center; padding:4px 2px; }
+  .clip-feature .band-cta-kicker { width:100%; text-align:center; margin-bottom:14px; }
+  .clip-feature h3 { width:100%; font-size:24px; line-height:1.2; text-align:center; margin-bottom:12px; }
+  .clip-feature p { width:100%; text-align:center; margin-bottom:24px; }
+  .clip-feature .btn { width:auto; max-width:100%; align-self:center; text-align:center; }
+  .clip-player { margin-top:0; }
 
   /* Perfil das bandas */
   .band-detail-page { width:100%; overflow-x:hidden; }
