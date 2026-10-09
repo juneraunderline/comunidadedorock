@@ -769,7 +769,7 @@ app.get("/api/bands/:id", async (req, res) => {
     if (!band) return res.status(404).json({ error: "Banda não encontrada" });
     band.image = await migrateLegacyBandImage(band);
     const slug = band.name ? band.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
-    res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=900");
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.json({ ...band, slug });
   } catch (err) {
     console.error("Erro ao buscar banda:", err.message);
@@ -819,7 +819,7 @@ app.get("/api/bands", async (req, res) => {
       const image = full ? band.image : await migrateLegacyBandImage(band);
       return { ...band, image, slug: mkSlug(band.name) };
     }));
-    res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.json(responseBands);
   } catch (err) {
     console.error("Erro ao buscar bandas:", err.message);
