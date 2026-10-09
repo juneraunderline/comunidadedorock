@@ -108,59 +108,64 @@ async function loadFeeds() {
 
 // --- FUNÇÕES AUXILIARES ---
 
-// Padroniza imagens de bandas: URLs existentes são preservadas; Base64 é
-// redimensionado/comprimido antes do upload para evitar payloads enormes.
+// Padroniza imagens de bandas no Cloudinary.
+// URLs que já estão no Cloudinary são mantidas; URLs externas são importadas,
+// e imagens Base64 são redimensionadas/comprimidas antes do upload.
 async function migrateLegacyBandImage(band, table = "bands") {
   const original = band?.image;
-  if (!original || typeof original !== "string" || /^https?:\/\//i.test(original)) return original || null;
+  if (!original || typeof original !== "string") return original || null;
   if (!["bands", "pending_bands"].includes(table)) throw new Error("Tabela de imagens não permitida");
+  if (/^https?:\/\/res\.cloudinary\.com\//i.test(original)) return original;
 
   try {
-    let imageBuffer;
-    if (/^data:image\//i.test(original)) {
-      const comma = original.indexOf(",");
-      if (comma < 0) return original;
-      imageBuffer = Buffer.from(original.slice(comma + 1), "base64");
-    } else {
-      const compact = original.replace(/\s/g, "");
-      if (compact.length < 50000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(compact)) return original;
-      imageBuffer = Buffer.from(compact, "base64");
-    }
+    let uploadSource = original;
+    const isRemoteUrl = /^https?:\/\//i.test(original);
 
-    if (!imageBuffer.length) return original;
-
-    // Sempre gera uma versão web leve, inclusive para imagens Base64 menores.
-    let optimized = await sharp(imageBuffer, { limitInputPixels: 100000000 })
-      .rotate()
-      .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
-      .flatten({ background: "#ffffff" })
-      .jpeg({ quality: 78, mozjpeg: true })
-      .toBuffer();
-
-    if (optimized.length > 9 * 1024 * 1024) {
-      optimized = await sharp(optimized)
-        .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
-        .jpeg({ quality: 62, mozjpeg: true })
-        .toBuffer();
-    }
-    if (optimized.length > 9 * 1024 * 1024) {
-      throw new Error("Imagem continua acima de 9 MB após a compressão");
-    }
-
-    const result = await cloudinary.uploader.upload(
-      "data:image/jpeg;base64," + optimized.toString("base64"),
-      {
-        folder: "comunidadedorock/bandas",
-        public_id: (table === "pending_bands" ? "pending-band-" : "band-") + band.id,
-        overwrite: true,
-        resource_type: "image"
+    if (!isRemoteUrl) {
+      let imageBuffer;
+      if (/^data:image\//i.test(original)) {
+        const comma = original.indexOf(",");
+        if (comma < 0) return original;
+        imageBuffer = Buffer.from(original.slice(comma + 1), "base64");
+      } else {
+        const compact = original.replace(/\s/g, "");
+        if (compact.length < 50000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(compact)) return original;
+        imageBuffer = Buffer.from(compact, "base64");
       }
-    );
+
+      if (!imageBuffer.length) return original;
+
+      // Uma saída padronizada e leve para imagens antigas e novas em Base64.
+      let optimized = await sharp(imageBuffer, { limitInputPixels: 100000000 })
+        .rotate()
+        .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+        .flatten({ background: "#ffffff" })
+        .jpeg({ quality: 78, mozjpeg: true })
+        .toBuffer();
+
+      if (optimized.length > 9 * 1024 * 1024) {
+        optimized = await sharp(optimized)
+          .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
+          .jpeg({ quality: 62, mozjpeg: true })
+          .toBuffer();
+      }
+      if (optimized.length > 9 * 1024 * 1024) {
+        throw new Error("Imagem continua acima de 9 MB após a compressão");
+      }
+      uploadSource = "data:image/jpeg;base64," + optimized.toString("base64");
+    }
+
+    const result = await cloudinary.uploader.upload(uploadSource, {
+      folder: "comunidadedorock/bandas",
+      public_id: (table === "pending_bands" ? "pending-band-" : "band-") + band.id,
+      overwrite: true,
+      resource_type: "image"
+    });
     const url = result.secure_url;
     await db.run(`UPDATE ${table} SET image = $1 WHERE id = $2 AND image = $3`, [url, band.id, original]);
     return url;
   } catch (err) {
-    console.warn("Não foi possível otimizar a imagem da banda " + band.id + ":", err.message);
+    console.warn("Não foi possível padronizar a imagem da banda " + band.id + ":", err.message);
     return original;
   }
 }
