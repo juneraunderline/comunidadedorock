@@ -46,11 +46,12 @@ app.post("/api/upload-image", async (req, res) => {
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
-  // Vercel cria várias instâncias serverless; um pool grande em cada instância
-  // pode esgotar rapidamente o limite de conexões do banco Layerbase.
-  max: 2,
-  idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 10000,
+  // O Layerbase tem limite restrito de conexões simultâneas.
+  // Em Vercel serverless, manter apenas uma conexão por instância e liberá-la
+  // rapidamente reduz o risco de esgotar max_client_conn.
+  max: 1,
+  idleTimeoutMillis: 1000,
+  connectionTimeoutMillis: 5000,
   allowExitOnIdle: true
 });
 
