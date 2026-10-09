@@ -32,6 +32,9 @@ export default function Admin({ user: currentUser }) {
   const [events, setEvents] = useState([]);
   const [newEvent, setNewEvent] = useState({ title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", description: "" });
   const [editingEvent, setEditingEvent] = useState(null);
+  const [releases, setReleases] = useState([]);
+  const [newRelease, setNewRelease] = useState({ title: "", artist: "", type: "Single", release_date: "", image: "", spotify: "", youtube: "", description: "" });
+  const [editingRelease, setEditingRelease] = useState(null);
 
   const [rssFeeds, setRssFeeds] = useState([]);
   const [feedName, setFeedName] = useState("");
@@ -93,6 +96,7 @@ export default function Admin({ user: currentUser }) {
     axios.get(`${API_URL}/api/pending-bands`).then(res => setPendingBands(res.data));
     axios.get(`${API_URL}/api/interviews?full=1`).then(res => setInterviews(res.data));
     axios.get(`${API_URL}/api/events?full=1`).then(res => setEvents(res.data));
+    axios.get(`${API_URL}/api/releases?full=1`).then(res => setReleases(res.data));
     axios.get(`${API_URL}/api/rss-feeds`).then(res => setRssFeeds(res.data));
     axios.get(`${API_URL}/api/users`).then(res => setAllUsers(res.data)).catch(() => {});
   };
@@ -423,7 +427,7 @@ export default function Admin({ user: currentUser }) {
       .catch((err) => alert("Erro ao deletar entrevista: " + (err.response?.data?.error || err.message)));
   };
 
-  // ====== EVENTOS ======
+  // ====== LANÇAMENTOS ======\n  const createRelease = () => {\n    if (!newRelease.title.trim() || !newRelease.artist.trim()) return alert("Preencha título e banda/artista");\n    axios.post(API_URL + "/api/releases", newRelease).then(() => { setNewRelease({ title:"", artist:"", type:"Single", release_date:"", image:"", spotify:"", youtube:"", description:"" }); fetchData(); alert("Lançamento publicado!"); }).catch(err => alert(err.response?.data?.error || "Erro ao publicar lançamento"));\n  };\n  const saveEditRelease = () => {\n    if (!editingRelease.title.trim() || !editingRelease.artist.trim()) return alert("Preencha título e banda/artista");\n    axios.put(API_URL + "/api/releases/" + editingRelease.id, editingRelease).then(() => { setEditingRelease(null); fetchData(); alert("Lançamento atualizado!"); }).catch(err => alert(err.response?.data?.error || "Erro ao atualizar lançamento"));\n  };\n  const deleteRelease = (id) => {\n    if (!confirm("Excluir este lançamento?")) return;\n    axios.delete(API_URL + "/api/releases/" + id).then(fetchData).catch(() => alert("Erro ao excluir lançamento"));\n  };\n\n  // ====== EVENTOS ======
   const createEvent = () => {
     if (!newEvent.title.trim() || !newEvent.date) {
       alert("Preencha pelo menos o título e a data");
@@ -708,6 +712,7 @@ export default function Admin({ user: currentUser }) {
         {isAdmin && <button className={activeTab === "bandas" ? "active" : ""} onClick={() => setActiveTab("bandas")}>BANDAS</button>}
         {isAdmin && <button className={activeTab === "entrevistas" ? "active" : ""} onClick={() => setActiveTab("entrevistas")}>ENTREVISTAS</button>}
         <button className={activeTab === "eventos" ? "active" : ""} onClick={() => setActiveTab("eventos")}>EVENTOS</button>
+        {isAdmin && <button className={activeTab === "lancamentos" ? "active" : ""} onClick={() => setActiveTab("lancamentos")}>LANÇAMENTOS</button>}
         {isAdmin && <button className={activeTab === "usuarios" ? "active" : ""} onClick={() => setActiveTab("usuarios")}>USUÁRIOS</button>}
       </div>
 
@@ -1590,6 +1595,29 @@ export default function Admin({ user: currentUser }) {
             </div>
           ))}
         </div>
+      </section>
+      )}
+
+      {activeTab === "lancamentos" && isAdmin && (
+      <section className="admin-card">
+        <h2>GERENCIAR LANÇAMENTOS</h2>
+        <div className="edit-post-form">
+          <h3>Novo lançamento</h3>
+          <div className="form-group"><label>Título</label><input value={newRelease.title} onChange={e=>setNewRelease({...newRelease,title:e.target.value})} placeholder="Nome do single, EP ou álbum" /></div>
+          <div className="form-group"><label>Banda / Artista</label><input value={newRelease.artist} onChange={e=>setNewRelease({...newRelease,artist:e.target.value})} /></div>
+          <div className="form-group"><label>Tipo</label><select value={newRelease.type} onChange={e=>setNewRelease({...newRelease,type:e.target.value})}><option>Single</option><option>EP</option><option>Álbum</option><option>Videoclipe</option></select></div>
+          <div className="form-group"><label>Data de lançamento</label><input type="date" value={newRelease.release_date} onChange={e=>setNewRelease({...newRelease,release_date:e.target.value})} /></div>
+          <div className="form-group"><label>Imagem</label><input value={newRelease.image} onChange={e=>setNewRelease({...newRelease,image:e.target.value})} /><input type="file" accept="image/*" onChange={e=>handleImageUpload(e.target.files?.[0], setNewRelease, "image")} /></div>
+          <div className="form-group"><label>Spotify</label><input value={newRelease.spotify} onChange={e=>setNewRelease({...newRelease,spotify:e.target.value})} /></div>
+          <div className="form-group"><label>YouTube / Clipe</label><input value={newRelease.youtube} onChange={e=>setNewRelease({...newRelease,youtube:e.target.value})} /></div>
+          <div className="form-group"><label>Descrição</label><textarea rows="4" value={newRelease.description} onChange={e=>setNewRelease({...newRelease,description:e.target.value})} /></div>
+          <div className="form-actions"><button className="btn btn-primary" onClick={createRelease}>Publicar lançamento</button></div>
+        </div>
+        <div className="interviews-list">
+          <h3>Lançamentos publicados ({releases.length})</h3>
+          {releases.map(r=><div key={r.id} className="post-item"><div className="post-preview">{r.image&&<img src={getImageUrl(r.image)} alt={r.title}/>}<div className="post-info"><h4>{r.title}</h4><p><strong>{r.artist}</strong> · {r.type}</p>{r.release_date&&<small>{r.release_date}</small>}</div></div><div className="post-actions"><button className="btn btn-primary" onClick={()=>setEditingRelease({...r})}>✏️ Editar</button><button className="btn btn-outline" onClick={()=>deleteRelease(r.id)}>🗑 Deletar</button></div></div>)}
+        </div>
+        {editingRelease && <div className="edit-post-form"><h3>Editando lançamento</h3><div className="form-group"><label>Título</label><input value={editingRelease.title} onChange={e=>setEditingRelease({...editingRelease,title:e.target.value})}/></div><div className="form-group"><label>Banda / Artista</label><input value={editingRelease.artist} onChange={e=>setEditingRelease({...editingRelease,artist:e.target.value})}/></div><div className="form-group"><label>Tipo</label><input value={editingRelease.type||"Single"} onChange={e=>setEditingRelease({...editingRelease,type:e.target.value})}/></div><div className="form-group"><label>Data</label><input type="date" value={editingRelease.release_date||""} onChange={e=>setEditingRelease({...editingRelease,release_date:e.target.value})}/></div><div className="form-group"><label>Imagem</label><input value={editingRelease.image||""} onChange={e=>setEditingRelease({...editingRelease,image:e.target.value})}/></div><div className="form-group"><label>Spotify</label><input value={editingRelease.spotify||""} onChange={e=>setEditingRelease({...editingRelease,spotify:e.target.value})}/></div><div className="form-group"><label>YouTube</label><input value={editingRelease.youtube||""} onChange={e=>setEditingRelease({...editingRelease,youtube:e.target.value})}/></div><div className="form-actions"><button className="btn btn-primary" onClick={saveEditRelease}>Salvar</button><button className="btn btn-outline" onClick={()=>setEditingRelease(null)}>Cancelar</button></div></div>}
       </section>
       )}
 
