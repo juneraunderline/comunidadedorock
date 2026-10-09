@@ -1999,3 +1999,106 @@ body {
 .band-event-item h4{margin:0 0 3px;color:#fff;font-size:14px}
 .band-event-item p{margin:0;color:#999;font-size:11px}
 @media(max-width:600px){.band-release-item{grid-template-columns:62px 1fr}.band-release-item>img,.band-release-placeholder{width:62px;height:62px}.band-release-links a{font-size:10px}.band-event-item{grid-template-columns:52px 1fr}}
+
+
+/* =========================================================
+   MOBILE FIRST — ajuste fino para telas pequenas
+   ========================================================= */
+@media (max-width: 600px) {
+  html, body { width:100%; max-width:100%; overflow-x:hidden; }
+  .app { width:100%; overflow-x:hidden; }
+  .header { height:64px; padding:10px 14px; gap:10px; }
+  .header-logo { height:30px; max-width:180px; }
+  .nav-menu { top:64px; padding:16px; }
+  .nav-menu .nav-link { font-size:15px; padding:14px 4px; }
+
+  .hero { height:390px; min-height:390px; margin-bottom:0; }
+  .hero-content { width:100%; max-width:100%; padding:20px 18px; }
+  .hero h2 { font-size:34px !important; line-height:1.05; letter-spacing:1px; margin-bottom:14px; }
+  .hero p { font-size:13px; line-height:1.55; margin-bottom:20px; }
+  .hero-buttons { width:100%; gap:10px; }
+  .hero .btn-primary, .hero .btn-outline { width:100%; padding:12px 14px; font-size:12px; }
+
+  .section { width:100%; padding:28px 14px; margin-top:0; }
+  .section-header { display:flex; flex-direction:column; align-items:flex-start; gap:10px; margin-bottom:22px; padding-bottom:0; }
+  .section-header h2 { width:100%; font-size:21px; line-height:1.2; }
+  .section-header .view-all { align-self:flex-end; font-size:11px; }
+  .grid, .grid-2, .grid-4 { width:100%; grid-template-columns:1fr !important; gap:14px; }
+
+  .card, .event-card { width:100%; max-width:none !important; }
+  .card-image { height:205px !important; }
+  .card-content { padding:12px; }
+  .card-content h3 { font-size:14px; line-height:1.3; }
+  .card-content p { font-size:12px; line-height:1.45; }
+
+  .events-grid { grid-template-columns:1fr !important; width:100%; gap:14px; }
+  .event-image-wrapper { height:210px; }
+  .event-content { padding:15px; }
+  .event-title { font-size:15px; line-height:1.3; }
+  .event-location { line-height:1.4; }
+  .btn-buy-tickets { font-size:11px !important; padding:12px 10px !important; }
+
+  .band-cta-section { width:100%; margin:12px 0 0; padding:28px 16px; border-radius:8px; }
+  .band-cta-section h2 { font-size:22px; line-height:1.2; }
+  .band-cta-section p { font-size:13px; line-height:1.5; }
+  .featured-band-card { width:100%; grid-template-columns:1fr; }
+  .featured-band-image, .featured-band-image img { width:100%; height:220px; min-height:220px; }
+  .featured-band-content { padding:20px 16px; }
+  .featured-band-content h3 { font-size:25px; line-height:1.15; }
+
+  .release-card { width:100%; min-height:0; }
+  .release-image { width:100%; min-width:0; height:190px; }
+  .release-content { padding:16px; }
+  .release-content h3 { font-size:18px; line-height:1.2; }
+  .release-content p { font-size:12px; line-height:1.5; }
+  .release-actions a { flex:1 1 auto; text-align:center; }
+
+  .clip-feature { width:100%; min-height:180px; padding:24px 18px; }
+  .clip-feature h3 { font-size:24px; line-height:1.15; }
+
+  /* Perfil das bandas */
+  .band-detail-page { width:100%; overflow-x:hidden; }
+  .band-detail-section { width:100%; padding:0; }
+  .band-detail-container { width:100%; max-width:100%; padding:0 14px 30px; }
+  .band-detail-image { width:100%; margin:0 0 18px; border-radius:10px; overflow:hidden; }
+  .band-detail-image img { width:100%; height:auto; max-height:360px; object-fit:contain; display:block; background:#111117; }
+  .band-detail-content { width:100%; }
+  .band-detail-content h1 { font-size:30px; line-height:1.05; overflow-wrap:anywhere; }
+  .band-detail-meta { display:grid; grid-template-columns:1fr; gap:7px; margin:14px 0; }
+  .meta-item { width:100%; line-height:1.4; overflow-wrap:anywhere; }
+  .band-detail-section-box, .band-detail-social { width:100%; padding:16px !important; margin-top:14px; }
+  .band-detail-section-box h3, .band-detail-social h3 { font-size:17px; }
+  .band-detail-section-box p { font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+  .social-links { width:100% !important; gap:8px !important; }
+  .band-detail-social-link { min-width:42px !important; width:auto; max-width:100%; height:40px !important; padding:0 10px !important; font-size:12px; }
+  .band-detail-discovery { width:100%; gap:12px; }
+  .band-detail-box-title { align-items:center; }
+  .band-detail-box-title h3 { font-size:16px; }
+  .band-release-item { grid-template-columns:58px minmax(0,1fr); gap:10px; padding:9px; }
+  .band-release-item > img, .band-release-placeholder { width:58px; height:58px; }
+  .band-release-item h4 { font-size:14px; line-height:1.25; overflow-wrap:anywhere; }
+  .band-release-links a { font-size:10px; padding:5px 7px; }
+  .band-event-item { grid-template-columns:50px minmax(0,1fr); gap:9px; }
+  .band-event-item h4, .band-event-item p { overflow-wrap:anywhere; line-height:1.4; }
+  .news-detail-share { display:flex; flex-wrap:wrap; gap:7px; align-items:center; }
+  .share-btn { font-size:11px !important; padding:8px 10px !important; }
+  .band-detail-actions .btn { width:100%; }
+
+  .footer { padding:30px 14px; }
+  .footer-logo { max-width:180px; height:auto; }
+}
+
+@media (max-width: 380px) {
+  .header-logo { max-width:150px; }
+  .hero { height:365px; min-height:365px; }
+  .hero h2 { font-size:29px !important; }
+  .section { padding-left:12px; padding-right:12px; }
+  .section-header h2 { font-size:19px; }
+  .card-image { height:185px !important; }
+  .event-image-wrapper { height:190px; }
+  .featured-band-image, .featured-band-image img { height:190px; min-height:190px; }
+  .band-detail-container { padding-left:10px; padding-right:10px; }
+  .band-detail-content h1 { font-size:26px; }
+  .band-detail-social-link span { display:none; }
+  .band-detail-social-link { width:40px; padding:0 !important; }
+}
