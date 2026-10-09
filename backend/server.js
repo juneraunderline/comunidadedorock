@@ -543,6 +543,75 @@ const BROWSER_HEADERS = {
   "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
 };
 
+// Se o RSS for bloqueado ou não retornar itens, tenta a API pública do WordPress.
+async function getFeedItems(feedUrl) {
+  let rssError = null;
+  try {
+    const response = await fetchFunc(feedUrl, { headers: BROWSER_HEADERS });
+    if (!response.ok) rssError = new Error("HTTP " + response.status + " ao acessar o feed");
+    else {
+      const xml = await response.text();
+      const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+      if (items.length) return items;
+      rssError = new Error("O endereço não retornou itens RSS/Atom");
+    }
+  } catch (err) { rssError = err; }
+
+  let siteUrl;
+  try { siteUrl = new URL(feedUrl); }
+  catch { throw rssError || new Error("Endereço do feed inválido"); }
+
+  const domain = siteUrl.hostname.replace(/^www\./i, "");
+  const apiCandidates = [
+    new URL("/wp-json/wp/v2/posts?per_page=10&_embed=1", siteUrl.origin).href,
+    "https://public-api.wordpress.com/wp/v2/sites/" + encodeURIComponent(domain) + "/posts?per_page=10&_embed=1"
+  ];
+  let lastApiError = null;
+
+  for (const apiUrl of apiCandidates) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      let response;
+      try {
+        response = await fetchFunc(apiUrl, {
+          headers: { ...BROWSER_HEADERS, "Accept": "application/json" },
+          signal: controller.signal
+        });
+      } finally { clearTimeout(timeout); }
+      if (!response.ok) {
+        lastApiError = new Error("API WordPress HTTP " + response.status);
+        continue;
+      }
+      const posts = await response.json();
+      if (!Array.isArray(posts) || !posts.length) {
+        lastApiError = new Error("API WordPress não retornou notícias");
+        continue;
+      }
+
+      const escapeXml = value => String(value || "").replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+      return posts.map(post => {
+        const title = post.title?.rendered || "";
+        const content = post.content?.rendered || post.excerpt?.rendered || "";
+        const image = post._embedded?.["wp:featuredmedia"]?.[0]?.source_url || "";
+        return "<item><title>" + escapeXml(title) + "</title><link>" +
+          escapeXml(post.link || "") + "</link><pubDate>" +
+          escapeXml(post.date || post.date_gmt || "") +
+          "</pubDate><content:encoded><![CDATA[" +
+          String(content).replace(/]]>/g, "]]]]><![CDATA[>") +
+          "]]></content:encoded>" +
+          (image ? '<media:content url="' + escapeXml(image) + '" />' : "") +
+          "</item>";
+      });
+    } catch (err) { lastApiError = err; }
+  }
+
+  throw new Error((rssError?.message || "Falha ao acessar RSS") +
+    "; alternativa WordPress indisponível: " + (lastApiError?.message || "sem resposta"));
+}
+
 // Guarda o último resultado por fonte para o painel administrativo, persistindo no Neon.
 async function saveRssFeedStatus(feed, details = {}) {
   if (!feed?.id) return;
@@ -1212,10 +1281,7 @@ app.post("/api/import-rss", async (req, res) => {
       let feedImported = 0;
       let feedItems = 0;
       try {
-        const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
-        if (!response.ok) throw new Error("HTTP " + response.status + " ao acessar o feed");
-        const xml = await response.text();
-        const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+        const items = await getFeedItems(feed.url);
         feedItems = items.length;
         for (const itemXml of items.slice(0, 3)) {
           const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
@@ -1254,10 +1320,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     feedForStatus = feed;
     if (!feed || !feed.url) return res.status(400).json({ error: "Feed inválido" });
     let imported = 0;
-    const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
-    if (!response.ok) throw new Error("HTTP " + response.status + " ao acessar o feed");
-    const xml = await response.text();
-    const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+    const items = await getFeedItems(feed.url);
     for (const itemXml of items.slice(0, 3)) {
       const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
       const content = decodeHtmlEntities(extractContentFromItem(itemXml));
