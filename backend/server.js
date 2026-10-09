@@ -82,6 +82,7 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS rss_feeds (id SERIAL PRIMARY KEY, name TEXT NOT NULL, url TEXT NOT NULL UNIQUE, logo TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS events (id SERIAL PRIMARY KEY, title TEXT, artist TEXT, date TEXT, time TEXT, location TEXT, city TEXT, state TEXT, image TEXT, ticket_link TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS interviews (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, content TEXT, image TEXT, date TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`CREATE TABLE IF NOT EXISTS releases (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, type TEXT DEFAULT 'Single', release_date TEXT, image TEXT, spotify TEXT, youtube TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, display_name TEXT, avatar TEXT, role TEXT DEFAULT 'user', created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, page_type TEXT NOT NULL, page_id INTEGER NOT NULL, user_id INTEGER, user_name TEXT NOT NULL, user_avatar TEXT, content TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW())`);
 };
@@ -931,6 +932,32 @@ app.delete("/api/interviews/:id", async (req, res) => {
   await db.run("DELETE FROM interviews WHERE id = $1", [req.params.id]);
   res.json({ success: true });
 });
+
+// Lançamentos
+app.get("/api/releases", async (req, res) => {
+  try {
+    const full = req.query.full === "1";
+    const limit = req.query.limit ? Math.max(1, Math.min(parseInt(req.query.limit) || 0, 50)) : null;
+    const fields = full ? "*" : "id, title, artist, type, release_date, image, spotify, youtube, LEFT(COALESCE(description, ''), 300) AS description, created_at";
+    const limitSql = limit ? `LIMIT ${limit}` : "";
+    const releases = await db.getAll(`SELECT ${fields} FROM releases ORDER BY COALESCE(release_date, created_at::date::text) DESC, id DESC ${limitSql}`);
+    res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
+    res.json(releases);
+  } catch (err) { console.error("Erro ao buscar lançamentos:", err.message); res.status(500).json({ error: "Erro ao carregar lançamentos" }); }
+});
+app.post("/api/releases", async (req, res) => {
+  const r = req.body;
+  if (!r.title || !r.artist) return res.status(400).json({ error: "Título e artista/banda são obrigatórios" });
+  await db.run("INSERT INTO releases (title, artist, type, release_date, image, spotify, youtube, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)", [r.title,r.artist,r.type||"Single",r.release_date||null,r.image||null,r.spotify||null,r.youtube||null,r.description||null]);
+  res.json({ success:true });
+});
+app.put("/api/releases/:id", async (req, res) => {
+  const r=req.body;
+  if(!r.title||!r.artist) return res.status(400).json({error:"Título e artista/banda são obrigatórios"});
+  await db.run("UPDATE releases SET title=$1, artist=$2, type=$3, release_date=$4, image=$5, spotify=$6, youtube=$7, description=$8 WHERE id=$9",[r.title,r.artist,r.type||"Single",r.release_date||null,r.image||null,r.spotify||null,r.youtube||null,r.description||null,req.params.id]);
+  res.json({success:true});
+});
+app.delete("/api/releases/:id", async (req,res)=>{ await db.run("DELETE FROM releases WHERE id=$1",[req.params.id]); res.json({success:true}); });
 
 // Eventos
 app.get("/api/events", async (req, res) => {
