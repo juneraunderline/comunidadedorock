@@ -507,7 +507,7 @@ async function autoImportRss() {
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
         
         // Limitar a 15 itens por feed para não travar
-        for (const itemXml of items.slice(0, 15)) {
+        for (const itemXml of items.slice(0, 3)) {
           const rawTitle = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
           const title = decodeHtmlEntities(rawTitle);
           if (!title) continue;
@@ -536,10 +536,11 @@ async function autoImportRss() {
         }
       } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
     }
-    // Limpar notícias sem imagem ou com imagem inválida
+    // Limpar notícias sem imagem e limitar cada fonte às 3 mais recentes.
     try {
       await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'");
-    } catch (e) {}
+      await cleanupRssPostsPerSource();
+    } catch (e) { console.warn("Erro ao limitar notícias por fonte:", e.message); }
   } finally {
     isImporting = false;
   }
@@ -555,6 +556,24 @@ app.get("/api/health", async (req, res) => {
     res.status(503).json({ status: "error", database: "unavailable" });
   }
 });
+
+
+// Mantém no máximo as 3 notícias mais recentes de cada fonte RSS.
+// Publicações próprias (source vazio) não são afetadas.
+async function cleanupRssPostsPerSource() {
+  await pool.query(`
+    WITH ranked AS (
+      SELECT id, ROW_NUMBER() OVER (
+        PARTITION BY source
+        ORDER BY created_at DESC NULLS LAST, id DESC
+      ) AS position
+      FROM posts
+      WHERE source IS NOT NULL AND TRIM(source) <> ''
+    )
+    DELETE FROM posts
+    WHERE id IN (SELECT id FROM ranked WHERE position > 3)
+  `);
+}
 
 // --- ROTAS DA API ---
 
@@ -1088,7 +1107,7 @@ app.post("/api/import-rss", async (req, res) => {
         const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
-        for (const itemXml of items) {
+        for (const itemXml of items.slice(0, 3)) {
           const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const rssImage = extractImageFromItem(itemXml, content);
@@ -1106,6 +1125,7 @@ app.post("/api/import-rss", async (req, res) => {
     }
     // Limpar posts sem imagem após import manual
     await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
+    await cleanupRssPostsPerSource();
     res.json({ success: true, imported });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1120,7 +1140,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
     const xml = await response.text();
     const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
-    for (const itemXml of items) {
+    for (const itemXml of items.slice(0, 3)) {
       const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
       const content = decodeHtmlEntities(extractContentFromItem(itemXml));
       const rssImage = extractImageFromItem(itemXml, content);
@@ -1135,6 +1155,7 @@ app.post("/api/import-rss-single", async (req, res) => {
       }
     }
     await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
+    await cleanupRssPostsPerSource();
     res.json({ success: true, imported });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1151,7 +1172,7 @@ app.post("/api/reimport-rss", async (req, res) => {
         const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
-        for (const itemXml of items) {
+        for (const itemXml of items.slice(0, 3)) {
           const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const image = extractImageFromItem(itemXml, content);
