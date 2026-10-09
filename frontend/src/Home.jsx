@@ -27,6 +27,30 @@ function Home({ posts }) {
 	  );
   const [displayCount, setDisplayCount] = useState(6);
   const [brokenImages, setBrokenImages] = useState(new Set());
+  useEffect(() => {
+    const fitReleaseTitles = () => {
+      document.querySelectorAll(".release-content h3").forEach((title) => {
+        title.style.fontSize = "16px";
+        const availableWidth = title.clientWidth;
+        if (!availableWidth) return;
+        let fontSize = 16;
+        while (title.scrollWidth > availableWidth && fontSize > 8) {
+          fontSize -= 0.5;
+          title.style.fontSize = `${fontSize}px`;
+        }
+      });
+    };
+
+    fitReleaseTitles();
+    const observer = new ResizeObserver(fitReleaseTitles);
+    document.querySelectorAll(".release-content h3").forEach((title) => observer.observe(title.parentElement));
+    window.addEventListener("resize", fitReleaseTitles);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", fitReleaseTitles);
+    };
+  }, [releases]);
+
 
   const formatDatePT = (dateString) => {
     if (!dateString) return "Data desconhecida";
