@@ -1145,7 +1145,25 @@ export default function Admin({ user: currentUser }) {
                 type="text"
                 value={editingBand.image || ""}
                 onChange={(e) => setEditingBand({...editingBand, image: e.target.value})}
+                placeholder="URL da imagem (ou envie um arquivo abaixo)"
               />
+              <input
+                type="file"
+                accept="image/*"
+                aria-label="Enviar imagem da banda"
+                style={{ marginTop: "8px" }}
+                onChange={(e) => {
+                  handleImageUpload(e.target.files?.[0], setEditingBand, "image");
+                  e.target.value = "";
+                }}
+              />
+              {editingBand.image && (
+                <img
+                  src={getImageUrl(editingBand.image)}
+                  alt="Prévia da imagem da banda"
+                  style={{ display: "block", maxWidth: "180px", maxHeight: "140px", objectFit: "cover", marginTop: "10px", borderRadius: "6px" }}
+                />
+              )}
             </div>
             <div className="form-group">
               <label>Contato</label>
@@ -1283,8 +1301,25 @@ export default function Admin({ user: currentUser }) {
                   type="text"
                   value={newBand.image}
                   onChange={(e) => setNewBand({...newBand, image: e.target.value})}
-                  placeholder="URL da imagem"
+                  placeholder="URL da imagem (ou envie um arquivo abaixo)"
                 />
+                <input
+                  type="file"
+                  accept="image/*"
+                  aria-label="Enviar imagem da banda"
+                  style={{ marginTop: "8px" }}
+                  onChange={(e) => {
+                    handleImageUpload(e.target.files?.[0], setNewBand, "image");
+                    e.target.value = "";
+                  }}
+                />
+                {newBand.image && (
+                  <img
+                    src={getImageUrl(newBand.image)}
+                    alt="Prévia da imagem da banda"
+                    style={{ display: "block", maxWidth: "180px", maxHeight: "140px", objectFit: "cover", marginTop: "10px", borderRadius: "6px" }}
+                  />
+                )}
               </div>
               <div className="form-group">
                 <label>Contato</label>
