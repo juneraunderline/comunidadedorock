@@ -88,7 +88,8 @@ function CadastrarBanda() {
         .band-form-card button[type="submit"]:hover { background:#c9151c !important; transform:translateY(-1px); box-shadow:0 8px 24px rgba(227,27,35,.2); }
         .band-form-card > form > div:first-child { padding:20px; border:1px dashed #444; border-radius:10px; background:#111; }
         @media(max-width:640px){ .band-form-shell{padding:5px 10px 30px;} .band-form-card{padding:20px 15px;} .band-form-card h3{font-size:16px;} }
-`}</style>\n        <div className="band-form-shell"><div className="band-form-card">
+`}</style>
+        <div className="band-form-shell"><div className="band-form-card">
           <form onSubmit={handleSubmit}>
             <div style={{marginBottom: "12px"}}>
               <label style={{display: "block", marginBottom: "6px", fontWeight: "bold"}}>Foto da Banda</label>
