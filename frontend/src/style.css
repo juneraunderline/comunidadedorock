@@ -1976,3 +1976,26 @@ body {
  .clip-feature{padding:30px 22px;min-height:190px}
  .clip-feature h3{font-size:26px}
 }
+
+
+/* Perfil completo das bandas */
+.band-detail-discovery{display:grid;grid-template-columns:1fr;gap:18px;margin-top:20px}
+.band-detail-box-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}
+.band-detail-box-title h3{margin:0}
+.band-detail-box-title span{background:#e9b61e;color:#111;border-radius:20px;padding:3px 9px;font-size:11px;font-weight:900}
+.band-release-list{display:grid;gap:10px}
+.band-release-item{display:grid;grid-template-columns:76px 1fr;gap:14px;align-items:center;padding:10px;border:1px solid #292930;border-radius:8px;background:#111117}
+.band-release-item>img,.band-release-placeholder{width:76px;height:76px;border-radius:6px;object-fit:cover;background:#09090c;display:flex;align-items:center;justify-content:center;font-size:28px}
+.band-release-item small{color:#e9b61e;text-transform:uppercase;font-size:10px;font-weight:800}
+.band-release-item h4{margin:3px 0 7px;color:#fff;font-size:16px}
+.band-release-links{display:flex;gap:8px;flex-wrap:wrap}
+.band-release-links a{font-size:11px;color:#ddd;text-decoration:none;border:1px solid #383842;border-radius:4px;padding:5px 8px}
+.band-release-links a:hover{border-color:#e9b61e;color:#e9b61e}
+.band-events-list{display:grid;gap:8px}
+.band-event-item{display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:center;padding:10px;border-bottom:1px solid #292930}
+.band-event-date{width:52px;height:52px;border:1px solid #e9b61e;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.band-event-date strong{color:#fff;font-size:20px;line-height:1}
+.band-event-date small{color:#e9b61e;font-size:9px;font-weight:900}
+.band-event-item h4{margin:0 0 3px;color:#fff;font-size:14px}
+.band-event-item p{margin:0;color:#999;font-size:11px}
+@media(max-width:600px){.band-release-item{grid-template-columns:62px 1fr}.band-release-item>img,.band-release-placeholder{width:62px;height:62px}.band-release-links a{font-size:10px}.band-event-item{grid-template-columns:52px 1fr}}
