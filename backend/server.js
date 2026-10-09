@@ -808,12 +808,12 @@ app.get("/api/bands", async (req, res) => {
     }
     const bands = await db.getAll(sql, params);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
-    // Migra somente o lote pedido; assim o JSON deixa de carregar fotos base64 enormes.
-    const responseBands = [];
-    for (const band of bands) {
+    // Migra as imagens antigas do lote em paralelo para reduzir a espera no primeiro acesso.
+    // O banco só recebe URLs depois que cada upload termina; falhas preservam a imagem original.
+    const responseBands = await Promise.all(bands.map(async (band) => {
       const image = full ? band.image : await migrateLegacyBandImage(band);
-      responseBands.push({ ...band, image, slug: mkSlug(band.name) });
-    }
+      return { ...band, image, slug: mkSlug(band.name) };
+    }));
     res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
     res.json(responseBands);
   } catch (err) {
