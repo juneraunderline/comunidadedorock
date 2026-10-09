@@ -21,6 +21,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
+const sharp = require("sharp");
 const imagesDir = process.env.VERCEL ? path.join("/tmp", "comunidadedorock-images") : path.join(__dirname, "public", "images");
 if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir, { recursive: true });
 app.use("/images", express.static(imagesDir));
@@ -108,18 +109,47 @@ async function loadFeeds() {
 // --- FUNÇÕES AUXILIARES ---
 
 // Migra imagens antigas salvas em base64 para URLs do Cloudinary, lote a lote.
+// Reduz imagens grandes antes do upload para respeitar o limite de 10 MB do Cloudinary.
 async function migrateLegacyBandImage(band) {
   const original = band?.image;
   if (!original || typeof original !== "string" || /^https?:\/\//i.test(original)) return original || null;
 
-  let uploadSource = original;
-  if (!/^data:image\//i.test(uploadSource)) {
-    const compact = uploadSource.replace(/\s/g, "");
-    if (compact.length < 50000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(compact)) return original;
-    uploadSource = "data:image/jpeg;base64," + compact;
-  }
-
   try {
+    let uploadSource = original;
+    let imageBuffer;
+
+    if (/^data:image\//i.test(uploadSource)) {
+      const comma = uploadSource.indexOf(",");
+      if (comma < 0) return original;
+      imageBuffer = Buffer.from(uploadSource.slice(comma + 1), "base64");
+    } else {
+      const compact = uploadSource.replace(/\s/g, "");
+      if (compact.length < 50000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(compact)) return original;
+      imageBuffer = Buffer.from(compact, "base64");
+    }
+
+    // Comprimi também imagens grandes que estão abaixo do limite para manter
+    // o upload previsível e evitar que Base64 enorme continue no banco.
+    if (imageBuffer.length > 7 * 1024 * 1024) {
+      imageBuffer = await sharp(imageBuffer, { limitInputPixels: 100000000 })
+        .rotate()
+        .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+        .flatten({ background: "#ffffff" })
+        .jpeg({ quality: 78, mozjpeg: true })
+        .toBuffer();
+      uploadSource = "data:image/jpeg;base64," + imageBuffer.toString("base64");
+    } else if (!/^data:image\//i.test(uploadSource)) {
+      uploadSource = "data:image/jpeg;base64," + imageBuffer.toString("base64");
+    }
+
+    // Cloudinary limita o upload direto de data URI; não tente enviar se
+    // mesmo após a compressão ainda estiver acima de 9 MB.
+    const payload = uploadSource.slice(uploadSource.indexOf(",") + 1);
+    const estimatedBytes = Math.floor(payload.length * 3 / 4);
+    if (estimatedBytes > 9 * 1024 * 1024) {
+      throw new Error("Imagem continua acima de 9 MB após a compressão");
+    }
+
     const result = await cloudinary.uploader.upload(uploadSource, {
       folder: "comunidadedorock/bandas",
       public_id: "band-" + band.id,
