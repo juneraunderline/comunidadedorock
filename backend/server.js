@@ -47,7 +47,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
   // Vercel cria várias instâncias serverless; um pool grande em cada instância
-  // pode esgotar rapidamente o limite de conexões do Neon.
+  // pode esgotar rapidamente o limite de conexões do banco Layerbase.
   max: 2,
   idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 10000,
@@ -483,6 +483,22 @@ async function extractImageFromArticlePage(link) {
   }
 }
 
+// Diagnóstico independente da inicialização das tabelas.
+// Permite separar falhas de conexão com o Layerbase de falhas no schema.
+app.get("/api/health", async (req, res) => {
+  try {
+    await pool.query("SELECT 1");
+    res.json({ status: "ok", database: "connected" });
+  } catch (err) {
+    console.error("Health check - banco:", err.code || err.message);
+    res.status(503).json({
+      status: "error",
+      database: "unavailable",
+      code: typeof err.code === "string" ? err.code : "UNKNOWN"
+    });
+  }
+});
+
 // Inicializa o banco sob demanda na primeira requisição.
 app.use(async (req, res, next) => {
   try {
@@ -608,16 +624,7 @@ async function autoImportRss() {
   }
 }
 // Não executar importação RSS em loop dentro da Vercel Serverless Function.\n// A importação é disparada exclusivamente pelo endpoint /api/cron/rss via GitHub Actions.\n// Isso evita chamadas externas contínuas que podem derrubar a Function e fazer o conteúdo da API parecer indisponível.
-// Diagnóstico seguro do backend/banco de produção
-app.get("/api/health", async (req, res) => {
-  try {
-    await pool.query("SELECT 1");
-    res.json({ status: "ok", database: "connected" });
-  } catch (err) {
-    console.error("Health check - banco:", err.message);
-    res.status(503).json({ status: "error", database: "unavailable" });
-  }
-});
+
 
 
 // Mantém no máximo as 3 notícias mais recentes de cada fonte RSS.
