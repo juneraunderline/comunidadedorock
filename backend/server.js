@@ -496,12 +496,18 @@ app.get("/api/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
   } catch (err) {
-    console.error("Health check - banco:", err.code || err.message);
+    // Diagnóstico temporário: a mensagem ajuda a identificar falhas de protocolo
+    // sem expor a URL de conexão nem credenciais.
+    console.error("Health check - banco:", {
+      code: typeof err.code === "string" ? err.code : "UNKNOWN",
+      message: String(err.message || "Erro sem mensagem").slice(0, 300)
+    });
     return res.status(503).json({
       status: "error",
       database: "unavailable",
       stage: "connection",
-      code: typeof err.code === "string" ? err.code : "UNKNOWN"
+      code: typeof err.code === "string" ? err.code : "UNKNOWN",
+      detail: String(err.message || "Erro sem mensagem").slice(0, 300)
     });
   }
 
