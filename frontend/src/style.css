@@ -1961,9 +1961,13 @@ body {
 .release-actions{display:flex;gap:8px;flex-wrap:wrap}
 .release-actions a{color:#fff;background:#24242c;border:1px solid #35353d;border-radius:4px;padding:7px 10px;font-size:11px;font-weight:800;text-decoration:none}
 .release-actions a:hover{border-color:#e9b61e;color:#e9b61e}
-.clip-feature{min-height:230px;border-radius:12px;border:1px solid #292930;background:linear-gradient(110deg,#15151b,#0c0c10);padding:40px;display:flex;align-items:center}
+.clip-feature{min-height:230px;border-radius:12px;border:1px solid #292930;background:linear-gradient(110deg,#15151b,#0c0c10);padding:28px;display:grid;grid-template-columns:minmax(240px,0.8fr) minmax(420px,1.2fr);gap:28px;align-items:center}
+.clip-info{min-width:0}
 .clip-feature h3{font-size:34px;color:#fff;text-transform:uppercase;margin:4px 0}
 .clip-feature p{color:#aaa;margin-bottom:20px}
+.clip-player{width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden;border:1px solid #292930}
+.clip-player iframe{width:100%;height:100%;border:0;display:block}
+
 @media(max-width:768px){
  .band-cta-section{margin:20px 20px 0;padding:35px 20px}
  .band-cta-section h2{font-size:23px}
@@ -1973,8 +1977,9 @@ body {
  .featured-band-content h3{font-size:29px}
  .release-card{display:block}
  .release-image{width:100%;height:190px}
- .clip-feature{padding:30px 22px;min-height:190px}
+ .clip-feature{padding:22px 18px;min-height:0;grid-template-columns:1fr;gap:20px}
  .clip-feature h3{font-size:26px}
+ .clip-player{width:100%;aspect-ratio:16/9}
 }
 
 
@@ -2053,7 +2058,7 @@ body {
   .release-content p { font-size:12px; line-height:1.5; }
   .release-actions a { flex:1 1 auto; text-align:center; }
 
-  .clip-feature { width:100%; min-height:180px; padding:24px 18px; }
+  .clip-feature { width:100%; min-height:0; padding:20px 16px; }
   .clip-feature h3 { font-size:24px; line-height:1.15; }
 
   /* Perfil das bandas */
