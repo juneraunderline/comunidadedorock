@@ -282,11 +282,10 @@ function Home({ posts }) {
               >
                 <div className="card-image">
                   <img 
-                    src={band.image?.includes('cloudinary') 
-                      ? band.image.replace('/upload/', '/upload/c_thumb,w_400,g_face,f_auto,q_auto/') 
-                      : getImageUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=400&h=400&fit=crop"} 
+                    src={getImageUrl(band.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=400&h=400&fit=crop"} 
                     alt={band.name} 
                     loading="lazy"
+                    style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center", backgroundColor: "#111" }}
                   />
                 </div>
                 <div className="card-content">
