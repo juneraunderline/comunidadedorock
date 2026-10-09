@@ -108,63 +108,62 @@ async function loadFeeds() {
 
 // --- FUNÇÕES AUXILIARES ---
 
-// Migra imagens antigas salvas em base64 para URLs do Cloudinary, lote a lote.
-// Reduz imagens grandes antes do upload para respeitar o limite de 10 MB do Cloudinary.
-async function migrateLegacyBandImage(band) {
+// Padroniza imagens de bandas: URLs existentes são preservadas; Base64 é
+// redimensionado/comprimido antes do upload para evitar payloads enormes.
+async function migrateLegacyBandImage(band, table = "bands") {
   const original = band?.image;
   if (!original || typeof original !== "string" || /^https?:\/\//i.test(original)) return original || null;
+  if (!["bands", "pending_bands"].includes(table)) throw new Error("Tabela de imagens não permitida");
 
   try {
-    let uploadSource = original;
     let imageBuffer;
-
-    if (/^data:image\//i.test(uploadSource)) {
-      const comma = uploadSource.indexOf(",");
+    if (/^data:image\//i.test(original)) {
+      const comma = original.indexOf(",");
       if (comma < 0) return original;
-      imageBuffer = Buffer.from(uploadSource.slice(comma + 1), "base64");
+      imageBuffer = Buffer.from(original.slice(comma + 1), "base64");
     } else {
-      const compact = uploadSource.replace(/\s/g, "");
+      const compact = original.replace(/\s/g, "");
       if (compact.length < 50000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(compact)) return original;
       imageBuffer = Buffer.from(compact, "base64");
     }
 
-    // Comprimi também imagens grandes que estão abaixo do limite para manter
-    // o upload previsível e evitar que Base64 enorme continue no banco.
-    if (imageBuffer.length > 7 * 1024 * 1024) {
-      imageBuffer = await sharp(imageBuffer, { limitInputPixels: 100000000 })
-        .rotate()
-        .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
-        .flatten({ background: "#ffffff" })
-        .jpeg({ quality: 78, mozjpeg: true })
-        .toBuffer();
-      uploadSource = "data:image/jpeg;base64," + imageBuffer.toString("base64");
-    } else if (!/^data:image\//i.test(uploadSource)) {
-      uploadSource = "data:image/jpeg;base64," + imageBuffer.toString("base64");
-    }
+    if (!imageBuffer.length) return original;
 
-    // Cloudinary limita o upload direto de data URI; não tente enviar se
-    // mesmo após a compressão ainda estiver acima de 9 MB.
-    const payload = uploadSource.slice(uploadSource.indexOf(",") + 1);
-    const estimatedBytes = Math.floor(payload.length * 3 / 4);
-    if (estimatedBytes > 9 * 1024 * 1024) {
+    // Sempre gera uma versão web leve, inclusive para imagens Base64 menores.
+    let optimized = await sharp(imageBuffer, { limitInputPixels: 100000000 })
+      .rotate()
+      .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+      .flatten({ background: "#ffffff" })
+      .jpeg({ quality: 78, mozjpeg: true })
+      .toBuffer();
+
+    if (optimized.length > 9 * 1024 * 1024) {
+      optimized = await sharp(optimized)
+        .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 62, mozjpeg: true })
+        .toBuffer();
+    }
+    if (optimized.length > 9 * 1024 * 1024) {
       throw new Error("Imagem continua acima de 9 MB após a compressão");
     }
 
-    const result = await cloudinary.uploader.upload(uploadSource, {
-      folder: "comunidadedorock/bandas",
-      public_id: "band-" + band.id,
-      overwrite: true,
-      resource_type: "image"
-    });
+    const result = await cloudinary.uploader.upload(
+      "data:image/jpeg;base64," + optimized.toString("base64"),
+      {
+        folder: "comunidadedorock/bandas",
+        public_id: (table === "pending_bands" ? "pending-band-" : "band-") + band.id,
+        overwrite: true,
+        resource_type: "image"
+      }
+    );
     const url = result.secure_url;
-    await db.run("UPDATE bands SET image = $1 WHERE id = $2 AND image = $3", [url, band.id, original]);
+    await db.run(`UPDATE ${table} SET image = $1 WHERE id = $2 AND image = $3`, [url, band.id, original]);
     return url;
   } catch (err) {
-    console.warn("Não foi possível migrar a imagem da banda " + band.id + ":", err.message);
+    console.warn("Não foi possível otimizar a imagem da banda " + band.id + ":", err.message);
     return original;
   }
 }
-
 
 // Evita depender do estado de memória de uma máquina/instância.
 // Em Vercel, a função pode ser criada e encerrada entre requisições.
@@ -823,19 +822,31 @@ app.get("/api/bands", async (req, res) => {
 });
 
 app.post("/api/bands", async (req, res) => {
-  const b = req.body;
-  if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
-  await db.run(`INSERT INTO bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
-    [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site]);
-  res.json({ success: true });
+  try {
+    const b = req.body;
+    if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
+    const inserted = await db.getOne(`INSERT INTO bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
+      [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site]);
+    const image = await migrateLegacyBandImage({ id: inserted.id, image: b.image }, "bands");
+    res.json({ success: true, image });
+  } catch (err) {
+    console.error("Erro ao cadastrar banda:", err.message);
+    res.status(500).json({ error: "Não foi possível cadastrar a banda" });
+  }
 });
 
 app.put("/api/bands/:id", async (req, res) => {
-  const b = req.body;
-  if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
-  await db.run(`UPDATE bands SET name=$1, genre=$2, city=$3, state=$4, year=$5, members=$6, biography=$7, contact=$8, image=$9, instagram=$10, facebook=$11, youtube=$12, spotify=$13, bandcamp=$14, site=$15 WHERE id=$16`,
-    [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site, req.params.id]);
-  res.json({ success: true });
+  try {
+    const b = req.body;
+    if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
+    await db.run(`UPDATE bands SET name=$1, genre=$2, city=$3, state=$4, year=$5, members=$6, biography=$7, contact=$8, image=$9, instagram=$10, facebook=$11, youtube=$12, spotify=$13, bandcamp=$14, site=$15 WHERE id=$16`,
+      [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site, req.params.id]);
+    const image = await migrateLegacyBandImage({ id: req.params.id, image: b.image }, "bands");
+    res.json({ success: true, image });
+  } catch (err) {
+    console.error("Erro ao atualizar banda:", err.message);
+    res.status(500).json({ error: "Não foi possível atualizar a banda" });
+  }
 });
 
 app.delete("/api/bands/:id", async (req, res) => {
@@ -844,11 +855,17 @@ app.delete("/api/bands/:id", async (req, res) => {
 });
 
 app.post("/api/bands/submit", async (req, res) => {
-  const b = req.body;
-  if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
-  await db.run(`INSERT INTO pending_bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
-    [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site]);
-  res.json({ success: true, message: "Banda cadastrada com sucesso! Aguarde a aprovação." });
+  try {
+    const b = req.body;
+    if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
+    const inserted = await db.getOne(`INSERT INTO pending_bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
+      [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site]);
+    await migrateLegacyBandImage({ id: inserted.id, image: b.image }, "pending_bands");
+    res.json({ success: true, message: "Banda cadastrada com sucesso! Aguarde a aprovação." });
+  } catch (err) {
+    console.error("Erro ao enviar banda para aprovação:", err.message);
+    res.status(500).json({ error: "Não foi possível cadastrar a banda" });
+  }
 });
 
 app.get("/api/pending-bands", async (req, res) => {
@@ -856,13 +873,19 @@ app.get("/api/pending-bands", async (req, res) => {
 });
 
 app.post("/api/approve-band/:id", async (req, res) => {
-  const band = await db.getOne("SELECT * FROM pending_bands WHERE id = $1", [req.params.id]);
-  if (!band) return res.status(404).send();
-  // created_at = NOW() na aprovação para que a banda apareça como "nova" na Home.
-  await db.run(`INSERT INTO bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, NOW())`,
-    [band.name, band.genre, band.city, band.state, band.year, band.members, band.biography, band.contact, band.image, band.instagram, band.facebook, band.youtube, band.spotify, band.bandcamp, band.site]);
-  await db.run("DELETE FROM pending_bands WHERE id = $1", [req.params.id]);
-  res.json({ success: true });
+  try {
+    const band = await db.getOne("SELECT * FROM pending_bands WHERE id = $1", [req.params.id]);
+    if (!band) return res.status(404).send();
+    // created_at = NOW() na aprovação para que a banda apareça como "nova" na Home.
+    const inserted = await db.getOne(`INSERT INTO bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, NOW()) RETURNING id`,
+      [band.name, band.genre, band.city, band.state, band.year, band.members, band.biography, band.contact, band.image, band.instagram, band.facebook, band.youtube, band.spotify, band.bandcamp, band.site]);
+    await migrateLegacyBandImage({ id: inserted.id, image: band.image }, "bands");
+    await db.run("DELETE FROM pending_bands WHERE id = $1", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao aprovar banda:", err.message);
+    res.status(500).json({ error: "Não foi possível aprovar a banda" });
+  }
 });
 
 app.delete("/api/pending-bands/:id", async (req, res) => {
