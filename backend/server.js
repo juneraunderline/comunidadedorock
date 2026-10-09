@@ -524,12 +524,16 @@ async function autoImportRss() {
         }
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
         itemCountForFeed = items.length;
-        if (!xml.trim() || items.length === 0) {
-          await saveRssFeedStatus(feed, { status: "no_new", message: "Feed acessível, mas não retornou itens RSS.", items: 0 });
+        if (!xml.trim()) {
+          await saveRssFeedStatus(feed, { status: "error", message: "Não foi possível obter o conteúdo do feed (resposta vazia ou bloqueada).", items: 0 });
+          continue;
+        }
+        if (items.length === 0) {
+          await saveRssFeedStatus(feed, { status: "no_new", message: "O feed respondeu, mas não contém itens RSS reconhecidos.", items: 0 });
           continue;
         }
         
-        // Limitar a 15 itens por feed para não travar
+        // Processar no máximo três itens por fonte
         for (const itemXml of items.slice(0, 3)) {
           const rawTitle = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
           const title = decodeHtmlEntities(rawTitle);
@@ -1146,10 +1150,14 @@ app.post("/api/import-rss", async (req, res) => {
     let imported = 0;
     const feeds = req.body.feeds || rssFeeds;
     for (const feed of feeds) {
+      let feedImported = 0;
+      let feedItems = 0;
       try {
         const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
+        if (!response.ok) throw new Error("HTTP " + response.status + " ao acessar o feed");
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+        feedItems = items.length;
         for (const itemXml of items.slice(0, 3)) {
           const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
@@ -1162,9 +1170,14 @@ app.post("/api/import-rss", async (req, res) => {
           if (!(await postAlreadyExists(title, link))) {
             await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
             imported++;
+            feedImported++;
           }
         }
-      } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
+        await saveRssFeedStatus(feed, { status: feedImported > 0 ? "updated" : "no_new", message: feedImported > 0 ? `${feedImported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported: feedImported, items: feedItems });
+      } catch (e) {
+        console.warn(`Erro no feed ${feed.name}: ${e.message}`);
+        await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: feedImported, items: feedItems });
+      }
     }
     // Limpar posts sem imagem após import manual
     await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
@@ -1181,6 +1194,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     if (!feed || !feed.url) return res.status(400).json({ error: "Feed inválido" });
     let imported = 0;
     const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
+    if (!response.ok) throw new Error("HTTP " + response.status + " ao acessar o feed");
     const xml = await response.text();
     const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
     for (const itemXml of items.slice(0, 3)) {
@@ -1199,6 +1213,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     }
     await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
     await cleanupRssPostsPerSource();
+    await saveRssFeedStatus(feed, { status: imported > 0 ? "updated" : "no_new", message: imported > 0 ? `${imported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported, items: items.length });
     res.json({ success: true, imported });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1211,10 +1226,15 @@ app.post("/api/reimport-rss", async (req, res) => {
     let created = 0;
     const feeds = req.body.feeds || rssFeeds;
     for (const feed of feeds) {
+      let feedUpdated = 0;
+      let feedCreated = 0;
+      let feedItems = 0;
       try {
         const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
+        if (!response.ok) throw new Error("HTTP " + response.status + " ao acessar o feed");
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+        feedItems = items.length;
         for (const itemXml of items.slice(0, 3)) {
           const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
@@ -1232,12 +1252,18 @@ app.post("/api/reimport-rss", async (req, res) => {
               [content, link, feed.name, image, existing.id]
             );
             updated++;
+            feedUpdated++;
           } else {
             await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
             created++;
+            feedCreated++;
           }
         }
-      } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
+        await saveRssFeedStatus(feed, { status: feedCreated > 0 ? "updated" : "no_new", message: feedCreated > 0 ? `${feedCreated} notícia(s) nova(s) criada(s); ${feedUpdated} atualizada(s).` : `Nenhuma notícia nova criada; ${feedUpdated} notícia(s) existente(s) atualizada(s).`, imported: feedCreated, updated: feedUpdated, items: feedItems });
+      } catch (e) {
+        console.warn(`Erro no feed ${feed.name}: ${e.message}`);
+        await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: feedCreated, updated: feedUpdated, items: feedItems });
+      }
     }
     await cleanupRssPostsPerSource();
     res.json({ success: true, updated, created });
