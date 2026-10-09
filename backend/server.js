@@ -1189,8 +1189,10 @@ app.post("/api/import-rss", async (req, res) => {
 });
 
 app.post("/api/import-rss-single", async (req, res) => {
+  let feedForStatus = null;
   try {
     const { feed } = req.body;
+    feedForStatus = feed;
     if (!feed || !feed.url) return res.status(400).json({ error: "Feed inválido" });
     let imported = 0;
     const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
@@ -1216,6 +1218,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     await saveRssFeedStatus(feed, { status: imported > 0 ? "updated" : "no_new", message: imported > 0 ? `${imported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported, items: items.length });
     res.json({ success: true, imported });
   } catch (err) {
+    if (feedForStatus) await saveRssFeedStatus(feedForStatus, { status: "error", message: err.message });
     res.status(500).json({ error: err.message });
   }
 });
