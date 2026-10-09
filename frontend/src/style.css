@@ -1961,11 +1961,13 @@ body {
 .release-actions{display:flex;gap:8px;flex-wrap:wrap}
 .release-actions a{color:#fff;background:#24242c;border:1px solid #35353d;border-radius:4px;padding:7px 10px;font-size:11px;font-weight:800;text-decoration:none}
 .release-actions a:hover{border-color:#e9b61e;color:#e9b61e}
-.clip-feature{min-height:230px;border-radius:12px;border:1px solid #292930;background:linear-gradient(110deg,#15151b,#0c0c10);padding:28px;display:grid;grid-template-columns:minmax(240px,0.8fr) minmax(420px,1.2fr);gap:28px;align-items:center}
-.clip-info{min-width:0}
-.clip-feature h3{font-size:34px;color:#fff;text-transform:uppercase;margin:4px 0}
-.clip-feature p{color:#aaa;margin-bottom:20px}
-.clip-player{width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden;border:1px solid #292930}
+.clip-feature{min-height:260px;border-radius:14px;border:1px solid #292930;background:linear-gradient(110deg,#17171d 0%,#0c0c10 100%);padding:34px;display:grid;grid-template-columns:minmax(260px,0.78fr) minmax(420px,1.22fr);gap:36px;align-items:center;box-shadow:0 14px 35px rgba(0,0,0,.28)}
+.clip-info{min-width:0;display:flex;flex-direction:column;align-items:flex-start;padding:6px 4px}
+.clip-feature .band-cta-kicker{margin-bottom:16px}
+.clip-feature h3{font-size:36px;color:#fff;text-transform:uppercase;margin:0 0 14px;line-height:1.08;letter-spacing:.4px}
+.clip-feature p{color:#aaa;margin:0 0 30px;font-size:15px;line-height:1.6}
+.clip-feature .btn{margin-top:2px;padding:13px 22px;border-radius:5px;box-shadow:0 6px 16px rgba(233,182,30,.16)}
+.clip-player{width:100%;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;border:1px solid #333;box-shadow:0 10px 28px rgba(0,0,0,.38)}
 .clip-player iframe{width:100%;height:100%;border:0;display:block}
 
 @media(max-width:768px){
@@ -1977,8 +1979,11 @@ body {
  .featured-band-content h3{font-size:29px}
  .release-card{display:block}
  .release-image{width:100%;height:190px}
- .clip-feature{padding:22px 18px;min-height:0;grid-template-columns:1fr;gap:20px}
- .clip-feature h3{font-size:26px}
+ .clip-feature{padding:24px 18px;min-height:0;grid-template-columns:1fr;gap:24px}
+ .clip-info{padding:2px 0}
+ .clip-feature h3{font-size:27px;margin-bottom:12px}
+ .clip-feature p{margin-bottom:24px}
+ .clip-feature .btn{width:auto;align-self:flex-start}
  .clip-player{width:100%;aspect-ratio:16/9}
 }
 
