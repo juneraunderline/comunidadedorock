@@ -1196,6 +1196,7 @@ app.post("/api/reimport-rss", async (req, res) => {
         }
       } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
     }
+    await cleanupRssPostsPerSource();
     res.json({ success: true, updated, created });
   } catch (err) {
     res.status(500).json({ error: err.message });
