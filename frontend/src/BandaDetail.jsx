@@ -92,6 +92,8 @@ function BandaDetail() {
   const navigate = useNavigate();
   const [band, setBand] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [releases, setReleases] = useState([]);
+  const [events, setEvents] = useState([]);
 
   useEffect(() => {
     let active = true;
@@ -101,6 +103,7 @@ function BandaDetail() {
       .then(res => {
         if (!active) return;
         setBand(res.data);
+        Promise.allSettled([axios.get(`${API_URL}/api/releases?full=1`), axios.get(`${API_URL}/api/events?full=1`)]).then(([rr, er]) => { if (!active) return; if (rr.status === "fulfilled") setReleases(rr.value.data.filter(item => String(item.artist || "").trim().toLowerCase() === String(res.data.name || "").trim().toLowerCase())); if (er.status === "fulfilled") setEvents(er.value.data.filter(item => String(item.artist || "").toLowerCase().includes(String(res.data.name || "").toLowerCase()))); });
         setLoading(false);
       })
       .catch(() => {
@@ -182,6 +185,34 @@ function BandaDetail() {
                   <SocialLink network="bandcamp" label="Bandcamp" href={band.bandcamp} color="#629AA9" />
                   <SocialLink network="site" label="Site Oficial" href={band.site} color="#E9B61E" />
                 </div>
+              </div>
+            )}
+
+            {(releases.length > 0 || events.length > 0) && (
+              <div className="band-detail-discovery">
+                {releases.length > 0 && (
+                  <div className="band-detail-section-box">
+                    <div className="band-detail-box-title"><h3>🎧 Lançamentos</h3><span>{releases.length}</span></div>
+                    <div className="band-release-list">
+                      {releases.slice(0, 6).map(release => (
+                        <article className="band-release-item" key={release.id}>
+                          {release.image ? <img src={getImageUrl(release.image)} alt={release.title} loading="lazy" /> : <div className="band-release-placeholder">🎵</div>}
+                          <div><small>{release.type || "Lançamento"}{release.release_date ? " · " + new Date(release.release_date + "T00:00:00").toLocaleDateString("pt-BR") : ""}</small><h4>{release.title}</h4><div className="band-release-links">{release.spotify && <a href={release.spotify} target="_blank" rel="noopener noreferrer">🎧 Ouvir no Spotify</a>}{release.youtube && <a href={release.youtube} target="_blank" rel="noopener noreferrer">▶ Ver no YouTube</a>}</div></div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {events.length > 0 && (
+                  <div className="band-detail-section-box">
+                    <div className="band-detail-box-title"><h3>📅 Próximos shows</h3><span>{events.length}</span></div>
+                    <div className="band-events-list">
+                      {events.filter(e => !e.date || new Date(e.date + "T23:59:59") >= new Date()).slice(0, 5).map(event => (
+                        <article className="band-event-item" key={event.id}><div className="band-event-date"><strong>{event.date ? new Date(event.date + "T00:00:00").getDate() : "—"}</strong><small>{event.date ? new Date(event.date + "T00:00:00").toLocaleDateString("pt-BR",{month:"short"}).replace(".","").toUpperCase() : ""}</small></div><div><h4>{event.title}</h4><p>📍 {event.location}{event.city ? " · " + event.city : ""}{event.time ? " · " + event.time : ""}</p></div></article>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
