@@ -11,6 +11,8 @@ function Home({ posts }) {
   const [bands, setBands] = useState([]);
 	  const [interviews, setInterviews] = useState([]);
 	  const [events, setEvents] = useState([]);
+  const [releases, setReleases] = useState([]);
+  const [loadingReleases, setLoadingReleases] = useState(true);
 	  const [loadingBands, setLoadingBands] = useState(true);
 	  const [loadingInterviews, setLoadingInterviews] = useState(true);
 	  const [loadingEvents, setLoadingEvents] = useState(true);
@@ -95,6 +97,12 @@ function Home({ posts }) {
         `${API_URL}/api/interviews?limit=3`,
         (data) => { setInterviews(data); setLoadingInterviews(false); },
         () => setLoadingInterviews(false)
+      );
+      // Buscar lançamentos (com retry)
+      fetchWithRetry(
+        `${API_URL}/api/releases?limit=4`,
+        (data) => { setReleases(data); setLoadingReleases(false); },
+        () => setLoadingReleases(false)
       );
       // Buscar eventos (com retry)
       fetchWithRetry(
@@ -302,6 +310,54 @@ function Home({ posts }) {
           )}
         </div>
       </section>
+
+      {/* CTA PARA BANDAS */}
+      <section className="band-cta-section">
+        <div className="band-cta-content">
+          <span className="band-cta-kicker">🎸 VOCÊ TEM UMA BANDA?</span>
+          <h2>COLOQUE SUA BANDA NO <span>MAPA DO ROCK</span></h2>
+          <p>Crie seu perfil gratuito no Comunidade do Rock e divulgue sua música, redes sociais, lançamentos e shows para novos fãs.</p>
+          <button className="btn btn-primary" onClick={() => navigate("/cadastrar-banda")}>CADASTRAR MINHA BANDA →</button>
+        </div>
+      </section>
+
+      {/* BANDA DA SEMANA */}
+      {!loadingBands && bands[0] && (
+      <section className="section band-feature-section">
+        <div className="section-header"><h2>BANDA <span className="highlight">EM DESTAQUE</span></h2><button onClick={() => navigate("/bandas")} className="view-all">Ver todas →</button></div>
+        <div className="featured-band-card" onClick={() => navigate("/bandas/" + (bands[0].slug || bands[0].id))}>
+          <div className="featured-band-image"><img src={getImageUrl(bands[0].image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=800&h=600&fit=crop"} alt={bands[0].name} /></div>
+          <div className="featured-band-content">
+            <span className="band-cta-kicker">BANDA DA SEMANA</span>
+            <h3>{bands[0].name}</h3>
+            <p className="featured-band-meta">{bands[0].genre} · {bands[0].city}{bands[0].state ? " / " + bands[0].state : ""}</p>
+            <p>Conheça a história, os integrantes, as músicas e as redes da banda.</p>
+            <span className="btn btn-primary">CONHECER A BANDA →</span>
+          </div>
+        </div>
+      </section>
+      )}
+
+      {/* LANÇAMENTOS */}
+      <section className="section">
+        <div className="section-header"><h2>LANÇAMENTOS <span className="highlight">DA CENA</span></h2></div>
+        <div className="grid grid-2">
+          {loadingReleases ? <><SkeletonCard /><SkeletonCard /></> : releases.length ? releases.slice(0,4).map(r => (
+            <div className="release-card" key={r.id}>
+              <div className="release-image">{r.image ? <img src={getImageUrl(r.image)} alt={r.title} loading="lazy" /> : <div className="release-placeholder">🎧</div>}<span>{r.type || "Single"}</span></div>
+              <div className="release-content"><small>{r.artist}{r.release_date ? " · " + new Date(r.release_date + "T00:00:00").toLocaleDateString("pt-BR") : ""}</small><h3>{r.title}</h3>{r.description && <p>{r.description}</p>}<div className="release-actions">{r.spotify && <a href={r.spotify} target="_blank" rel="noopener noreferrer">🎧 Spotify</a>}{r.youtube && <a href={r.youtube} target="_blank" rel="noopener noreferrer">▶ YouTube</a>}</div></div>
+            </div>
+          )) : <div style={{gridColumn:"1/-1",textAlign:"center",color:"#888",padding:"30px"}}>Novos lançamentos das bandas independentes aparecerão aqui.</div>}
+        </div>
+      </section>
+
+      {/* CLIPE DA SEMANA */}
+      {!loadingReleases && releases.find(r => r.youtube) && (() => { const clip = releases.find(r => r.youtube); return (
+      <section className="section">
+        <div className="section-header"><h2>CLIPE <span className="highlight">EM DESTAQUE</span></h2></div>
+        <div className="clip-feature"><div><span className="band-cta-kicker">CLIPE DA SEMANA</span><h3>{clip.title}</h3><p>{clip.artist}</p><a className="btn btn-primary" href={clip.youtube} target="_blank" rel="noopener noreferrer">ASSISTIR NO YOUTUBE →</a></div></div>
+      </section>
+      ); })()}
 
       {/* PRÓXIMOS EVENTOS */}
       <section className="section">
