@@ -427,7 +427,21 @@ export default function Admin({ user: currentUser }) {
       .catch((err) => alert("Erro ao deletar entrevista: " + (err.response?.data?.error || err.message)));
   };
 
-  // ====== LANÇAMENTOS ======\n  const createRelease = () => {\n    if (!newRelease.title.trim() || !newRelease.artist.trim()) return alert("Preencha título e banda/artista");\n    axios.post(API_URL + "/api/releases", newRelease).then(() => { setNewRelease({ title:"", artist:"", type:"Single", release_date:"", image:"", spotify:"", youtube:"", description:"" }); fetchData(); alert("Lançamento publicado!"); }).catch(err => alert(err.response?.data?.error || "Erro ao publicar lançamento"));\n  };\n  const saveEditRelease = () => {\n    if (!editingRelease.title.trim() || !editingRelease.artist.trim()) return alert("Preencha título e banda/artista");\n    axios.put(API_URL + "/api/releases/" + editingRelease.id, editingRelease).then(() => { setEditingRelease(null); fetchData(); alert("Lançamento atualizado!"); }).catch(err => alert(err.response?.data?.error || "Erro ao atualizar lançamento"));\n  };\n  const deleteRelease = (id) => {\n    if (!confirm("Excluir este lançamento?")) return;\n    axios.delete(API_URL + "/api/releases/" + id).then(fetchData).catch(() => alert("Erro ao excluir lançamento"));\n  };\n\n  // ====== EVENTOS ======
+  // ====== LANÇAMENTOS ======
+  const createRelease = () => {
+    if (!newRelease.title.trim() || !newRelease.artist.trim()) return alert("Preencha título e banda/artista");
+    axios.post(API_URL + "/api/releases", newRelease).then(() => { setNewRelease({ title:"", artist:"", type:"Single", release_date:"", image:"", spotify:"", youtube:"", description:"" }); fetchData(); alert("Lançamento publicado!"); }).catch(err => alert(err.response?.data?.error || "Erro ao publicar lançamento"));
+  };
+  const saveEditRelease = () => {
+    if (!editingRelease.title.trim() || !editingRelease.artist.trim()) return alert("Preencha título e banda/artista");
+    axios.put(API_URL + "/api/releases/" + editingRelease.id, editingRelease).then(() => { setEditingRelease(null); fetchData(); alert("Lançamento atualizado!"); }).catch(err => alert(err.response?.data?.error || "Erro ao atualizar lançamento"));
+  };
+  const deleteRelease = (id) => {
+    if (!confirm("Excluir este lançamento?")) return;
+    axios.delete(API_URL + "/api/releases/" + id).then(fetchData).catch(() => alert("Erro ao excluir lançamento"));
+  };
+
+  // ====== EVENTOS ======
   const createEvent = () => {
     if (!newEvent.title.trim() || !newEvent.date) {
       alert("Preencha pelo menos o título e a data");
