@@ -1671,7 +1671,7 @@ export default function Admin({ user: currentUser }) {
           <div className="form-group"><label>Imagem</label><input value={newRelease.image} onChange={e=>setNewRelease({...newRelease,image:e.target.value})} /><input type="file" accept="image/*" onChange={e=>handleImageUpload(e.target.files?.[0], setNewRelease, "image")} /></div>
           <div className="form-group"><label>Spotify</label><input value={newRelease.spotify} onChange={e=>setNewRelease({...newRelease,spotify:e.target.value})} /></div>
           <div className="form-group"><label>YouTube / Clipe</label><input value={newRelease.youtube} onChange={e=>setNewRelease({...newRelease,youtube:e.target.value})} /></div>
-          <div className="form-group"><label>Descrição</label><textarea rows="4" value={newRelease.description} onChange={e=>setNewRelease({...newRelease,description:e.target.value})} /></div>
+          
           <div className="form-actions"><button className="btn btn-primary" onClick={createRelease}>Publicar lançamento</button></div>
         </div>
         <div className="interviews-list">
