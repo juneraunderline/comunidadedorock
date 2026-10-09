@@ -1930,3 +1930,49 @@ body {
 .skeleton-text.short {
   width: 40%;
 }
+
+
+/* FASE 1 — descoberta e atração de bandas */
+.band-cta-section{margin:30px auto 10px;padding:44px 30px;max-width:1180px;background:linear-gradient(135deg,#17171d,#0e0e12);border:1px solid #2b2b32;border-left:4px solid #e9b61e;border-radius:12px;text-align:center;position:relative;overflow:hidden}
+.band-cta-section:after{content:"🤘";position:absolute;right:30px;bottom:-20px;font-size:110px;opacity:.06}
+.band-cta-content{max-width:760px;margin:auto;position:relative;z-index:1}
+.band-cta-kicker{display:block;color:#e9b61e;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+.band-cta-section h2{color:#fff;font-size:30px;font-weight:900;margin:0 0 12px;text-transform:uppercase}
+.band-cta-section h2 span{color:#e9b61e}
+.band-cta-section p{color:#999;font-size:14px;line-height:1.7;margin-bottom:22px}
+.band-feature-section{padding-top:25px}
+.featured-band-card{display:grid;grid-template-columns:minmax(280px,1fr) 1fr;background:#15151b;border:1px solid #292930;border-radius:12px;overflow:hidden;cursor:pointer;transition:.25s}
+.featured-band-card:hover{border-color:#e9b61e;transform:translateY(-3px)}
+.featured-band-image{min-height:330px;background:#08080a;display:flex;align-items:center;justify-content:center}
+.featured-band-image img{width:100%;height:100%;min-height:330px;object-fit:contain;background:#08080a}
+.featured-band-content{padding:44px 38px;display:flex;flex-direction:column;justify-content:center}
+.featured-band-content h3{font-size:38px;text-transform:uppercase;color:#fff;margin:0 0 8px;font-weight:900}
+.featured-band-content p{color:#aaa;margin-bottom:20px}
+.featured-band-content .featured-band-meta{color:#e9b61e;font-weight:700;text-transform:uppercase;font-size:12px}
+.release-card{display:flex;background:#15151b;border:1px solid #292930;border-radius:10px;overflow:hidden;min-height:190px}
+.release-image{width:190px;min-width:190px;background:#09090c;position:relative;display:flex;align-items:center;justify-content:center}
+.release-image img{width:100%;height:100%;object-fit:cover}
+.release-image>span{position:absolute;top:10px;left:10px;background:#e9b61e;color:#fff;font-size:10px;font-weight:900;padding:5px 8px;border-radius:3px;text-transform:uppercase}
+.release-placeholder{font-size:52px;opacity:.35}
+.release-content{padding:22px;display:flex;flex-direction:column;justify-content:center}
+.release-content small{color:#e9b61e;font-weight:700;text-transform:uppercase;font-size:11px}
+.release-content h3{color:#fff;font-size:20px;text-transform:uppercase;margin:5px 0 8px}
+.release-content p{color:#999;font-size:12px;line-height:1.5;margin-bottom:12px}
+.release-actions{display:flex;gap:8px;flex-wrap:wrap}
+.release-actions a{color:#fff;background:#24242c;border:1px solid #35353d;border-radius:4px;padding:7px 10px;font-size:11px;font-weight:800;text-decoration:none}
+.release-actions a:hover{border-color:#e9b61e;color:#e9b61e}
+.clip-feature{min-height:230px;border-radius:12px;border:1px solid #292930;background:linear-gradient(110deg,#15151b,#0c0c10);padding:40px;display:flex;align-items:center}
+.clip-feature h3{font-size:34px;color:#fff;text-transform:uppercase;margin:4px 0}
+.clip-feature p{color:#aaa;margin-bottom:20px}
+@media(max-width:768px){
+ .band-cta-section{margin:20px 20px 0;padding:35px 20px}
+ .band-cta-section h2{font-size:23px}
+ .featured-band-card{grid-template-columns:1fr}
+ .featured-band-image,.featured-band-image img{min-height:240px;height:240px}
+ .featured-band-content{padding:28px 22px}
+ .featured-band-content h3{font-size:29px}
+ .release-card{display:block}
+ .release-image{width:100%;height:190px}
+ .clip-feature{padding:30px 22px;min-height:190px}
+ .clip-feature h3{font-size:26px}
+}
