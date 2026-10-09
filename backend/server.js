@@ -1197,7 +1197,7 @@ app.put("/api/releases/:id", async (req, res) => {
   await db.run("UPDATE releases SET title=$1, artist=$2, type=$3, release_date=$4, image=$5, spotify=$6, youtube=$7, description=$8 WHERE id=$9",[r.title,r.artist,r.type||"Single",r.release_date||null,r.image||null,r.spotify||null,r.youtube||null,r.description||null,req.params.id]);
   res.json({success:true});
 });
-app.delete("/api/releases/:id", async (req,res)=>{ await db.run("DELETE FROM releases WHERE id=$1",[req.params.id]); res.json({success:true}); });
+app.delete("/api/releases/:id", async (req,res)=>{ try { const result = await db.run("DELETE FROM releases WHERE id=$1",[req.params.id]); res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate"); res.json({success:true}); } catch(err) { console.error("Erro ao excluir lançamento:", err.message); res.status(500).json({error:"Erro ao excluir lançamento"}); } });
 
 // Eventos
 app.get("/api/events", async (req, res) => {
