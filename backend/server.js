@@ -80,6 +80,7 @@ const initDb = async () => {
   await db.run(`CREATE INDEX IF NOT EXISTS idx_bands_created_at ON bands (created_at DESC)`);
   await db.run(`CREATE TABLE IF NOT EXISTS pending_bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, submitted_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS rss_feeds (id SERIAL PRIMARY KEY, name TEXT NOT NULL, url TEXT NOT NULL UNIQUE, logo TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`CREATE TABLE IF NOT EXISTS rss_feed_status (feed_id INTEGER PRIMARY KEY, feed_name TEXT NOT NULL, feed_url TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'unknown', message TEXT, imported_count INTEGER NOT NULL DEFAULT 0, updated_count INTEGER NOT NULL DEFAULT 0, item_count INTEGER NOT NULL DEFAULT 0, checked_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS events (id SERIAL PRIMARY KEY, title TEXT, artist TEXT, date TEXT, time TEXT, location TEXT, city TEXT, state TEXT, image TEXT, ticket_link TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS interviews (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, content TEXT, image TEXT, date TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS releases (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, type TEXT DEFAULT 'Single', release_date TEXT, image TEXT, spotify TEXT, youtube TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
@@ -474,6 +475,21 @@ const BROWSER_HEADERS = {
   "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
 };
 
+// Guarda o último resultado por fonte para o painel administrativo, persistindo no Neon.
+async function saveRssFeedStatus(feed, details = {}) {
+  if (!feed?.id) return;
+  const status = details.status || "error";
+  const message = details.message || "";
+  try {
+    await db.run(
+      "INSERT INTO rss_feed_status (feed_id, feed_name, feed_url, status, message, imported_count, updated_count, item_count, checked_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) ON CONFLICT (feed_id) DO UPDATE SET feed_name = EXCLUDED.feed_name, feed_url = EXCLUDED.feed_url, status = EXCLUDED.status, message = EXCLUDED.message, imported_count = EXCLUDED.imported_count, updated_count = EXCLUDED.updated_count, item_count = EXCLUDED.item_count, checked_at = NOW()",
+      [feed.id, feed.name || "Fonte RSS", feed.url || "", status, message, Number(details.imported || 0), Number(details.updated || 0), Number(details.items || 0)]
+    );
+  } catch (err) {
+    console.warn("Não foi possível salvar status RSS de " + (feed.name || feed.url) + ":", err.message);
+  }
+}
+
 let isImporting = false;
 async function autoImportRss() {
   if (isImporting) return; // Evitar execuções sobrepostas
@@ -484,6 +500,8 @@ async function autoImportRss() {
       rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
     } catch (e) { console.warn("Erro ao recarregar feeds:", e.message); }
     for (const feed of rssFeeds) {
+      let importedForFeed = 0;
+      let itemCountForFeed = 0;
       try {
         // Tentar URL direta primeiro, se falhar tentar via proxy
         let xml = "";
@@ -505,6 +523,11 @@ async function autoImportRss() {
           if (proxyRes?.status === 200) xml = await proxyRes.text();
         }
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+        itemCountForFeed = items.length;
+        if (!xml.trim() || items.length === 0) {
+          await saveRssFeedStatus(feed, { status: "no_new", message: "Feed acessível, mas não retornou itens RSS.", items: 0 });
+          continue;
+        }
         
         // Limitar a 15 itens por feed para não travar
         for (const itemXml of items.slice(0, 3)) {
@@ -532,9 +555,19 @@ async function autoImportRss() {
 
           await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)",
             [title, content, image, link, feed.name]);
+          importedForFeed++;
           console.log(`✅ Importado: ${title.substring(0, 30)}`);
         }
-      } catch (e) { console.warn(`Erro no feed ${feed.name}: ${e.message}`); }
+        await saveRssFeedStatus(feed, {
+          status: importedForFeed > 0 ? "updated" : "no_new",
+          message: importedForFeed > 0 ? `${importedForFeed} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.",
+          imported: importedForFeed,
+          items: itemCountForFeed
+        });
+      } catch (e) {
+        console.warn(`Erro no feed ${feed.name}: ${e.message}`);
+        await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: importedForFeed, items: itemCountForFeed });
+      }
     }
     // Limpar notícias sem imagem e limitar cada fonte às 3 mais recentes.
     try {
@@ -1057,6 +1090,16 @@ app.delete("/api/comments/:id", async (req, res) => {
 app.get("/api/rss-feeds", (req, res) => {
   res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=900");
   res.json(rssFeeds);
+});
+
+app.get("/api/rss-status", async (req, res) => {
+  try {
+    const rows = await db.getAll("SELECT * FROM rss_feed_status ORDER BY checked_at DESC NULLS LAST, feed_name ASC");
+    res.set("Cache-Control", "no-store");
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post("/api/rss-feeds", async (req, res) => {
