@@ -593,18 +593,18 @@ async function getFeedItems(feedUrl) {
       const html = await response.text();
       const found = [];
       const seen = new Set();
-      const anchorRegex = /<a\\b[^>]*href=["']([^"'#]+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+      const anchorRegex = /<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
       let match;
       while ((match = anchorRegex.exec(html)) && found.length < 20) {
         let link;
         try { link = new URL(match[1], pageUrl); } catch { continue; }
-        if (link.hostname.replace(/^www\\./i, "") !== domain) continue;
-        const title = match[2].replace(/<script[\\s\\S]*?<\\/script>/gi, "")
-          .replace(/<style[\\s\\S]*?<\\/style>/gi, "")
-          .replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim();
-        const path = link.pathname.replace(/\\/$/, "");
+        if (link.hostname.replace(/^www\./i, "") !== domain) continue;
+        const title = match[2].replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        const path = link.pathname.replace(/\/$/, "");
         if (title.length < 18 || path.length < 8 || seen.has(link.href)) continue;
-        if (/\\/(noticias|destaques|contato|sobre|anuncie|promocoes|page)\\/?$/i.test(path)) continue;
+        if (/\/(noticias|destaques|contato|sobre|anuncie|promocoes|page)\/?$/i.test(path)) continue;
         seen.add(link.href);
         const safeTitle = title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         found.push("<item><title>" + safeTitle + "</title><link>" +
