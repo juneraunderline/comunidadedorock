@@ -452,9 +452,23 @@ export default function Admin({ user: currentUser }) {
     if (!editingRelease.title.trim() || !editingRelease.artist.trim()) return alert("Preencha título e banda/artista");
     axios.put(API_URL + "/api/releases/" + editingRelease.id, editingRelease).then(() => { setEditingRelease(null); fetchData(); alert("Lançamento atualizado!"); }).catch(err => alert(err.response?.data?.error || "Erro ao atualizar lançamento"));
   };
-  const deleteRelease = (id) => {
+  const deleteRelease = async (id) => {
     if (!confirm("Excluir este lançamento?")) return;
-    axios.delete(API_URL + "/api/releases/" + id).then(fetchData).catch(() => alert("Erro ao excluir lançamento"));
+    try {
+      const response = await axios.delete(API_URL + "/api/releases/" + id, {
+        headers: { "Cache-Control": "no-cache" }
+      });
+      if (response.data?.success) {
+        setReleases(current => current.filter(item => String(item.id) !== String(id)));
+        alert("Lançamento excluído com sucesso.");
+        fetchData();
+      } else {
+        alert("A API não confirmou a exclusão do lançamento.");
+      }
+    } catch (err) {
+      alert("Não foi possível excluir o lançamento: " + (err.response?.data?.error || err.message));
+      fetchData();
+    }
   };
 
   // ====== EVENTOS ======
