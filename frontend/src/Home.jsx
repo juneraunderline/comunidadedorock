@@ -355,7 +355,33 @@ function Home({ posts }) {
       {!loadingReleases && releases.find(r => r.youtube) && (() => { const clip = releases.find(r => r.youtube); return (
       <section className="section">
         <div className="section-header"><h2>CLIPE <span className="highlight">EM DESTAQUE</span></h2></div>
-        <div className="clip-feature"><div><span className="band-cta-kicker">CLIPE DA SEMANA</span><h3>{clip.title}</h3><p>{clip.artist}</p><a className="btn btn-primary" href={clip.youtube} target="_blank" rel="noopener noreferrer">ASSISTIR NO YOUTUBE →</a></div></div>
+        <div className="clip-feature">
+          <div className="clip-info">
+            <span className="band-cta-kicker">CLIPE DA SEMANA</span>
+            <h3>{clip.title}</h3>
+            <p>{clip.artist}</p>
+            <a className="btn btn-primary" href={clip.youtube} target="_blank" rel="noopener noreferrer">ASSISTIR NO YOUTUBE →</a>
+          </div>
+          <div className="clip-player">
+            <iframe
+              src={(() => {
+                try {
+                  const url = new URL(clip.youtube);
+                  let videoId = url.searchParams.get("v");
+                  if (!videoId && url.hostname.includes("youtu.be")) videoId = url.pathname.slice(1).split("/")[0];
+                  if (!videoId && url.pathname.includes("/shorts/")) videoId = url.pathname.split("/shorts/")[1].split("/")[0];
+                  return videoId ? `https://www.youtube.com/embed/${videoId}` : clip.youtube;
+                } catch {
+                  return clip.youtube;
+                }
+              })()}
+              title={clip.title}
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+        </div>
       </section>
       ); })()}
 
