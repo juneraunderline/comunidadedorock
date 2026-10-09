@@ -71,7 +71,24 @@ function CadastrarBanda() {
         <div className="section-header">
           <h2>CADASTRAR <span className="highlight">BANDA</span></h2>
         </div>
-        <div style={{maxWidth: "600px", margin: "0 auto", padding: "20px"}}>
+        <style>{`
+        .band-form-shell { max-width: 780px; margin: 0 auto; padding: 10px 20px 45px; }
+        .band-form-card { background: linear-gradient(145deg,#171717,#0d0d0d); border: 1px solid #303030; border-radius: 14px; padding: 30px; box-shadow: 0 16px 45px rgba(0,0,0,.3); }
+        .band-form-card form { display: flex; flex-direction: column; gap: 2px; }
+        .band-form-card input, .band-form-card textarea { box-sizing: border-box !important; width: 100% !important; min-height: 46px; padding: 12px 14px !important; border: 1px solid #3a3a3a !important; border-radius: 7px !important; background: #101010 !important; color: #fff !important; font: inherit; outline: none; transition: .2s; }
+        .band-form-card input:focus, .band-form-card textarea:focus { border-color: #e31b23 !important; box-shadow: 0 0 0 3px rgba(227,27,35,.13); background: #151515 !important; }
+        .band-form-card input::placeholder, .band-form-card textarea::placeholder { color: #777; }
+        .band-form-card textarea { min-height: 135px; resize: vertical; line-height: 1.5; }
+        .band-form-card h3 { color:#fff; font-size:18px; margin:24px 0 14px; padding-top:22px; border-top:1px solid #292929; }
+        .band-form-card h3::before { content:""; display:inline-block; width:4px; height:20px; margin-right:9px; vertical-align:-4px; border-radius:3px; background:#e31b23; }
+        .band-form-card h3:first-of-type { margin-top:0; padding-top:0; border-top:0; }
+        .band-form-card input[type="file"] { min-height:auto; padding:16px !important; border:1px dashed #4b4b4b !important; cursor:pointer; }
+        .band-form-card img { border:1px solid #333; border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+        .band-form-card button[type="submit"] { width:100% !important; min-height:50px; margin-top:18px; border:0 !important; border-radius:7px !important; background:#e31b23 !important; color:#fff !important; font-weight:800; font-size:15px; cursor:pointer; transition:.2s; }
+        .band-form-card button[type="submit"]:hover { background:#c9151c !important; transform:translateY(-1px); box-shadow:0 8px 24px rgba(227,27,35,.2); }
+        .band-form-card > form > div:first-child { padding:20px; border:1px dashed #444; border-radius:10px; background:#111; }
+        @media(max-width:640px){ .band-form-shell{padding:5px 10px 30px;} .band-form-card{padding:20px 15px;} .band-form-card h3{font-size:16px;} }
+`}</style>\n        <div className="band-form-shell"><div className="band-form-card">
           <form onSubmit={handleSubmit}>
             <div style={{marginBottom: "12px"}}>
               <label style={{display: "block", marginBottom: "6px", fontWeight: "bold"}}>Foto da Banda</label>
