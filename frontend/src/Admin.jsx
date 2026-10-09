@@ -37,6 +37,8 @@ export default function Admin({ user: currentUser }) {
   const [editingRelease, setEditingRelease] = useState(null);
 
   const [rssFeeds, setRssFeeds] = useState([]);
+  const [rssStatuses, setRssStatuses] = useState([]);
+  const [loadingRssStatuses, setLoadingRssStatuses] = useState(false);
   const [feedName, setFeedName] = useState("");
   const [feedUrl, setFeedUrl] = useState("");
   const [feedLogo, setFeedLogo] = useState("");
@@ -90,6 +92,19 @@ export default function Admin({ user: currentUser }) {
     reader.readAsDataURL(file);
   };
 
+  const fetchRssStatuses = async () => {
+    setLoadingRssStatuses(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/rss-status`);
+      setRssStatuses(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Erro ao carregar status RSS:", err);
+    } finally {
+      setLoadingRssStatuses(false);
+    }
+  };
+
+  const getRssStatus = (feed) => rssStatuses.find(item => Number(item.feed_id) === Number(feed.id));
   const fetchData = () => {
     axios.get(`${API_URL}/api/posts?full=1`).then(res => setPosts(res.data));
     axios.get(`${API_URL}/api/bands?full=1`).then(res => setBands(res.data));
@@ -98,6 +113,7 @@ export default function Admin({ user: currentUser }) {
     axios.get(`${API_URL}/api/events?full=1`).then(res => setEvents(res.data));
     axios.get(`${API_URL}/api/releases?full=1`).then(res => setReleases(res.data));
     axios.get(`${API_URL}/api/rss-feeds`).then(res => setRssFeeds(res.data));
+    fetchRssStatuses();
     axios.get(`${API_URL}/api/users`).then(res => setAllUsers(res.data)).catch(() => {});
   };
 
@@ -733,6 +749,17 @@ export default function Admin({ user: currentUser }) {
       {activeTab === "rss" && (
       <section className="admin-card">
         <h2>FEEDS RSS</h2>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+          <p style={{ color: "#aaa", margin: 0, fontSize: "13px" }}>Acompanhe a última verificação automática de cada fonte.</p>
+          <button className="btn btn-outline" onClick={fetchRssStatuses} disabled={loadingRssStatuses}>
+            {loadingRssStatuses ? "Consultando..." : "↻ Atualizar status"}
+          </button>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "16px", fontSize: "12px" }}>
+          <span style={{ padding: "5px 9px", borderRadius: "5px", background: "#173d2a", color: "#8ee5a4" }}>● Atualizou</span>
+          <span style={{ padding: "5px 9px", borderRadius: "5px", background: "#40351a", color: "#f4d27b" }}>● Sem novidades</span>
+          <span style={{ padding: "5px 9px", borderRadius: "5px", background: "#461f25", color: "#ff9ba4" }}>● Erro</span>
+        </div>
         <div className="edit-post-form">
           <h3>Novo Feed RSS</h3>
           <div className="form-group">
@@ -813,6 +840,24 @@ export default function Admin({ user: currentUser }) {
                         Logo: {feed.logo}
                       </p>
                     )}
+                    {(() => {
+                      const status = getRssStatus(feed);
+                      const statusStyle = status?.status === "updated"
+                        ? { background: "#173d2a", color: "#8ee5a4", label: "Atualizou" }
+                        : status?.status === "no_new"
+                          ? { background: "#40351a", color: "#f4d27b", label: "Sem novidades" }
+                          : status?.status === "error"
+                            ? { background: "#461f25", color: "#ff9ba4", label: "Erro" }
+                            : { background: "#30303a", color: "#c4c4ce", label: "Ainda não verificado" };
+                      return (
+                        <div style={{ marginTop: "8px", padding: "8px", borderRadius: "6px", background: statusStyle.background, color: statusStyle.color, fontSize: "12px", overflowWrap: "anywhere" }}>
+                          <strong>{statusStyle.label}</strong>
+                          {status?.message && <div style={{ marginTop: "3px" }}>{status.message}</div>}
+                          {status?.checked_at && <div style={{ marginTop: "3px", opacity: 0.8 }}>Última verificação: {new Date(status.checked_at).toLocaleString("pt-BR")}</div>}
+                          {status && <div style={{ marginTop: "3px", opacity: 0.8 }}>Itens no feed: {status.item_count ?? 0} · Novas: {status.imported_count ?? 0}{Number(status.updated_count || 0) > 0 ? ` · Atualizadas: ${status.updated_count}` : ""}</div>}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
