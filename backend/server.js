@@ -200,16 +200,24 @@ async function migrateLegacyBandImage(band, table = "bands") {
 // Evita depender do estado de memória de uma máquina/instância.
 // Em Vercel, a função pode ser criada e encerrada entre requisições.
 let initializationPromise = null;
+let initializationStage = "not_started";
+let initializationErrorCode = null;
 
 async function ensureInitialized() {
   if (!initializationPromise) {
     initializationPromise = (async () => {
+      initializationStage = "creating_tables";
+      initializationErrorCode = null;
       await initDb();
+      initializationStage = "loading_feeds";
       await loadFeeds();
+      initializationStage = "ready";
       // A limpeza de duplicatas não deve rodar em toda requisição/cold start.
       // Ela é executada somente pelo endpoint manual /api/cleanup-duplicates.
       return true;
     })().catch(err => {
+      initializationStage = "failed";
+      initializationErrorCode = typeof err.code === "string" ? err.code : "UNKNOWN";
       initializationPromise = null;
       throw err;
     });
@@ -483,18 +491,30 @@ async function extractImageFromArticlePage(link) {
   }
 }
 
-// Diagnóstico independente da inicialização das tabelas.
-// Permite separar falhas de conexão com o Layerbase de falhas no schema.
+// Diagnóstico seguro: testa a conexão e a inicialização real usada pela API.
 app.get("/api/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
-    res.json({ status: "ok", database: "connected" });
   } catch (err) {
     console.error("Health check - banco:", err.code || err.message);
-    res.status(503).json({
+    return res.status(503).json({
       status: "error",
       database: "unavailable",
+      stage: "connection",
       code: typeof err.code === "string" ? err.code : "UNKNOWN"
+    });
+  }
+
+  try {
+    await ensureInitialized();
+    return res.json({ status: "ok", database: "connected", initialization: "ready" });
+  } catch (err) {
+    console.error("Health check - inicialização:", initializationStage, err.code || err.message);
+    return res.status(503).json({
+      status: "error",
+      database: "connected",
+      initialization: initializationStage,
+      code: initializationErrorCode || "UNKNOWN"
     });
   }
 });
