@@ -45,7 +45,7 @@ function Sobre() {
 
           <div style={{ textAlign: "center", marginTop: "48px", padding: "30px", background: "#16161b", borderRadius: "8px", border: "1px solid #2a2a33" }}>
             <p style={{ fontSize: "16px", color: "#fff", marginBottom: "8px", fontWeight: "700" }}>🤘 Rock nunca morre.</p>
-            <p style={{ color: "#888", fontSize: "13px" }}>Comunidade do Rock — Desde 2026</p>
+            <p style={{ color: "#888", fontSize: "13px" }}>Comunidade do Rock — Desde 2004</p>
           </div>
         </div>
       </section>
