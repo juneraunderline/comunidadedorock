@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_URL from "./config/api";
 
-function Eventos() {
+function Eventos({ user }) {
   const [events, setEvents] = useState([]);
   const [submission, setSubmission] = useState({ title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", description: "", contact_email: "" });
   const [sending, setSending] = useState(false);
@@ -39,9 +39,11 @@ function Eventos() {
         </div>
 
         <div style={{ maxWidth: "900px", margin: "0 auto 36px", padding: "24px", background: "#15151f", border: "1px solid #343442", borderRadius: "10px" }}>
-          <h3 style={{ color: "#e9b61e", marginTop: 0 }}>Divulgue o evento da sua banda</h3>
-          <p style={{ color: "#aaa", lineHeight: 1.6 }}>Cadastre seu show gratuitamente. Nossa equipe vai revisar as informações antes de publicar na agenda.</p>
-          <form onSubmit={async (e) => {
+          {user ? (
+            <>
+              <h3 style={{ color: "#e9b61e", marginTop: 0 }}>Divulgue o evento da sua banda</h3>
+              <p style={{ color: "#aaa", lineHeight: 1.6 }}>Cadastre seu show gratuitamente. Nossa equipe vai revisar as informações antes de publicar na agenda.</p>
+              <form onSubmit={async (e) => {
             e.preventDefault();
             setSending(true);
             setSubmitMessage("");
@@ -82,7 +84,17 @@ function Eventos() {
               {sending ? "ENVIANDO..." : "ENVIAR PARA APROVAÇÃO"}
             </button>
             {submitMessage && <p role="status" style={{ marginBottom: 0, color: submitMessage.toLowerCase().includes("não foi") || submitMessage.toLowerCase().includes("válido") || submitMessage.toLowerCase().includes("preencha") ? "#ff8b8b" : "#9fda9f" }}>{submitMessage}</p>}
-          </form>
+              </form>
+            </>
+          ) : (
+            <div style={{ textAlign: "center", padding: "8px 4px" }}>
+              <h3 style={{ color: "#e9b61e", marginTop: 0 }}>Quer divulgar um evento de rock?</h3>
+              <p style={{ color: "#ccc", lineHeight: 1.7, maxWidth: "620px", margin: "0 auto 20px" }}>
+                Para cadastrar um show na agenda da Comunidade do Rock, você precisa entrar na sua conta ou criar um cadastro gratuito. Depois de entrar, o formulário de envio estará disponível aqui.
+              </p>
+              <Link to="/login" className="btn btn-primary" style={{ display: "inline-block", textDecoration: "none", margin: "4px 6px" }}>ENTRAR / CRIAR CONTA</Link>
+            </div>
+          )}
         </div>
         
         {events.length === 0 ? (
