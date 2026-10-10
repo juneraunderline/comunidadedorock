@@ -1258,12 +1258,12 @@ app.get("/api/events", async (req, res) => {
 app.post("/api/event-submissions", async (req, res) => {
   try {
     const e = req.body || {};
-    const title = String(e.title || "").trim();
+    const title = String(e.title || "").trim() || String(e.artist || "").trim() || "Evento sem título";
     const artist = String(e.artist || "").trim();
     const date = String(e.date || "").trim();
     const contactEmail = String(e.contact_email || "").trim();
-    if (!title || !artist || !date || !contactEmail) {
-      return res.status(400).json({ error: "Preencha o nome do evento, banda, data e e-mail de contato." });
+    if (!artist || !date || !contactEmail) {
+      return res.status(400).json({ error: "Preencha a banda/artista, data e e-mail de contato." });
     }
     if (!/^\S+@\S+\.\S+$/.test(contactEmail)) {
       return res.status(400).json({ error: "Informe um e-mail de contato válido." });
