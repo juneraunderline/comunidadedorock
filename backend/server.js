@@ -96,6 +96,7 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS interviews (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, content TEXT, image TEXT, date TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS releases (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, type TEXT DEFAULT 'Single', release_date TEXT, image TEXT, spotify TEXT, youtube TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, display_name TEXT, avatar TEXT, role TEXT DEFAULT 'user', created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_band BOOLEAN NOT NULL DEFAULT FALSE`);
   await db.run(`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, page_type TEXT NOT NULL, page_id INTEGER NOT NULL, user_id INTEGER, user_name TEXT NOT NULL, user_avatar TEXT, content TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW())`);
 };
 
@@ -804,15 +805,15 @@ async function cleanupRssPostsPerSource() {
 // Autenticação
 app.post("/api/register", async (req, res) => {
   try {
-    const { username, password, display_name } = req.body;
+    const { username, password, display_name, is_band } = req.body;
     if (!username || !password) return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
     if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
     if (password.length < 4) return res.status(400).json({ error: "Senha deve ter pelo menos 4 caracteres" });
     const exists = await db.getOne("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
     if (exists) return res.status(409).json({ error: "Usuário já existe" });
     const result = await pool.query(
-      "INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, $4) RETURNING id, username, display_name, avatar, role, created_at",
-      [username.toLowerCase(), password, display_name || username, "user"]
+      "INSERT INTO users (username, password, display_name, role, is_band) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, display_name, avatar, role, is_band, created_at",
+      [username.toLowerCase(), password, display_name || username, "user", Boolean(is_band)]
     );
     res.json({ success: true, user: result.rows[0] });
   } catch (err) {
@@ -839,7 +840,7 @@ app.post("/api/login", async (req, res) => {
     // Login — sempre verifica senha do banco
     const found = await db.getOne("SELECT * FROM users WHERE username = $1 AND password = $2", [user?.toLowerCase(), pass]);
     if (!found) return res.status(401).json({ success: false, error: "Usuário ou senha incorretos" });
-    res.json({ success: true, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role, created_at: found.created_at } });
+    res.json({ success: true, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role, is_band: Boolean(found.is_band), created_at: found.created_at } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
