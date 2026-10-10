@@ -121,39 +121,28 @@ async function loadFeeds() {
 }
 
 
-// Notificações por e-mail via Resend. Configure RESEND_API_KEY e RESEND_FROM_EMAIL na Vercel.
+// Notificações por e-mail usando o mesmo FormSubmit do formulário de contato.
 async function notifyAdminByEmail(subject, details) {
-  const to = "comunidadedorock@hotmail.com";
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
-  if (!apiKey || !from) {
-    console.warn("Aviso por e-mail não enviado: configure RESEND_API_KEY e RESEND_FROM_EMAIL.");
-    return false;
-  }
-
-  const escapeHtml = (value) => String(value ?? "")
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-  const rows = Object.entries(details)
-    .filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "")
-    .map(([label, value]) => `<tr><th align="left" style="padding:8px;border-bottom:1px solid #ddd">${escapeHtml(label)}</th><td style="padding:8px;border-bottom:1px solid #ddd">${escapeHtml(value)}</td></tr>`)
-    .join("");
+  const payload = {
+    ...details,
+    _subject: subject,
+    _template: "table"
+  };
 
   try {
-    const response = await fetchFunc("https://api.resend.com/emails", {
+    const response = await fetchFunc("https://formsubmit.co/ajax/comunidadedorock@hotmail.com", {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from,
-        to: [to],
-        subject,
-        html: `<div style="font-family:Arial,sans-serif;color:#222"><h2>${escapeHtml(subject)}</h2><p>Uma nova submissão foi recebida no Comunidade do Rock.</p><table style="border-collapse:collapse;width:100%">${rows}</table><p><a href="https://comunidadedorock.com.br/admin">Acessar o painel administrativo</a></p></div>`
-      })
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(payload)
     });
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
       console.error("Falha ao enviar notificação por e-mail:", response.status, errorText.slice(0, 500));
+      return false;
+    }
+    const result = await response.json().catch(() => ({}));
+    if (result.success === "false" || result.success === false) {
+      console.error("FormSubmit recusou a notificação por e-mail:", result.message || "sem detalhes");
       return false;
     }
     return true;
