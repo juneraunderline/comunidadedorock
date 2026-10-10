@@ -4,6 +4,28 @@ import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 import Comentarios from "./Comentarios";
 
+
+function parseMembersForDisplay(value) {
+  return String(value || "").trim().split(/\n|(?<=\.)\s+(?=[A-ZÀ-Ú])/).map((line) => {
+    const parts = line.trim().replace(/[.]$/, "").split(/\s+[—–-]\s+/);
+    const name = (parts.shift() || "").trim();
+    const rest = parts.join(" — ");
+    const match = rest.match(/@([\w.]+)/);
+    const instagram = match ? match[1] : "";
+    const role = rest.replace(/@([\w.]+)/g, "").replace(/\s*[—–-]\s*$/, "").trim();
+    if (!name) return null;
+    const normalized = role.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    let icon = "🎵";
+    if (/vocal|voz|cantor|cantora|vocalista/.test(normalized)) icon = "🎤";
+    else if (/bateria|baterista|drum|percuss/.test(normalized)) icon = "🥁";
+    else if (/baixo|baixista|bass|guitarra|guitarrista|violao|violonista|cordas/.test(normalized)) icon = "🎸";
+    else if (/teclado|tecladista|piano|sintetizador|synth/.test(normalized)) icon = "🎹";
+    else if (/sax|saxofone|trompete|trombone|flauta|sopro/.test(normalized)) icon = "🎷";
+    else if (/compos|compositor|compositora/.test(normalized)) icon = "✍️";
+    return { name, role, instagram, icon };
+  }).filter(Boolean);
+}
+
 function normalizeSocialUrl(value, platform) {
   const raw = String(value || "").trim();
   if (!raw) return "";
@@ -170,7 +192,18 @@ function BandaDetail() {
             {band.members && (
               <div className="band-detail-section-box">
                 <h3>Integrantes</h3>
-                <p>{band.members}</p>
+                <div style={{ display: "grid", gap: "10px" }}>
+                  {parseMembersForDisplay(band.members).map((member, index) => (
+                    <div key={index} style={{ display: "flex", alignItems: "flex-start", gap: "10px", lineHeight: 1.6 }}>
+                      <span aria-hidden="true" style={{ fontSize: "20px", minWidth: "26px" }}>{member.icon}</span>
+                      <div>
+                        <strong>{member.name}</strong>
+                        {member.role && <span> — {member.role}</span>}
+                        {member.instagram && <div><a href={normalizeSocialUrl(member.instagram, "instagram")} target="_blank" rel="noopener noreferrer" style={{ color: "#E1306C", fontSize: "0.9em" }}>@{member.instagram.replace(/^@/, "")}</a></div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
