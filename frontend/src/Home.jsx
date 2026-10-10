@@ -139,7 +139,7 @@ function Home({ posts }) {
       );
       // Buscar eventos (com retry)
       fetchWithRetry(
-        `${API_URL}/api/events?limit=3`,
+        `${API_URL}/api/events?limit=3&_=${Date.now()}`,
         (data) => { setEvents(data); setLoadingEvents(false); },
         () => setLoadingEvents(false)
       );
