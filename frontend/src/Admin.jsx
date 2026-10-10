@@ -2,6 +2,59 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 
+
+function parseBandMembers(value) {
+  const text = String(value || "").trim();
+  if (!text) return [{ name: "", role: "", instagram: "" }];
+  return text.split(/\n|(?<=\.)\s+(?=[A-ZÀ-Ú])/).map((line) => {
+    const parts = line.trim().replace(/[.]$/, "").split(/\s+[—–-]\s+/);
+    const name = (parts.shift() || "").trim();
+    const rest = parts.join(" — ");
+    const instagramMatch = rest.match(/@([\w.]+)/);
+    const instagram = instagramMatch ? instagramMatch[1] : "";
+    const role = rest.replace(/@([\w.]+)/g, "").replace(/\s*[—–-]\s*$/, "").trim();
+    return { name, role, instagram };
+  }).filter((member) => member.name);
+}
+function serializeBandMembers(members) {
+  return (members || []).filter((member) => member.name.trim()).map((member) => {
+    const parts = [member.name.trim()];
+    if (member.role.trim()) parts.push(member.role.trim());
+    if (member.instagram.trim()) parts.push("@" + member.instagram.trim().replace(/^@/, ""));
+    return parts.join(" — ");
+  }).join("\n");
+}
+function instrumentIcon(role) {
+  const value = String(role || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (/vocal|voz|cantor|cantora|vocalista/.test(value)) return "🎤";
+  if (/bateria|baterista|drum|percuss/.test(value)) return "🥁";
+  if (/baixo|baixista|bass|guitarra|guitarrista|violao|violonista|cordas/.test(value)) return "🎸";
+  if (/teclado|tecladista|piano|sintetizador|synth/.test(value)) return "🎹";
+  if (/sax|saxofone|trompete|trombone|flauta|sopro/.test(value)) return "🎷";
+  if (/compos|compositor|compositora/.test(value)) return "✍️";
+  return "🎵";
+}
+function BandMembersEditor({ members, setMembers }) {
+  const update = (index, field, value) => setMembers((current) => current.map((member, i) => i === index ? { ...member, [field]: value } : member));
+  return (
+    <div style={{ display: "grid", gap: "10px" }}>
+      {members.map((member, index) => (
+        <div key={index} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px", padding: "10px", border: "1px solid #444", borderRadius: "8px" }}>
+          <input aria-label={\`Nome do integrante \${index + 1}\`} value={member.name} onChange={(e) => update(index, "name", e.target.value)} placeholder="Nome do integrante" />
+          <input aria-label={\`Instrumento de \${member.name || index + 1}\`} value={member.role} onChange={(e) => update(index, "role", e.target.value)} placeholder="Instrumento / função (ex.: guitarra e composição)" />
+          <input aria-label={\`Instagram de \${member.name || index + 1}\`} value={member.instagram} onChange={(e) => update(index, "instagram", e.target.value)} placeholder="Instagram (opcional, @perfil)" />
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span title="Ícone identificado automaticamente" style={{ fontSize: "22px" }}>{instrumentIcon(member.role)}</span>
+            <button type="button" className="btn btn-secondary" onClick={() => setMembers((current) => current.filter((_, i) => i !== index))}>Remover</button>
+          </div>
+        </div>
+      ))}
+      <div><button type="button" className="btn btn-secondary" onClick={() => setMembers((current) => [...current, { name: "", role: "", instagram: "" }])}>+ Adicionar integrante</button></div>
+      <small style={{ color: "#aaa" }}>O ícone muda automaticamente conforme o instrumento ou função informado. O Instagram é opcional.</small>
+    </div>
+  );
+}
+
 function normalizeInstagramUrl(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
@@ -23,6 +76,8 @@ export default function Admin({ user: currentUser }) {
   const [interviews, setInterviews] = useState([]);
   const [newPost, setNewPost] = useState({ title: "", content: "", image: "", link: "", source: "" });
   const [newBand, setNewBand] = useState({ name: "", genre: "", city: "", state: "", year: "", members: "", biography: "", contact: "", image: "", instagram: "", facebook: "", youtube: "", spotify: "", bandcamp: "", site: "" });
+  const [newBandMembers, setNewBandMembers] = useState([{ name: "", role: "", instagram: "" }]);
+  const [editingBandMembers, setEditingBandMembers] = useState([{ name: "", role: "", instagram: "" }]);
   const [activeTab, setActiveTab] = useState("noticias");
   const [editingPost, setEditingPost] = useState(null);
   const [selectedPosts, setSelectedPosts] = useState(new Set());
@@ -324,6 +379,7 @@ export default function Admin({ user: currentUser }) {
 
   const startEditBand = (band) => {
     setEditingBand({ ...band });
+    setEditingBandMembers(parseBandMembers(band.members));
   };
 
   const saveEditBand = () => {
@@ -338,7 +394,7 @@ export default function Admin({ user: currentUser }) {
       city: editingBand.city,
       state: editingBand.state,
       year: editingBand.year,
-      members: editingBand.members,
+      members: serializeBandMembers(editingBandMembers),
       biography: editingBand.biography,
       contact: editingBand.contact,
       image: editingBand.image,
@@ -351,6 +407,7 @@ export default function Admin({ user: currentUser }) {
     })
       .then(() => {
         setEditingBand(null);
+        setEditingBandMembers([{ name: "", role: "", instagram: "" }]);
         fetchData();
         alert("Banda atualizada com sucesso!");
       })
@@ -359,6 +416,7 @@ export default function Admin({ user: currentUser }) {
 
   const cancelEditBand = () => {
     setEditingBand(null);
+    setEditingBandMembers([{ name: "", role: "", instagram: "" }]);
   };
 
   const deleteBand = (id) => {
@@ -385,9 +443,10 @@ export default function Admin({ user: currentUser }) {
       return;
     }
 
-    axios.post(`${API_URL}/api/bands`, newBand)
+    axios.post(`${API_URL}/api/bands`, { ...newBand, members: serializeBandMembers(newBandMembers) })
       .then(() => {
         setNewBand({ name: "", genre: "", city: "", state: "", year: "", members: "", biography: "", contact: "", image: "", instagram: "", facebook: "", youtube: "", spotify: "", bandcamp: "", site: "" });
+        setNewBandMembers([{ name: "", role: "", instagram: "" }]);
         fetchData();
         alert("Banda adicionada com sucesso!");
       })
@@ -396,6 +455,7 @@ export default function Admin({ user: currentUser }) {
 
   const cancelCreateBand = () => {
     setNewBand({ name: "", genre: "", city: "", state: "", year: "", members: "", biography: "", contact: "", image: "", instagram: "", facebook: "", youtube: "", spotify: "", bandcamp: "", site: "" });
+    setNewBandMembers([{ name: "", role: "", instagram: "" }]);
   };
 
   const approveBand = (id) => {
@@ -1254,11 +1314,7 @@ export default function Admin({ user: currentUser }) {
             </div>
             <div className="form-group">
               <label>Integrantes</label>
-              <textarea
-                value={editingBand.members || ""}
-                onChange={(e) => setEditingBand({...editingBand, members: e.target.value})}
-                rows="3"
-              />
+              <BandMembersEditor members={editingBandMembers} setMembers={setEditingBandMembers} />
             </div>
             <div className="form-group">
               <label>Biografia</label>
@@ -1408,12 +1464,7 @@ export default function Admin({ user: currentUser }) {
               </div>
               <div className="form-group">
                 <label>Integrantes</label>
-                <textarea
-                  value={newBand.members}
-                  onChange={(e) => setNewBand({...newBand, members: e.target.value})}
-                  placeholder="Integrantes da banda"
-                  rows="3"
-                />
+                <BandMembersEditor members={newBandMembers} setMembers={setNewBandMembers} />
               </div>
               <div className="form-group">
                 <label>Biografia</label>
