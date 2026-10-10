@@ -730,8 +730,10 @@ async function autoImportRss() {
           continue;
         }
         
-        // Processar no máximo três itens por fonte
-        for (const itemXml of items.slice(0, 3)) {
+        // Examinar até 10 itens por fonte para pular notícias antigas ou sem imagem.
+        // Importar no máximo 3 notícias novas e válidas por fonte em cada execução.
+        for (const itemXml of items.slice(0, 10)) {
+          if (importedForFeed >= 3) break;
           const rawTitle = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
           const title = decodeHtmlEntities(rawTitle);
           if (!title) continue;
@@ -761,7 +763,7 @@ async function autoImportRss() {
         }
         await saveRssFeedStatus(feed, {
           status: importedForFeed > 0 ? "updated" : "no_new",
-          message: importedForFeed > 0 ? `${importedForFeed} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.",
+          message: importedForFeed > 0 ? `${importedForFeed} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 10 primeiros itens do feed.",
           imported: importedForFeed,
           items: itemCountForFeed
         });
