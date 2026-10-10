@@ -135,7 +135,7 @@ function App() {
           <Route path="/bandas/:id" element={<BandaDetail />} />
           <Route path="/entrevistas" element={<Entrevistas />} />
           <Route path="/entrevistas/:id" element={<EntrevistaDetail />} />
-          <Route path="/eventos" element={<Eventos />} />
+          <Route path="/eventos" element={<Eventos user={user} />} />
           <Route path="/eventos/:id" element={<EventDetail />} />
           <Route path="/contato" element={<Contato />} />
           <Route path="/cadastrar-banda" element={<CadastrarBanda />} />
