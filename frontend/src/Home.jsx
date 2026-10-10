@@ -97,14 +97,16 @@ function Home({ posts }) {
 
   useEffect(() => {
     // Funcao de retry automatico
-    const fetchWithRetry = (url, onSuccess, onError, retries = 1) => {
-      axios.get(url)
+    const fetchWithRetry = (url, onSuccess, onError, retries = 3, attempt = 0) => {
+      axios.get(url, { timeout: 25000 })
         .then(res => onSuccess(res.data))
-        .catch(() => {
+        .catch((error) => {
           if (retries > 0) {
-            setTimeout(() => fetchWithRetry(url, onSuccess, onError, retries - 1), 3000);
+            // APIs e bancos com escala para zero podem demorar a acordar após um período sem acessos.
+            const delay = Math.min(2000 * (2 ** attempt), 10000);
+            setTimeout(() => fetchWithRetry(url, onSuccess, onError, retries - 1, attempt + 1), delay);
           } else if (onError) {
-            onError();
+            onError(error);
           }
         });
     };
