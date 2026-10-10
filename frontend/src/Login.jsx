@@ -10,6 +10,7 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [isBand, setIsBand] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -26,7 +27,8 @@ function Login({ onLogin }) {
         const res = await axios.post(`${API_URL}/api/register`, {
           username,
           password,
-          display_name: displayName || username
+          display_name: displayName || username,
+          is_band: isBand
         });
         if (res.data.success) {
           onLogin(res.data.user);
@@ -82,6 +84,23 @@ function Login({ onLogin }) {
               style={{ width: "100%", padding: "12px 14px", background: "#10101a", border: "1px solid #2a2a33", borderRadius: "8px", color: "#fff", fontSize: "14px" }}
             />
           </div>
+
+          {isRegister && (
+            <div style={{ marginBottom: "14px", textAlign: "left" }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", color: "#ddd", fontSize: "13px", lineHeight: 1.5, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={isBand}
+                  onChange={e => setIsBand(e.target.checked)}
+                  style={{ marginTop: "3px", accentColor: "#e9b61e" }}
+                />
+                <span>Estou me cadastrando como banda ou artista</span>
+              </label>
+              <p style={{ color: "#888", fontSize: "11px", margin: "5px 0 0 26px" }}>
+                Marque esta opção se a conta será usada para divulgar sua banda ou seus shows.
+              </p>
+            </div>
+          )}
 
           {isRegister && (
             <div style={{ marginBottom: "14px", textAlign: "left" }}>
