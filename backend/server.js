@@ -1178,7 +1178,11 @@ app.get("/api/interviews", async (req, res) => {
   const fields = full ? "*" : "id, title, artist, image, date, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 300) AS summary";
   const limitSql = limit ? `LIMIT ${limit}` : "";
   const interviews = await db.getAll(`SELECT ${fields} FROM interviews ORDER BY id DESC ${limitSql}`);
-  res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("CDN-Cache-Control", "no-store");
+  res.set("Vercel-CDN-Cache-Control", "no-store");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
   res.json(interviews);
 });
 
@@ -1309,8 +1313,17 @@ app.put("/api/events/:id/status", async (req, res) => {
 });
 
 app.delete("/api/events/:id", async (req, res) => {
-  await db.run("DELETE FROM events WHERE id = $1", [req.params.id]);
-  res.json({ success: true });
+  try {
+    const result = await pool.query("DELETE FROM events WHERE id = $1 RETURNING id", [req.params.id]);
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.set("CDN-Cache-Control", "no-store");
+    res.set("Vercel-CDN-Cache-Control", "no-store");
+    if (result.rowCount === 0) return res.status(404).json({ error: "Evento não encontrado." });
+    return res.status(200).json({ success: true, deletedId: result.rows[0].id });
+  } catch (err) {
+    console.error("Erro ao excluir evento:", err.message);
+    return res.status(500).json({ error: "Não foi possível excluir o evento." });
+  }
 });
 
 // Comentários
