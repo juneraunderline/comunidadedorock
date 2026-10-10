@@ -135,19 +135,29 @@ async function notifyAdminByEmail(subject, details) {
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(payload)
     });
+
+    const responseText = await response.text().catch(() => "");
+    let result = null;
+    try {
+      result = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      result = null;
+    }
+
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      console.error("Falha ao enviar notificação por e-mail:", response.status, errorText.slice(0, 500));
+      console.error("[Email admin] FormSubmit respondeu com HTTP", response.status, "para:", subject, "| resposta:", responseText.slice(0, 1000));
       return false;
     }
-    const result = await response.json().catch(() => ({}));
-    if (result.success === "false" || result.success === false) {
-      console.error("FormSubmit recusou a notificação por e-mail:", result.message || "sem detalhes");
+
+    if (!result || result.success === "false" || result.success === false) {
+      console.error("[Email admin] Resposta inesperada do FormSubmit para:", subject, "| resposta:", responseText.slice(0, 1000));
       return false;
     }
+
+    console.log("[Email admin] FormSubmit aceitou a solicitação:", subject, "| HTTP:", response.status, "| sucesso:", result.success ?? "não informado", "| mensagem:", result.message ?? "não informada");
     return true;
   } catch (err) {
-    console.error("Falha ao enviar notificação por e-mail:", err.message);
+    console.error("[Email admin] Erro ao chamar FormSubmit para:", subject, "|", err.message);
     return false;
   }
 }
