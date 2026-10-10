@@ -543,6 +543,16 @@ export default function Admin({ user: currentUser }) {
       .catch((err) => alert("Erro ao deletar evento: " + (err.response?.data?.error || err.message)));
   };
 
+  const approveEvent = async (id) => {
+    try {
+      await axios.put(API_URL + "/api/events/" + id + "/status", { status: "approved" });
+      await fetchData();
+      alert("Evento aprovado e publicado na página de eventos!");
+    } catch (err) {
+      alert("Erro ao aprovar evento: " + (err.response?.data?.error || err.message));
+    }
+  };
+
   const addRssFeed = async () => {
     if (!feedName.trim() || !feedUrl.trim()) {
       alert("Preencha nome e URL do feed");
@@ -1934,23 +1944,25 @@ export default function Admin({ user: currentUser }) {
         )}
 
         <div className="events-list">
-          <h3>Lista de Eventos ({events.length})</h3>
+          <h3>Lista de Eventos ({events.length}) · {events.filter(event => event.status === "pending").length} aguardando aprovação</h3>
           {events.length === 0 && <p>Nenhum evento adicionado</p>}
           {events.map(event => (
             <div key={event.id} className="post-item">
               <div className="post-preview">
                 {event.image && <img src={getImageUrl(event.image)} alt={event.title} />}
                 <div className="post-info">
-                  <h4>{event.title}</h4>
+                  <h4>{event.title} {event.status === "pending" ? <span style={{ color: "#e9b61e", fontSize: "12px" }}>• AGUARDANDO APROVAÇÃO</span> : <span style={{ color: "#8fd694", fontSize: "12px" }}>• PUBLICADO</span>}</h4>
                   <p><strong>{event.artist}</strong></p>
                   <p>📅 {event.date} {event.time && `às ${event.time}`}</p>
                   <p>📍 {event.location}, {event.city} - {event.state}</p>
                   <p>{event.description ? event.description.substring(0, 100) : "Sem descrição"}...</p>
+                  {event.contact_email && <p>Contato enviado: {event.contact_email}</p>}
                 </div>
               </div>
               <div className="post-actions">
+                {isAdmin && event.status === "pending" && <button className="btn btn-primary" onClick={() => approveEvent(event.id)}>✓ Aprovar e publicar</button>}
                 <button className="btn btn-primary" onClick={() => startEditEvent(event)}>✏️ Editar</button>
-                {isAdmin && <button className="btn btn-outline" onClick={() => {if (confirm("Tem certeza?")) deleteEvent(event.id)}}>🗑 Deletar</button>}
+                {isAdmin && <button className="btn btn-outline" onClick={() => {if (confirm(event.status === "pending" ? "Rejeitar e excluir este envio?" : "Tem certeza que deseja excluir este evento?")) deleteEvent(event.id)}}>🗑 {event.status === "pending" ? "Rejeitar" : "Deletar"}</button>}
               </div>
             </div>
           ))}
