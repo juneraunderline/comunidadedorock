@@ -57,7 +57,7 @@ function Eventos() {
           }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
               {[
-                ["title", "Nome do evento *", "Ex.: Festival Rock Independente", "text", true],
+                ["title", "Nome do evento (opcional)", "Ex.: Festival Rock Independente", "text", false],
                 ["artist", "Banda / artista *", "Nome da banda", "text", true],
                 ["date", "Data do evento *", "", "date", true],
                 ["time", "Horário", "", "time", false],
