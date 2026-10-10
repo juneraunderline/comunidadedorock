@@ -112,7 +112,7 @@ function Home({ posts }) {
     const loadData = () => {
       // Buscar bandas (com retry, ordenadas pelas mais recentes)
       fetchWithRetry(
-        `${API_URL}/api/bands?sort=recent&limit=3`,
+        `${API_URL}/api/bands?sort=featured&limit=3`,
         (data) => { setBands(data); setLoadingBands(false); },
         () => setLoadingBands(false)
       );
