@@ -91,6 +91,8 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS rss_feeds (id SERIAL PRIMARY KEY, name TEXT NOT NULL, url TEXT NOT NULL UNIQUE, logo TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS rss_feed_status (feed_id INTEGER PRIMARY KEY, feed_name TEXT NOT NULL, feed_url TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'unknown', message TEXT, imported_count INTEGER NOT NULL DEFAULT 0, updated_count INTEGER NOT NULL DEFAULT 0, item_count INTEGER NOT NULL DEFAULT 0, checked_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS events (id SERIAL PRIMARY KEY, title TEXT, artist TEXT, date TEXT, time TEXT, location TEXT, city TEXT, state TEXT, image TEXT, ticket_link TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`ALTER TABLE events ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'approved'`);
+  await db.run(`ALTER TABLE events ADD COLUMN IF NOT EXISTS contact_email TEXT`);
   await db.run(`CREATE TABLE IF NOT EXISTS interviews (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, content TEXT, image TEXT, date TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS releases (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, type TEXT DEFAULT 'Single', release_date TEXT, image TEXT, spotify TEXT, youtube TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, display_name TEXT, avatar TEXT, role TEXT DEFAULT 'user', created_at TIMESTAMPTZ DEFAULT NOW())`);
@@ -1247,10 +1249,34 @@ app.get("/api/events", async (req, res) => {
   const limit = req.query.limit ? Math.max(1, Math.min(parseInt(req.query.limit) || 0, 100)) : null;
   const fields = full ? "*" : "id, title, artist, date, time, location, city, state, image, ticket_link, LEFT(COALESCE(description, ''), 300) AS description, created_at";
   const limitSql = limit ? `LIMIT ${limit}` : "";
-  const events = await db.getAll(`SELECT ${fields} FROM events ORDER BY date ASC ${limitSql}`);
+  const events = await db.getAll(`SELECT ${fields} FROM events ${full ? "" : "WHERE status = 'approved'"} ORDER BY date ASC ${limitSql}`);
   const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
   res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
   res.json(events.map(e => ({ ...e, slug: mkSlug(e.title) })));
+});
+
+app.post("/api/event-submissions", async (req, res) => {
+  try {
+    const e = req.body || {};
+    const title = String(e.title || "").trim();
+    const artist = String(e.artist || "").trim();
+    const date = String(e.date || "").trim();
+    const contactEmail = String(e.contact_email || "").trim();
+    if (!title || !artist || !date || !contactEmail) {
+      return res.status(400).json({ error: "Preencha o nome do evento, banda, data e e-mail de contato." });
+    }
+    if (!/^\S+@\S+\.\S+$/.test(contactEmail)) {
+      return res.status(400).json({ error: "Informe um e-mail de contato válido." });
+    }
+    await db.run(
+      "INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, description, contact_email, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending')",
+      [title, artist, date, e.time || null, String(e.location || "").trim(), String(e.city || "").trim(), String(e.state || "").trim(), String(e.image || "").trim(), String(e.ticket_link || "").trim(), String(e.description || "").trim(), contactEmail]
+    );
+    res.status(201).json({ success: true, message: "Evento enviado para análise da administração." });
+  } catch (err) {
+    console.error("Erro ao receber evento:", err);
+    res.status(500).json({ error: "Não foi possível enviar o evento agora. Tente novamente." });
+  }
 });
 
 app.post("/api/events", async (req, res) => {
@@ -1267,6 +1293,19 @@ app.put("/api/events/:id", async (req, res) => {
   await db.run("UPDATE events SET title=$1, artist=$2, date=$3, time=$4, location=$5, city=$6, state=$7, image=$8, ticket_link=$9, description=$10 WHERE id=$11",
     [e.title, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.description, req.params.id]);
   res.json({ success: true });
+});
+
+app.put("/api/events/:id/status", async (req, res) => {
+  const status = String(req.body?.status || "");
+  if (!["approved", "pending"].includes(status)) {
+    return res.status(400).json({ error: "Status inválido." });
+  }
+  try {
+    await db.run("UPDATE events SET status = $1 WHERE id = $2", [status, req.params.id]);
+    res.json({ success: true, status });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível atualizar o status do evento." });
+  }
 });
 
 app.delete("/api/events/:id", async (req, res) => {
