@@ -10,7 +10,7 @@ function Eventos() {
   const [submitMessage, setSubmitMessage] = useState("");
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/events`)
+    axios.get(`${API_URL}/api/events?_=${Date.now()}`)
       .then(res => setEvents(res.data))
       .catch(err => console.error("Erro ao carregar eventos:", err));
   }, []);
