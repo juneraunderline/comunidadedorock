@@ -24,7 +24,7 @@ function Contato() {
     e.preventDefault();
     setSending(true);
     try {
-      await fetch("https://formsubmit.co/ajax/junior.lopes@yahoo.com", {
+      await fetch("https://formsubmit.co/ajax/comunidadedorock@hotmail.com", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({
@@ -77,7 +77,7 @@ function Contato() {
           <div style={{ marginBottom: "32px", padding: "24px", background: "#16161b", borderRadius: "8px", border: "1px solid #2a2a33", textAlign: "center" }}>
             <p style={{ color: "#e9b61e", fontWeight: "700", marginBottom: "8px", textTransform: "uppercase", fontSize: "13px", letterSpacing: "1px" }}>Canais Oficiais</p>
             <p style={{ color: "#ccc", fontSize: "14px", lineHeight: "1.6" }}>Para parcerias, sugestões de pauta ou remoção de conteúdo, você também pode enviar um e-mail direto para:<br />
-            <a href="mailto:junior.lopes@yahoo.com" style={{ color: "#fff", textDecoration: "underline", fontWeight: "700" }}>junior.lopes@yahoo.com</a></p>
+            <a href="mailto:comunidadedorock@hotmail.com" style={{ color: "#fff", textDecoration: "underline", fontWeight: "700" }}>comunidadedorock@hotmail.com</a></p>
           </div>
           <p style={{ color: "#999", marginBottom: "24px" }}>Ou utilize o formulário abaixo para nos enviar uma mensagem rápida:</p>
           <form onSubmit={handleSubmit}>
