@@ -81,9 +81,10 @@ const db = {
 // Inicialização de Tabelas
 const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS posts (id SERIAL PRIMARY KEY, title TEXT, content TEXT, image TEXT, link TEXT, source TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
-  await db.run(`CREATE TABLE IF NOT EXISTS bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
-  // Garante que bancos antigos (criados antes da coluna created_at existir) recebam a coluna.
+  await db.run(`CREATE TABLE IF NOT EXISTS bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, is_weekly_featured BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  // Garante que bancos antigos recebam as colunas adicionadas depois da criação.
   await db.run(`ALTER TABLE bands ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`);
+  await db.run(`ALTER TABLE bands ADD COLUMN IF NOT EXISTS is_weekly_featured BOOLEAN NOT NULL DEFAULT FALSE`);
   // Índice para acelerar a listagem das bandas novas por data.
   await db.run(`CREATE INDEX IF NOT EXISTS idx_bands_created_at ON bands (created_at DESC)`);
   await db.run(`CREATE TABLE IF NOT EXISTS pending_bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, submitted_at TIMESTAMPTZ DEFAULT NOW())`);
@@ -1020,9 +1021,11 @@ app.get("/api/bands/:id", async (req, res) => {
 app.get("/api/bands", async (req, res) => {
   try {
     const full = req.query.full === "1";
-    const orderBy = req.query.sort === "recent"
-      ? "created_at DESC NULLS LAST, id DESC"
-      : "name ASC";
+    const orderBy = req.query.sort === "featured"
+      ? "is_weekly_featured DESC, created_at DESC NULLS LAST, id DESC"
+      : req.query.sort === "recent"
+        ? "created_at DESC NULLS LAST, id DESC"
+        : "name ASC";
     const requestedLimit = parseInt(req.query.limit, 10);
     const limit = full ? null : Math.max(1, Math.min(Number.isFinite(requestedLimit) && requestedLimit > 0 ? requestedLimit : 12, 50));
     const requestedOffset = parseInt(req.query.offset, 10);
@@ -1031,7 +1034,7 @@ app.get("/api/bands", async (req, res) => {
     const genre = typeof req.query.genre === "string" ? req.query.genre.trim().slice(0, 100) : "";
     const fields = full
       ? "*"
-      : "id, name, genre, city, state, year, image, instagram, facebook, youtube, spotify, bandcamp, site, created_at";
+      : "id, name, genre, city, state, year, image, instagram, facebook, youtube, spotify, bandcamp, site, is_weekly_featured, created_at";
     const conditions = [];
     const params = [];
     if (search) {
@@ -1092,6 +1095,29 @@ app.put("/api/bands/:id", async (req, res) => {
   } catch (err) {
     console.error("Erro ao atualizar banda:", err.message);
     res.status(500).json({ error: "Não foi possível atualizar a banda" });
+  }
+});
+
+app.post("/api/bands/:id/weekly-featured", async (req, res) => {
+  try {
+    const bandId = Number(req.params.id);
+    const featured = req.body?.featured === true;
+    if (!Number.isInteger(bandId) || bandId <= 0) {
+      return res.status(400).json({ error: "ID de banda inválido" });
+    }
+    const band = await db.getOne("SELECT id FROM bands WHERE id = $1", [bandId]);
+    if (!band) return res.status(404).json({ error: "Banda não encontrada" });
+
+    // Uma única instrução garante que exista no máximo uma Banda da Semana.
+    if (featured) {
+      await db.run("UPDATE bands SET is_weekly_featured = (id = $1)", [bandId]);
+    } else {
+      await db.run("UPDATE bands SET is_weekly_featured = FALSE WHERE id = $1", [bandId]);
+    }
+    res.json({ success: true, id: bandId, is_weekly_featured: featured });
+  } catch (err) {
+    console.error("Erro ao definir Banda da Semana:", err.message);
+    res.status(500).json({ error: "Não foi possível atualizar a Banda da Semana" });
   }
 });
 
