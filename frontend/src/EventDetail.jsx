@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import API_URL, { getImageUrl } from "./config/api";
+import API_URL from "./config/api";
 
 function EventDetail() {
   const { id } = useParams();
