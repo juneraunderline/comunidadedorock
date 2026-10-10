@@ -9,6 +9,7 @@ import Portal from "./Portal";
 function Home({ posts }) {
   const navigate = useNavigate();
   const [bands, setBands] = useState([]);
+  const [featuredBand, setFeaturedBand] = useState(null);
 	  const [interviews, setInterviews] = useState([]);
 	  const [events, setEvents] = useState([]);
   const [releases, setReleases] = useState([]);
@@ -112,9 +113,15 @@ function Home({ posts }) {
     const loadData = () => {
       // Buscar bandas (com retry, ordenadas pelas mais recentes)
       fetchWithRetry(
-        `${API_URL}/api/bands?sort=featured&limit=3`,
+        `${API_URL}/api/bands?sort=recent&limit=3`,
         (data) => { setBands(data); setLoadingBands(false); },
         () => setLoadingBands(false)
+      );
+      // A Banda em Destaque é carregada separadamente para não alterar a ordem cronológica das Bandas Novas.
+      fetchWithRetry(
+        `${API_URL}/api/bands?sort=featured&limit=1`,
+        (data) => { setFeaturedBand(data?.[0]?.is_weekly_featured ? data[0] : null); },
+        () => setFeaturedBand(null)
       );
       // Buscar entrevistas (com retry)
       fetchWithRetry(
@@ -346,18 +353,18 @@ function Home({ posts }) {
       </section>
 
       {/* BANDA DA SEMANA */}
-      {!loadingBands && bands[0] && (
+      {!loadingBands && featuredBand && (
       <section className="section band-feature-section">
         <div className="section-header">
           <h2>BANDA <span className="highlight">EM DESTAQUE</span></h2>
           <button onClick={() => navigate("/bandas")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
         </div>
-        <div className="featured-band-card" onClick={() => navigate("/bandas/" + (bands[0].slug || bands[0].id))}>
-          <div className="featured-band-image"><img src={getImageUrl(bands[0].image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=800&h=600&fit=crop"} alt={bands[0].name} /></div>
+        <div className="featured-band-card" onClick={() => navigate("/bandas/" + (featuredBand.slug || featuredBand.id))}>
+          <div className="featured-band-image"><img src={getImageUrl(featuredBand.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=800&h=600&fit=crop"} alt={featuredBand.name} /></div>
           <div className="featured-band-content">
             <span className="band-cta-kicker">BANDA DA SEMANA</span>
-            <h3>{bands[0].name}</h3>
-            <p className="featured-band-meta">{bands[0].genre} · {bands[0].city}{bands[0].state ? " / " + bands[0].state : ""}</p>
+            <h3>{featuredBand.name}</h3>
+            <p className="featured-band-meta">{featuredBand.genre} · {featuredBand.city}{featuredBand.state ? " / " + featuredBand.state : ""}</p>
             <p>Conheça a história, os integrantes, as músicas e as redes da banda.</p>
             <span className="btn btn-primary">CONHECER A BANDA →</span>
           </div>
