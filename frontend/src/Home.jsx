@@ -348,7 +348,10 @@ function Home({ posts }) {
       {/* BANDA DA SEMANA */}
       {!loadingBands && bands[0] && (
       <section className="section band-feature-section">
-        <div className="section-header"><h2>BANDA <span className="highlight">EM DESTAQUE</span></h2><button onClick={() => navigate("/bandas")} className="view-all">Ver todas →</button></div>
+        <div className="section-header">
+          <h2>BANDA <span className="highlight">EM DESTAQUE</span></h2>
+          <button onClick={() => navigate("/bandas")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
+        </div>
         <div className="featured-band-card" onClick={() => navigate("/bandas/" + (bands[0].slug || bands[0].id))}>
           <div className="featured-band-image"><img src={getImageUrl(bands[0].image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=800&h=600&fit=crop"} alt={bands[0].name} /></div>
           <div className="featured-band-content">
