@@ -50,8 +50,13 @@ function EventDetail() {
       </div>
       <div className="event-card" style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
         {event.image && (
-          <div style={{ width: '100%', height: '380px', overflow: 'hidden', borderRadius: '8px', marginBottom: '20px' }}>
-            <img src={getImageUrl(event.image)} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ width: '100%', maxWidth: '760px', margin: '0 auto 20px', borderRadius: '8px', background: '#0b0b0f', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <img
+              src={event.image}
+              alt={`Cartaz do evento: ${event.title}`}
+              style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '80vh', objectFit: 'contain', objectPosition: 'center', borderRadius: '8px' }}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
           </div>
         )}
         <div style={{ background: '#16161b', padding: '20px', borderRadius: '8px' }}>
