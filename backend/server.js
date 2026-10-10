@@ -120,6 +120,49 @@ async function loadFeeds() {
   } catch (e) { console.error(e); }
 }
 
+
+// Notificações por e-mail via Resend. Configure RESEND_API_KEY e RESEND_FROM_EMAIL na Vercel.
+async function notifyAdminByEmail(subject, details) {
+  const to = "comunidadedorock@hotmail.com";
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) {
+    console.warn("Aviso por e-mail não enviado: configure RESEND_API_KEY e RESEND_FROM_EMAIL.");
+    return false;
+  }
+
+  const escapeHtml = (value) => String(value ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+  const rows = Object.entries(details)
+    .filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "")
+    .map(([label, value]) => `<tr><th align="left" style="padding:8px;border-bottom:1px solid #ddd">${escapeHtml(label)}</th><td style="padding:8px;border-bottom:1px solid #ddd">${escapeHtml(value)}</td></tr>`)
+    .join("");
+
+  try {
+    const response = await fetchFunc("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject,
+        html: `<div style="font-family:Arial,sans-serif;color:#222"><h2>${escapeHtml(subject)}</h2><p>Uma nova submissão foi recebida no Comunidade do Rock.</p><table style="border-collapse:collapse;width:100%">${rows}</table><p><a href="https://comunidadedorock.com.br/admin">Acessar o painel administrativo</a></p></div>`
+      })
+    });
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.error("Falha ao enviar notificação por e-mail:", response.status, errorText.slice(0, 500));
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("Falha ao enviar notificação por e-mail:", err.message);
+    return false;
+  }
+}
+
 // --- FUNÇÕES AUXILIARES ---
 
 // Padroniza imagens de bandas no Cloudinary.
@@ -1138,6 +1181,12 @@ app.post("/api/bands/submit", async (req, res) => {
     const inserted = await db.getOne(`INSERT INTO pending_bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
       [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site]);
     await migrateLegacyBandImage({ id: inserted.id, image: b.image }, "pending_bands");
+    await notifyAdminByEmail("Nova banda aguardando aprovação", {
+      "Banda": b.name, "Estilo": b.genre, "Cidade": [b.city, b.state].filter(Boolean).join(" / "),
+      "Ano de formação": b.year, "Integrantes": b.members, "Contato": b.contact,
+      "Instagram": b.instagram, "Facebook": b.facebook, "YouTube": b.youtube, "Site": b.site,
+      "ID da inscrição": inserted.id
+    });
     res.json({ success: true, message: "Banda cadastrada com sucesso! Aguarde a aprovação." });
   } catch (err) {
     console.error("Erro ao enviar banda para aprovação:", err.message);
@@ -1275,10 +1324,16 @@ app.post("/api/event-submissions", async (req, res) => {
     if (!/^\S+@\S+\.\S+$/.test(contactEmail)) {
       return res.status(400).json({ error: "Informe um e-mail de contato válido." });
     }
-    await db.run(
-      "INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, description, contact_email, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending')",
+    const insertedEvent = await db.getOne(
+      "INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, description, contact_email, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending') RETURNING id",
       [title, artist, date, e.time || null, String(e.location || "").trim(), String(e.city || "").trim(), String(e.state || "").trim(), String(e.image || "").trim(), String(e.ticket_link || "").trim(), String(e.description || "").trim(), contactEmail]
     );
+    await notifyAdminByEmail("Novo evento aguardando aprovação", {
+      "Evento": title, "Banda / artista": artist, "Data": date, "Horário": e.time,
+      "Local": e.location, "Cidade": [e.city, e.state].filter(Boolean).join(" / "),
+      "E-mail de contato": contactEmail, "Link de ingressos": e.ticket_link,
+      "ID da inscrição": insertedEvent.id
+    });
     res.status(201).json({ success: true, message: "Evento enviado para análise da administração." });
   } catch (err) {
     console.error("Erro ao receber evento:", err);
@@ -1289,8 +1344,13 @@ app.post("/api/event-submissions", async (req, res) => {
 app.post("/api/events", async (req, res) => {
   const e = req.body;
   if (!e.title || !e.date) return res.status(400).json({ error: "Título e data são obrigatórios" });
-  await db.run("INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+  const insertedEvent = await db.getOne("INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
     [e.title, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.description]);
+  await notifyAdminByEmail("Novo evento cadastrado no site", {
+    "Evento": e.title, "Banda / artista": e.artist, "Data": e.date, "Horário": e.time,
+    "Local": e.location, "Cidade": [e.city, e.state].filter(Boolean).join(" / "),
+    "ID do evento": insertedEvent.id
+  });
   res.json({ success: true });
 });
 
