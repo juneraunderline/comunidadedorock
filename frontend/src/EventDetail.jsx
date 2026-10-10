@@ -10,7 +10,7 @@ function EventDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/events`)
+    axios.get(`${API_URL}/api/events?_=${Date.now()}`)
       .then(res => {
         const selected = res.data.find(it => it.slug === id || String(it.id) === String(id));
         setEvent(selected);
