@@ -17,9 +17,12 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  height: 100%;
+  min-height: 0;
 }
 
 .portal-title {
+  flex: 0 0 auto;
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
@@ -33,15 +36,22 @@
 .portal-list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 4px 0 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #e9b61e transparent;
 }
 
 .portal-item {
   margin: 0;
   padding: 0;
+  flex: 0 0 auto;
 }
 
 .portal-link {
@@ -108,6 +118,24 @@
   text-align: center;
 }
 
+/* Rolagem personalizada da lista de portais */
+.portal-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.portal-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.portal-list::-webkit-scrollbar-thumb {
+  background: #e9b61e;
+  border-radius: 3px;
+}
+
+.portal-list::-webkit-scrollbar-thumb:hover {
+  background: #ffd54f;
+}
+
 /* Responsivo */
 @media (max-width: 1024px) {
   .portal {
@@ -135,22 +163,4 @@
   .portal {
     display: none;
   }
-}
-
-/* Scrollbar personalizada */
-.portal::-webkit-scrollbar {
-  width: 6px;
-}
-
-.portal::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.portal::-webkit-scrollbar-thumb {
-  background: #e9b61e;
-  border-radius: 3px;
-}
-
-.portal::-webkit-scrollbar-thumb:hover {
-  background: #ffd54f;
 }
