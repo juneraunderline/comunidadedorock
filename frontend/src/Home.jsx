@@ -8,15 +8,15 @@ import Portal from "./Portal";
 
 function Home({ posts }) {
   const navigate = useNavigate();
-  const [bands, setBands] = useState([]);
-  const [featuredBand, setFeaturedBand] = useState(null);
-	  const [interviews, setInterviews] = useState([]);
-	  const [events, setEvents] = useState([]);
-  const [releases, setReleases] = useState([]);
-  const [loadingReleases, setLoadingReleases] = useState(true);
-	  const [loadingBands, setLoadingBands] = useState(true);
-	  const [loadingInterviews, setLoadingInterviews] = useState(true);
-	  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [bands, setBands] = useState(() => { try { return JSON.parse(localStorage.getItem("cdr_home_bands_v1") || "[]"); } catch { return []; } });
+  const [featuredBand, setFeaturedBand] = useState(() => { try { return JSON.parse(localStorage.getItem("cdr_home_featured_band_v1") || "null"); } catch { return null; } });
+	  const [interviews, setInterviews] = useState(() => { try { return JSON.parse(localStorage.getItem("cdr_home_interviews_v1") || "[]"); } catch { return []; } });
+	  const [events, setEvents] = useState(() => { try { return JSON.parse(localStorage.getItem("cdr_home_events_v1") || "[]"); } catch { return []; } });
+  const [releases, setReleases] = useState(() => { try { return JSON.parse(localStorage.getItem("cdr_home_releases_v1") || "[]"); } catch { return []; } });
+  const [loadingReleases, setLoadingReleases] = useState(() => { try { return !localStorage.getItem("cdr_home_releases_v1"); } catch { return true; } });
+	  const [loadingBands, setLoadingBands] = useState(() => { try { return !localStorage.getItem("cdr_home_bands_v1"); } catch { return true; } });
+	  const [loadingInterviews, setLoadingInterviews] = useState(() => { try { return !localStorage.getItem("cdr_home_interviews_v1"); } catch { return true; } });
+	  const [loadingEvents, setLoadingEvents] = useState(() => { try { return !localStorage.getItem("cdr_home_events_v1"); } catch { return true; } });
 	  const loadingPosts = posts.length === 0;
 
 	  const SkeletonCard = () => (
@@ -116,31 +116,31 @@ function Home({ posts }) {
       // Buscar bandas (com retry, ordenadas pelas mais recentes)
       fetchWithRetry(
         `${API_URL}/api/bands?sort=recent&limit=3`,
-        (data) => { setBands(data); setLoadingBands(false); },
+        (data) => { setBands(data); try { localStorage.setItem("cdr_home_bands_v1", JSON.stringify(data)); } catch {} setLoadingBands(false); },
         () => setLoadingBands(false)
       );
       // A Banda em Destaque é carregada separadamente para não alterar a ordem cronológica das Bandas Novas.
       fetchWithRetry(
         `${API_URL}/api/bands?sort=featured&limit=1`,
-        (data) => { setFeaturedBand(data?.[0]?.is_weekly_featured ? data[0] : null); },
+        (data) => { const featured = data?.[0]?.is_weekly_featured ? data[0] : null; setFeaturedBand(featured); try { localStorage.setItem("cdr_home_featured_band_v1", JSON.stringify(featured)); } catch {} },
         () => setFeaturedBand(null)
       );
       // Buscar entrevistas (com retry)
       fetchWithRetry(
         `${API_URL}/api/interviews?limit=3`,
-        (data) => { setInterviews(data); setLoadingInterviews(false); },
+        (data) => { setInterviews(data); try { localStorage.setItem("cdr_home_interviews_v1", JSON.stringify(data)); } catch {} setLoadingInterviews(false); },
         () => setLoadingInterviews(false)
       );
       // Buscar lançamentos (com retry)
       fetchWithRetry(
         `${API_URL}/api/releases?limit=4`,
-        (data) => { setReleases(data); setLoadingReleases(false); },
+        (data) => { setReleases(data); try { localStorage.setItem("cdr_home_releases_v1", JSON.stringify(data)); } catch {} setLoadingReleases(false); },
         () => setLoadingReleases(false)
       );
       // Buscar eventos (com retry)
       fetchWithRetry(
         `${API_URL}/api/events?limit=3&_=${Date.now()}`,
-        (data) => { setEvents(data); setLoadingEvents(false); },
+        (data) => { setEvents(data); try { localStorage.setItem("cdr_home_events_v1", JSON.stringify(data)); } catch {} setLoadingEvents(false); },
         () => setLoadingEvents(false)
       );
     };
