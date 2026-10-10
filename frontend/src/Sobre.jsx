@@ -39,7 +39,7 @@ function Sobre() {
           <h3 style={{ color: "#e9b61e", margin: "32px 0 12px", fontSize: "20px" }}>Contato e Expediente</h3>
           <p>Para sugestões de pauta, parcerias comerciais, solicitações de remoção de conteúdo ou divulgação de eventos, utilize os canais abaixo:</p>
           <ul style={{ paddingLeft: "24px", marginBottom: "16px" }}>
-            <li><strong>E-mail Editorial:</strong> <a href="mailto:junior.lopes@yahoo.com" style={{ color: "#e9b61e" }}>junior.lopes@yahoo.com</a></li>
+            <li><strong>E-mail Editorial:</strong> <a href="mailto:comunidadedorock@hotmail.com" style={{ color: "#e9b61e" }}>comunidadedorock@hotmail.com</a></li>
             <li><strong>Formulário:</strong> Acesse nossa página de <a href="/contato" style={{ color: "#e9b61e" }}>Contato</a></li>
           </ul>
 
