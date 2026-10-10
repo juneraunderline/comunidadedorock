@@ -40,9 +40,9 @@ function BandMembersEditor({ members, setMembers }) {
     <div style={{ display: "grid", gap: "10px" }}>
       {members.map((member, index) => (
         <div key={index} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px", padding: "10px", border: "1px solid #444", borderRadius: "8px" }}>
-          <input aria-label={\`Nome do integrante \${index + 1}\`} value={member.name} onChange={(e) => update(index, "name", e.target.value)} placeholder="Nome do integrante" />
-          <input aria-label={\`Instrumento de \${member.name || index + 1}\`} value={member.role} onChange={(e) => update(index, "role", e.target.value)} placeholder="Instrumento / função (ex.: guitarra e composição)" />
-          <input aria-label={\`Instagram de \${member.name || index + 1}\`} value={member.instagram} onChange={(e) => update(index, "instagram", e.target.value)} placeholder="Instagram (opcional, @perfil)" />
+          <input aria-label={`Nome do integrante \${index + 1}`} value={member.name} onChange={(e) => update(index, "name", e.target.value)} placeholder="Nome do integrante" />
+          <input aria-label={`Instrumento de \${member.name || index + 1}`} value={member.role} onChange={(e) => update(index, "role", e.target.value)} placeholder="Instrumento / função (ex.: guitarra e composição)" />
+          <input aria-label={`Instagram de \${member.name || index + 1}`} value={member.instagram} onChange={(e) => update(index, "instagram", e.target.value)} placeholder="Instagram (opcional, @perfil)" />
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span title="Ícone identificado automaticamente" style={{ fontSize: "22px" }}>{instrumentIcon(member.role)}</span>
             <button type="button" className="btn btn-secondary" onClick={() => setMembers((current) => current.filter((_, i) => i !== index))}>Remover</button>
