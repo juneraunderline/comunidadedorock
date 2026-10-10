@@ -22,6 +22,26 @@ jobs:
             echo "Configure os secrets COMUNIDADE_ROCK_BACKEND_URL e COMUNIDADE_ROCK_CRON_SECRET."
             exit 1
           fi
-          curl --fail --silent --show-error \
+
+          response_file=$(mktemp)
+          set +e
+          status=$(curl --silent --show-error \
+            -o "$response_file" \
+            -w "%{http_code}" \
             -H "Authorization: Bearer $CRON_SECRET" \
-            "$BACKEND_URL/api/cron/rss"
+            "$BACKEND_URL/api/cron/rss")
+          curl_exit=$?
+          set -e
+
+          cat "$response_file"
+          rm -f "$response_file"
+
+          if [ "$curl_exit" -ne 0 ]; then
+            echo "Falha de comunicação com o backend (curl exit $curl_exit)."
+            exit "$curl_exit"
+          fi
+
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "Backend retornou HTTP $status."
+            exit 1
+          fi
