@@ -6,17 +6,41 @@ import logo from "./assets/logo.webp";
 import hero from "./assets/hero-stage.webp";
 import Portal from "./Portal";
 
+function getHomeCache(key, fallback) {
+  try {
+    if (typeof window === "undefined") return fallback;
+    const value = window.localStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function hasHomeCache(key) {
+  try {
+    return typeof window !== "undefined" && !!window.localStorage.getItem(key);
+  } catch {
+    return false;
+  }
+}
+
+function saveHomeCache(key, value) {
+  try {
+    if (typeof window !== "undefined") window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+}
+
 function Home({ posts }) {
   const navigate = useNavigate();
-  const [bands, setBands] = useState(() => { try { return JSON.parse(localStorage.getItem("cdr_home_bands_v1") || "[]"); } catch { return []; } });
-  const [featuredBand, setFeaturedBand] = useState(() => { try { return JSON.parse(localStorage.getItem("cdr_home_featured_band_v1") || "null"); } catch { return null; } });
-	  const [interviews, setInterviews] = useState(() => { try { return JSON.parse(localStorage.getItem("cdr_home_interviews_v1") || "[]"); } catch { return []; } });
-	  const [events, setEvents] = useState(() => { try { return JSON.parse(localStorage.getItem("cdr_home_events_v1") || "[]"); } catch { return []; } });
-  const [releases, setReleases] = useState(() => { try { return JSON.parse(localStorage.getItem("cdr_home_releases_v1") || "[]"); } catch { return []; } });
-  const [loadingReleases, setLoadingReleases] = useState(() => { try { return !localStorage.getItem("cdr_home_releases_v1"); } catch { return true; } });
-	  const [loadingBands, setLoadingBands] = useState(() => { try { return !localStorage.getItem("cdr_home_bands_v1"); } catch { return true; } });
-	  const [loadingInterviews, setLoadingInterviews] = useState(() => { try { return !localStorage.getItem("cdr_home_interviews_v1"); } catch { return true; } });
-	  const [loadingEvents, setLoadingEvents] = useState(() => { try { return !localStorage.getItem("cdr_home_events_v1"); } catch { return true; } });
+  const [bands, setBands] = useState(() => getHomeCache("cdr_home_bands_v1", []));
+  const [featuredBand, setFeaturedBand] = useState(() => getHomeCache("cdr_home_featured_band_v1", null));
+	  const [interviews, setInterviews] = useState(() => getHomeCache("cdr_home_interviews_v1", []));
+	  const [events, setEvents] = useState(() => getHomeCache("cdr_home_events_v1", []));
+  const [releases, setReleases] = useState(() => getHomeCache("cdr_home_releases_v1", []));
+  const [loadingReleases, setLoadingReleases] = useState(() => !hasHomeCache("cdr_home_releases_v1"));
+	  const [loadingBands, setLoadingBands] = useState(() => !hasHomeCache("cdr_home_bands_v1"));
+	  const [loadingInterviews, setLoadingInterviews] = useState(() => !hasHomeCache("cdr_home_interviews_v1"));
+	  const [loadingEvents, setLoadingEvents] = useState(() => !hasHomeCache("cdr_home_events_v1"));
 	  const loadingPosts = posts.length === 0;
 
 	  const SkeletonCard = () => (
@@ -116,31 +140,31 @@ function Home({ posts }) {
       // Buscar bandas (com retry, ordenadas pelas mais recentes)
       fetchWithRetry(
         `${API_URL}/api/bands?sort=recent&limit=3`,
-        (data) => { setBands(data); try { localStorage.setItem("cdr_home_bands_v1", JSON.stringify(data)); } catch {} setLoadingBands(false); },
+        (data) => { setBands(data); saveHomeCache("cdr_home_bands_v1", data); setLoadingBands(false); },
         () => setLoadingBands(false)
       );
       // A Banda em Destaque é carregada separadamente para não alterar a ordem cronológica das Bandas Novas.
       fetchWithRetry(
         `${API_URL}/api/bands?sort=featured&limit=1`,
-        (data) => { const featured = data?.[0]?.is_weekly_featured ? data[0] : null; setFeaturedBand(featured); try { localStorage.setItem("cdr_home_featured_band_v1", JSON.stringify(featured)); } catch {} },
+        (data) => { const featured = data?.[0]?.is_weekly_featured ? data[0] : null; setFeaturedBand(featured); saveHomeCache("cdr_home_featured_band_v1", featured); },
         () => setFeaturedBand(null)
       );
       // Buscar entrevistas (com retry)
       fetchWithRetry(
         `${API_URL}/api/interviews?limit=3`,
-        (data) => { setInterviews(data); try { localStorage.setItem("cdr_home_interviews_v1", JSON.stringify(data)); } catch {} setLoadingInterviews(false); },
+        (data) => { setInterviews(data); saveHomeCache("cdr_home_interviews_v1", data); setLoadingInterviews(false); },
         () => setLoadingInterviews(false)
       );
       // Buscar lançamentos (com retry)
       fetchWithRetry(
         `${API_URL}/api/releases?limit=4`,
-        (data) => { setReleases(data); try { localStorage.setItem("cdr_home_releases_v1", JSON.stringify(data)); } catch {} setLoadingReleases(false); },
+        (data) => { setReleases(data); saveHomeCache("cdr_home_releases_v1", data); setLoadingReleases(false); },
         () => setLoadingReleases(false)
       );
       // Buscar eventos (com retry)
       fetchWithRetry(
         `${API_URL}/api/events?limit=3&_=${Date.now()}`,
-        (data) => { setEvents(data); try { localStorage.setItem("cdr_home_events_v1", JSON.stringify(data)); } catch {} setLoadingEvents(false); },
+        (data) => { setEvents(data); saveHomeCache("cdr_home_events_v1", data); setLoadingEvents(false); },
         () => setLoadingEvents(false)
       );
     };
