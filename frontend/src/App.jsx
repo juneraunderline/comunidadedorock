@@ -25,7 +25,12 @@ import PoliticaPrivacidade from "./PoliticaPrivacidade";
 import TermosDeUso from "./TermosDeUso";
 
 function App() {
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cdr_home_posts_v1");
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState(() => {
@@ -46,30 +51,49 @@ function App() {
   };
 
   useEffect(() => {
-    // Funcao de retry automatico
-    const fetchWithRetry = (url, onSuccess, onError, retries = 3, attempt = 0) => {
-      axios.get(url, { timeout: 25000 })
-        .then(res => onSuccess(res.data))
-        .catch((error) => {
-          if (retries > 0) {
-            // APIs e bancos com escala para zero podem demorar a acordar após um período sem acessos.
-            const delay = Math.min(2000 * (2 ** attempt), 10000);
-            setTimeout(() => fetchWithRetry(url, onSuccess, onError, retries - 1, attempt + 1), delay);
-          } else if (onError) {
-            onError(error);
-          }
-        });
+    let active = true;
+    let inFlight = false;
+    let retryTimer;
+    let retryCount = 0;
+
+    const refreshPosts = async () => {
+      if (inFlight || document.visibilityState === "hidden") return;
+      inFlight = true;
+      try {
+        const response = await axios.get(`${API_URL}/api/posts?limit=12&_=${Date.now()}`, { timeout: 20000 });
+        if (!active || !Array.isArray(response.data)) return;
+        const nextPosts = response.data;
+        setPosts((current) => JSON.stringify(current) === JSON.stringify(nextPosts) ? current : nextPosts);
+        try { localStorage.setItem("cdr_home_posts_v1", JSON.stringify(nextPosts)); } catch {}
+        retryCount = 0;
+        setLoading(false);
+      } catch {
+        // Mantém o conteúdo em cache e tenta novamente sem bloquear a página.
+        setLoading(false);
+        if (active && retryCount < 2) {
+          const delay = 3000 * (retryCount + 1);
+          retryCount += 1;
+          retryTimer = setTimeout(refreshPosts, delay);
+        }
+      } finally {
+        inFlight = false;
+      }
     };
 
-    // Buscar apenas os posts necessários para a Home inicialmente (melhora performance)
-    fetchWithRetry(
-      `${API_URL}/api/posts?limit=12`,
-      (data) => { setPosts(data); setLoading(false); },
-      () => setLoading(false)
-    );
+    // Mostra o cache imediatamente e atualiza as notícias em segundo plano.
+    refreshPosts();
+    const pollTimer = setInterval(refreshPosts, 60000);
+    const onFocus = () => refreshPosts();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
 
-    // Sem polling contínuo: a API pública usa cache na borda.
-    return undefined;
+    return () => {
+      active = false;
+      clearInterval(pollTimer);
+      clearTimeout(retryTimer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
   }, []);
 
   return (
