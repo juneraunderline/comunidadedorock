@@ -366,6 +366,19 @@ export default function Admin({ user: currentUser }) {
       .then(() => fetchData());
   };
 
+  const toggleWeeklyFeaturedBand = async (band) => {
+    const featured = !Boolean(band.is_weekly_featured);
+    try {
+      await axios.post(`${API_URL}/api/bands/${band.id}/weekly-featured`, { featured });
+      await fetchData();
+      alert(featured
+        ? `${band.name} agora é a Banda da Semana!`
+        : `${band.name} foi removida de Banda da Semana.`);
+    } catch (err) {
+      alert("Erro ao atualizar Banda da Semana: " + (err.response?.data?.error || err.message));
+    }
+  };
+
   const createBand = () => {
     if (!newBand.name.trim()) {
       alert("Preencha o nome da banda");
@@ -1508,7 +1521,14 @@ export default function Admin({ user: currentUser }) {
                       <p>{band.biography ? band.biography.substring(0, 100) : "Sem descrição"}...</p>
                     </div>
                   </div>
-                  <div className="post-actions">
+                  <div className="post-actions" style={{ flexWrap: "wrap" }}>
+                    <button
+                      className={band.is_weekly_featured ? "btn btn-primary" : "btn btn-outline"}
+                      onClick={() => toggleWeeklyFeaturedBand(band)}
+                      title={band.is_weekly_featured ? "Remover da Banda da Semana" : "Definir como Banda da Semana"}
+                    >
+                      {band.is_weekly_featured ? "⭐ Banda da Semana (remover)" : "⭐ Definir como Banda da Semana"}
+                    </button>
                     <button className="btn btn-primary" onClick={() => startEditBand(band)}>✏️ Editar</button>
                     <button className="btn btn-outline" onClick={() => {if (confirm("Tem certeza que deseja deletar esta banda?")) deleteBand(band.id)}}>🗑 Deletar</button>
                   </div>
