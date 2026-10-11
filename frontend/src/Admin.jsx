@@ -546,8 +546,8 @@ export default function Admin({ user: currentUser }) {
 
   // ====== EVENTOS ======
   const createEvent = () => {
-    if (!newEvent.title.trim() || !newEvent.date) {
-      alert("Preencha pelo menos o título e a data");
+    if ((!newEvent.title.trim() && !newEvent.artist.trim()) || !newEvent.date) {
+      alert("Informe o título ou pelo menos uma banda, além da data");
       return;
     }
 
@@ -565,8 +565,8 @@ export default function Admin({ user: currentUser }) {
   };
 
   const saveEditEvent = () => {
-    if (!editingEvent.title.trim() || !editingEvent.date) {
-      alert("Preencha pelo menos o título e a data");
+    if ((!editingEvent.title.trim() && !String(editingEvent.artist || "").trim()) || !editingEvent.date) {
+      alert("Informe o título ou pelo menos uma banda, além da data");
       return;
     }
 
@@ -1796,11 +1796,11 @@ export default function Admin({ user: currentUser }) {
             </div>
             <div className="form-group">
               <label>Artista/Banda</label>
-              <input
-                type="text"
-                value={editingEvent.artist}
+              <textarea
+                rows={3}
+                value={editingEvent.artist || ""}
                 onChange={(e) => setEditingEvent({...editingEvent, artist: e.target.value})}
-                placeholder="Nome do artista ou banda"
+                placeholder="Uma banda por linha"
               />
             </div>
             <div className="form-group">
@@ -1912,11 +1912,11 @@ export default function Admin({ user: currentUser }) {
             </div>
             <div className="form-group">
               <label>Artista/Banda</label>
-              <input
-                type="text"
+              <textarea
+                rows={3}
                 value={newEvent.artist}
                 onChange={(e) => setNewEvent({...newEvent, artist: e.target.value})}
-                placeholder="Nome do artista ou banda"
+                placeholder="Uma banda por linha"
               />
             </div>
             <div className="form-group">
