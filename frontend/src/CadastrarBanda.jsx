@@ -9,7 +9,7 @@ function serializeBandMembers(members) {
     if (member.role.trim()) parts.push(member.role.trim());
     if (member.instagram.trim()) parts.push("@" + member.instagram.trim().replace(/^@/, ""));
     return parts.join(" — ");
-  }).join("\\n");
+  }).join("\n");
 }
 function instrumentIcon(role) {
   const value = String(role || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
@@ -61,23 +61,8 @@ function instrumentIcon(role) {
     try {
       const res = await axios.post(`${API_URL}/api/bands/submit`, { ...form, members: serializeBandMembers(members) });
       setMessage(res.data.message || "Banda cadastrada com sucesso! Aguarde a aprovação.");
-      setForm({
-        name: "",
-        genre: "",
-        city: "",
-        state: "",
-        year: "",
-        members: "",
-        biography: "",
-        contact: "",
-        instagram: "",
-        facebook: "",
-        youtube: "",
-        spotify: "",
-        bandcamp: "",
-        site: "",
-        image: ""
-      });
+      setForm({ name: "", genre: "", city: "", state: "", year: "", members: "", biography: "", contact: "", instagram: "", facebook: "", youtube: "", spotify: "", bandcamp: "", site: "", image: "" });
+      setMembers([{ name: "", role: "", instagram: "" }]);
     } catch (err) {
       setMessage("Erro ao cadastrar banda: " + (err.response?.data?.error || err.message));
     }
