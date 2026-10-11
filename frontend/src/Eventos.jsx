@@ -157,6 +157,12 @@ function Eventos({ user }) {
                       {event.state && ` - ${event.state}`}
                     </p>
                   )}
+                  {event.ticket_location && (
+                    <p className="event-location">
+                      <span className="event-icon">🎟️</span>
+                      <strong>Venda física:</strong> {event.ticket_location}
+                    </p>
+                  )}
                   
                   {event.description && (
                     <p className="event-description">
