@@ -23,6 +23,7 @@ import Login from "./Login";
 import Sobre from "./Sobre";
 import PoliticaPrivacidade from "./PoliticaPrivacidade";
 import TermosDeUso from "./TermosDeUso";
+import GuiaDivulgacaoBandas from "./GuiaDivulgacaoBandas";
 
 function CanonicalUrl() {
   const location = useLocation();
@@ -180,6 +181,7 @@ function App() {
           <Route path="/entrevistas/:id" element={<EntrevistaDetail />} />
           <Route path="/eventos" element={<Eventos user={user} />} />
           <Route path="/eventos/:id" element={<EventDetail />} />
+          <Route path="/guias/divulgacao-banda-independente" element={<GuiaDivulgacaoBandas />} />
           <Route path="/contato" element={<Contato />} />
           <Route path="/cadastrar-banda" element={<CadastrarBanda />} />
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
@@ -217,6 +219,7 @@ function App() {
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginBottom: "12px", flexWrap: "wrap" }}>
             <Link to="/sobre" style={{ color: "#888", fontSize: "12px", textDecoration: "none", transition: "color 0.3s" }}>Sobre</Link>
+            <Link to="/guias/divulgacao-banda-independente" style={{ color: "#888", fontSize: "12px", textDecoration: "none", transition: "color 0.3s" }}>Guias para bandas</Link>
             <Link to="/privacidade" style={{ color: "#888", fontSize: "12px", textDecoration: "none", transition: "color 0.3s" }}>Política de Privacidade</Link>
             <Link to="/termos" style={{ color: "#888", fontSize: "12px", textDecoration: "none", transition: "color 0.3s" }}>Termos de Uso</Link>
             <Link to="/contato" style={{ color: "#888", fontSize: "12px", textDecoration: "none", transition: "color 0.3s" }}>Contato</Link>
