@@ -85,7 +85,7 @@ export default function Admin({ user: currentUser }) {
   const [editingInterview, setEditingInterview] = useState(null);
   const [newInterview, setNewInterview] = useState({ title: "", artist: "", content: "", image: "", date: "" });
   const [events, setEvents] = useState([]);
-  const [newEvent, setNewEvent] = useState({ title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", description: "" });
+  const [newEvent, setNewEvent] = useState({ title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", ticket_location: "", description: "" });
   const [editingEvent, setEditingEvent] = useState(null);
   const [releases, setReleases] = useState([]);
   const [newRelease, setNewRelease] = useState({ title: "", artist: "", type: "Single", release_date: "", image: "", spotify: "", youtube: "", description: "" });
@@ -553,7 +553,7 @@ export default function Admin({ user: currentUser }) {
 
     axios.post(`${API_URL}/api/events`, newEvent)
       .then(() => {
-        setNewEvent({ title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", description: "" });
+        setNewEvent({ title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", ticket_location: "", description: "" });
         fetchData();
         alert("Evento adicionado com sucesso!");
       })
@@ -580,6 +580,7 @@ export default function Admin({ user: currentUser }) {
       state: editingEvent.state,
       image: editingEvent.image,
       ticket_link: editingEvent.ticket_link,
+      ticket_location: editingEvent.ticket_location,
       description: editingEvent.description
     })
       .then(() => {
@@ -1856,10 +1857,19 @@ export default function Admin({ user: currentUser }) {
               <input type="file" accept="image/*" style={{ marginTop: "8px" }} onChange={(e) => handleImageUpload(e.target.files[0], setEditingEvent, "image")} />
             </div>
             <div className="form-group">
+              <label>Ponto físico de venda de ingressos</label>
+              <input
+                type="text"
+                value={editingEvent.ticket_location || ""}
+                onChange={(e) => setEditingEvent({...editingEvent, ticket_location: e.target.value})}
+                placeholder="Loja, bar ou endereço onde comprar"
+              />
+            </div>
+            <div className="form-group">
               <label>Link de Ingressos</label>
               <input
                 type="text"
-                value={editingEvent.ticket_link}
+                value={editingEvent.ticket_link || ""}
                 onChange={(e) => setEditingEvent({...editingEvent, ticket_link: e.target.value})}
                 placeholder="URL para compra de ingressos"
               />
@@ -1961,6 +1971,15 @@ export default function Admin({ user: currentUser }) {
                 placeholder="URL da imagem"
               />
               <input type="file" accept="image/*" style={{ marginTop: "8px" }} onChange={(e) => handleImageUpload(e.target.files[0], setNewEvent, "image")} />
+            </div>
+            <div className="form-group">
+              <label>Ponto físico de venda de ingressos</label>
+              <input
+                type="text"
+                value={newEvent.ticket_location}
+                onChange={(e) => setNewEvent({...newEvent, ticket_location: e.target.value})}
+                placeholder="Loja, bar ou endereço onde comprar"
+              />
             </div>
             <div className="form-group">
               <label>Link de Ingressos</label>
