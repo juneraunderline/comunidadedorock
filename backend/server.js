@@ -90,7 +90,8 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS pending_bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, submitted_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS rss_feeds (id SERIAL PRIMARY KEY, name TEXT NOT NULL, url TEXT NOT NULL UNIQUE, logo TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS rss_feed_status (feed_id INTEGER PRIMARY KEY, feed_name TEXT NOT NULL, feed_url TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'unknown', message TEXT, imported_count INTEGER NOT NULL DEFAULT 0, updated_count INTEGER NOT NULL DEFAULT 0, item_count INTEGER NOT NULL DEFAULT 0, checked_at TIMESTAMPTZ DEFAULT NOW())`);
-  await db.run(`CREATE TABLE IF NOT EXISTS events (id SERIAL PRIMARY KEY, title TEXT, artist TEXT, date TEXT, time TEXT, location TEXT, city TEXT, state TEXT, image TEXT, ticket_link TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`CREATE TABLE IF NOT EXISTS events (id SERIAL PRIMARY KEY, title TEXT, artist TEXT, date TEXT, time TEXT, location TEXT, city TEXT, state TEXT, image TEXT, ticket_link TEXT, ticket_location TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`ALTER TABLE events ADD COLUMN IF NOT EXISTS ticket_location TEXT`);
   await db.run(`ALTER TABLE events ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'approved'`);
   await db.run(`ALTER TABLE events ADD COLUMN IF NOT EXISTS contact_email TEXT`);
   await db.run(`CREATE TABLE IF NOT EXISTS interviews (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, content TEXT, image TEXT, date TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
@@ -1302,7 +1303,7 @@ app.delete("/api/releases/:id", async (req, res) => {
 app.get("/api/events", async (req, res) => {
   const full = req.query.full === "1";
   const limit = req.query.limit ? Math.max(1, Math.min(parseInt(req.query.limit) || 0, 100)) : null;
-  const fields = full ? "*" : "id, title, artist, date, time, location, city, state, image, ticket_link, LEFT(COALESCE(description, ''), 300) AS description, created_at";
+  const fields = full ? "*" : "id, title, artist, date, time, location, city, state, image, ticket_link, ticket_location, LEFT(COALESCE(description, ''), 300) AS description, created_at";
   const limitSql = limit ? `LIMIT ${limit}` : "";
   const events = await db.getAll(`SELECT ${fields} FROM events ${full ? "" : "WHERE status = 'approved'"} ORDER BY date ASC ${limitSql}`);
   const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
@@ -1324,13 +1325,13 @@ app.post("/api/event-submissions", async (req, res) => {
       return res.status(400).json({ error: "Informe um e-mail de contato válido." });
     }
     const insertedEvent = await db.getOne(
-      "INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, description, contact_email, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending') RETURNING id",
-      [title, artist, date, e.time || null, String(e.location || "").trim(), String(e.city || "").trim(), String(e.state || "").trim(), String(e.image || "").trim(), String(e.ticket_link || "").trim(), String(e.description || "").trim(), contactEmail]
+      "INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, ticket_location, description, contact_email, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'pending') RETURNING id",
+      [title, artist, date, e.time || null, String(e.location || "").trim(), String(e.city || "").trim(), String(e.state || "").trim(), String(e.image || "").trim(), String(e.ticket_link || "").trim(), String(e.ticket_location || "").trim(), String(e.description || "").trim(), contactEmail]
     );
     await notifyAdminByEmail("Novo evento aguardando aprovação", {
       "Evento": title, "Banda / artista": artist, "Data": date, "Horário": e.time,
       "Local": e.location, "Cidade": [e.city, e.state].filter(Boolean).join(" / "),
-      "E-mail de contato": contactEmail, "Link de ingressos": e.ticket_link,
+      "E-mail de contato": contactEmail, "Link de ingressos": e.ticket_link, "Ponto físico de venda": e.ticket_location,
       "ID da inscrição": insertedEvent.id
     });
     res.status(201).json({ success: true, message: "Evento enviado para análise da administração." });
@@ -1343,8 +1344,8 @@ app.post("/api/event-submissions", async (req, res) => {
 app.post("/api/events", async (req, res) => {
   const e = req.body;
   if (!e.title || !e.date) return res.status(400).json({ error: "Título e data são obrigatórios" });
-  const insertedEvent = await db.getOne("INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
-    [e.title, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.description]);
+  const insertedEvent = await db.getOne("INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, ticket_location, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id",
+    [e.title || e.artist, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.ticket_location, e.description]);
   await notifyAdminByEmail("Novo evento cadastrado no site", {
     "Evento": e.title, "Banda / artista": e.artist, "Data": e.date, "Horário": e.time,
     "Local": e.location, "Cidade": [e.city, e.state].filter(Boolean).join(" / "),
@@ -1356,8 +1357,8 @@ app.post("/api/events", async (req, res) => {
 app.put("/api/events/:id", async (req, res) => {
   const e = req.body;
   if (!e.title || !e.date) return res.status(400).json({ error: "Título e data são obrigatórios" });
-  await db.run("UPDATE events SET title=$1, artist=$2, date=$3, time=$4, location=$5, city=$6, state=$7, image=$8, ticket_link=$9, description=$10 WHERE id=$11",
-    [e.title, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.description, req.params.id]);
+  await db.run("UPDATE events SET title=$1, artist=$2, date=$3, time=$4, location=$5, city=$6, state=$7, image=$8, ticket_link=$9, ticket_location=$10, description=$11 WHERE id=$12",
+    [e.title || e.artist, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.ticket_location, e.description, req.params.id]);
   res.json({ success: true });
 });
 
