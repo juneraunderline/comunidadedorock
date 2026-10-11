@@ -94,7 +94,7 @@ function CadastrarBanda() {
             <div style={{marginBottom: "12px"}}>
               <label style={{display: "block", marginBottom: "6px", fontWeight: "bold"}}>Foto da Banda</label>
               <input type="file" accept="image/*" onChange={handleFileChange} style={{width: "100%"}} />
-              {form.image && <img src={form.image} alt="Preview" style={{marginTop: "8px", width: "100%", maxHeight: "250px", objectFit: "cover", borderRadius: "8px"}} />}
+              {form.image && <img src={form.image} alt="Preview" style={{marginTop: "8px", width: "100%", maxHeight: "320px", height: "auto", objectFit: "contain", objectPosition: "center", borderRadius: "8px", background: "#0b0b0f"}} />}
             </div>
 
             <input
