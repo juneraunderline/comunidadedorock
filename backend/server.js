@@ -1807,6 +1807,33 @@ app.get("/api/debug-rss", async (req, res) => {
   }
 });
 
+// Sitemap dinâmico: inclui páginas públicas e conteúdos publicados do banco.
+app.get("/sitemap.xml", async (req, res) => {
+  try {
+    await ensureInitialized();
+    const base = "https://comunidadedorock.com.br";
+    const [posts, bands, interviews, events] = await Promise.all([
+      db.getAll("SELECT id, created_at FROM posts ORDER BY created_at DESC"),
+      db.getAll("SELECT id, created_at FROM bands ORDER BY created_at DESC"),
+      db.getAll("SELECT id, created_at FROM interviews ORDER BY created_at DESC"),
+      db.getAll("SELECT id, created_at FROM events WHERE status = 'approved' ORDER BY created_at DESC")
+    ]);
+    const staticPaths = ["/", "/noticias", "/bandas", "/entrevistas", "/eventos", "/cadastrar-banda", "/sobre", "/privacidade", "/termos", "/contato"];
+    const urls = staticPaths.map((path) => ({ loc: base + path }));
+    for (const post of posts) urls.push({ loc: base + "/noticias/" + post.id, lastmod: post.created_at });
+    for (const band of bands) urls.push({ loc: base + "/bandas/" + band.id, lastmod: band.created_at });
+    for (const interview of interviews) urls.push({ loc: base + "/entrevistas/" + interview.id, lastmod: interview.created_at });
+    for (const event of events) urls.push({ loc: base + "/eventos/" + event.id, lastmod: event.created_at });
+    const escapeXml = (value) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/\'/g, "&apos;");
+    const entries = urls.map(({ loc, lastmod }) => "  <url><loc>" + escapeXml(loc) + "</loc>" + (lastmod ? "<lastmod>" + new Date(lastmod).toISOString().slice(0, 10) + "</lastmod>" : "") + "</url>").join("\n");
+    res.set("Content-Type", "application/xml; charset=utf-8");
+    res.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
+    res.send('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + entries + "\n</urlset>");
+  } catch (err) {
+    console.error("Erro ao gerar sitemap:", err);
+    res.status(500).type("text/plain").send("Não foi possível gerar o sitemap.");
+  }
+});
 // Inicialização compatível com Vercel e desenvolvimento local.
 // Em produção serverless, o banco é inicializado sob demanda pelo middleware acima.
 app.get("/api/cron/rss", async (req, res) => {
