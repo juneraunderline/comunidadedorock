@@ -136,7 +136,7 @@ function Eventos({ user }) {
                   <h3 className="event-title">{event.title}</h3>
                   
                   {event.artist && (
-                    <p className="event-artist">
+                    <p className="event-artist" style={{ whiteSpace: "pre-line" }}>
                       <span className="event-icon">🎤</span>
                       {event.artist}
                     </p>
