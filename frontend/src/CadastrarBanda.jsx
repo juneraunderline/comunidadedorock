@@ -21,7 +21,8 @@ function instrumentIcon(role) {
   if (/compos|compositor|compositora/.test(value)) return "✍️";
   return "🎵";
 }
-\nfunction CadastrarBanda() {
+
+function CadastrarBanda() {
   const [form, setForm] = useState({
     name: "",
     genre: "",
