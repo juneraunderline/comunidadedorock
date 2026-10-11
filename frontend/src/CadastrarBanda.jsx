@@ -40,7 +40,8 @@ function CadastrarBanda() {
     site: "",
     image: ""
   });
-  const [members, setMembers] = useState([{ name: "", role: "", instagram: "" }]);\n  const [message, setMessage] = useState("");
+  const [members, setMembers] = useState([{ name: "", role: "", instagram: "" }]);
+  const [message, setMessage] = useState("");
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
