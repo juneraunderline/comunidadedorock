@@ -5,7 +5,8 @@ import API_URL from "./config/api";
 
 function Eventos({ user }) {
   const [events, setEvents] = useState([]);
-  const [submission, setSubmission] = useState({ title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", description: "", contact_email: "" });
+  const emptySubmission = { title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", ticket_location: "", description: "", contact_email: "" };
+  const [submission, setSubmission] = useState(emptySubmission);
   const [sending, setSending] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
 
@@ -42,7 +43,7 @@ function Eventos({ user }) {
           {user ? (
             <>
               <h3 style={{ color: "#e9b61e", marginTop: 0 }}>Divulgue o evento da sua banda</h3>
-              <p style={{ color: "#aaa", lineHeight: 1.6 }}>Cadastre seu show gratuitamente. Nossa equipe vai revisar as informações antes de publicar na agenda.</p>
+              <p style={{ color: "#aaa", lineHeight: 1.6 }}>Cadastre seu show gratuitamente. Você pode incluir várias bandas, informar onde acontece o evento e indicar onde comprar ingressos. Nossa equipe revisará as informações antes da publicação.</p>
               <form onSubmit={async (e) => {
             e.preventDefault();
             setSending(true);
@@ -50,7 +51,7 @@ function Eventos({ user }) {
             try {
               const response = await axios.post(API_URL + "/api/event-submissions", submission);
               setSubmitMessage(response.data.message || "Evento enviado para análise da administração!");
-              setSubmission({ title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", description: "", contact_email: "" });
+              setSubmission(emptySubmission);
             } catch (error) {
               setSubmitMessage(error.response?.data?.error || "Não foi possível enviar agora. Tente novamente.");
             } finally {
@@ -60,19 +61,27 @@ function Eventos({ user }) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
               {[
                 ["title", "Nome do evento (opcional)", "Ex.: Festival Rock Independente", "text", false],
-                ["artist", "Banda / artista *", "Nome da banda", "text", true],
+                ["artist", "Bandas / artistas *", "Digite uma banda por linha. Pode incluir quantas bandas quiser.", "textarea", true],
                 ["date", "Data do evento *", "", "date", true],
-                ["time", "Horário", "", "time", false],
-                ["location", "Local / casa de shows", "Nome do local", "text", false],
+                ["time", "Horário de início", "", "time", false],
+                ["location", "Local do show / casa de shows", "Ex.: Hangar 110", "text", false],
                 ["city", "Cidade", "Ex.: São Paulo", "text", false],
                 ["state", "Estado", "Ex.: SP", "text", false],
+                ["ticket_location", "Ponto físico de venda de ingressos (opcional)", "Ex.: loja, bar ou endereço de venda", "text", false],
+                ["ticket_link", "Link para comprar ingressos (opcional)", "https://...", "url", false],
                 ["contact_email", "E-mail para contato *", "email@exemplo.com", "email", true],
-                ["image", "Link do cartaz (opcional)", "https://...", "url", false],
-                ["ticket_link", "Link dos ingressos (opcional)", "https://...", "url", false]
+                ["image", "Link do cartaz (opcional)", "https://...", "url", false]
               ].map(([field, label, placeholder, type, required]) => (
                 <label key={field} style={{ display: "flex", flexDirection: "column", gap: "6px", color: "#ddd", fontSize: "13px" }}>
                   {label}
-                  <input type={type} required={required} value={submission[field]} placeholder={placeholder} onChange={(e) => setSubmission({ ...submission, [field]: e.target.value })} style={{ boxSizing: "border-box", width: "100%", padding: "11px", border: "1px solid #454552", borderRadius: "5px", background: "#20202b", color: "#fff" }} />
+                  {type === "textarea" ? (
+                    <>
+                      <textarea required={required} rows={3} value={submission[field]} placeholder={placeholder} onChange={(e) => setSubmission({ ...submission, [field]: e.target.value })} style={{ boxSizing: "border-box", width: "100%", padding: "11px", border: "1px solid #454552", borderRadius: "5px", background: "#20202b", color: "#fff", resize: "vertical" }} />
+                      <small style={{ color: "#999" }}>Informe uma banda por linha. Se houver várias, todas serão exibidas no evento.</small>
+                    </>
+                  ) : (
+                    <input type={type} required={required} value={submission[field]} placeholder={placeholder} onChange={(e) => setSubmission({ ...submission, [field]: e.target.value })} style={{ boxSizing: "border-box", width: "100%", padding: "11px", border: "1px solid #454552", borderRadius: "5px", background: "#20202b", color: "#fff" }} />
+                  )}
                 </label>
               ))}
             </div>
