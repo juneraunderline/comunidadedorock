@@ -160,7 +160,7 @@ function CadastrarBanda() {
                 style={{padding: "10px", border: "1px solid #ccc", borderRadius: "4px", background: "#111", color: "#fff"}}
               />
             </div>
-            <h3>Integrantes da banda</h3>
+            <h3>Integrantes da banda — cadastre cada integrante separadamente</h3>
             <div style={{display: "grid", gap: "10px", marginBottom: "14px"}}>
               {members.map((member, index) => (
                 <div key={index} style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px", padding: "12px", border: "1px solid #444", borderRadius: "8px", background: "#111"}}>
