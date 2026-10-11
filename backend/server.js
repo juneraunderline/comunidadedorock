@@ -1356,7 +1356,7 @@ app.post("/api/events", async (req, res) => {
 
 app.put("/api/events/:id", async (req, res) => {
   const e = req.body;
-  if (!e.title || !e.date) return res.status(400).json({ error: "Título e data são obrigatórios" });
+  if ((!String(e.title || "").trim() && !String(e.artist || "").trim()) || !e.date) return res.status(400).json({ error: "Informe o título ou pelo menos uma banda, além da data" });
   await db.run("UPDATE events SET title=$1, artist=$2, date=$3, time=$4, location=$5, city=$6, state=$7, image=$8, ticket_link=$9, ticket_location=$10, description=$11 WHERE id=$12",
     [e.title || e.artist, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.ticket_location, e.description, req.params.id]);
   res.json({ success: true });
