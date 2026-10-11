@@ -2,7 +2,26 @@ import { useState } from "react";
 import axios from "axios";
 import API_URL from "./config/api";
 
-function CadastrarBanda() {
+
+function serializeBandMembers(members) {
+  return (members || []).filter((member) => member.name.trim()).map((member) => {
+    const parts = [member.name.trim()];
+    if (member.role.trim()) parts.push(member.role.trim());
+    if (member.instagram.trim()) parts.push("@" + member.instagram.trim().replace(/^@/, ""));
+    return parts.join(" — ");
+  }).join("\\n");
+}
+function instrumentIcon(role) {
+  const value = String(role || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+  if (/vocal|voz|cantor|cantora|vocalista/.test(value)) return "🎤";
+  if (/bateria|baterista|drum|percuss/.test(value)) return "🥁";
+  if (/baixo|baixista|bass|guitarra|guitarrista|violao|violonista|cordas/.test(value)) return "🎸";
+  if (/teclado|tecladista|piano|sintetizador|synth/.test(value)) return "🎹";
+  if (/sax|saxofone|trompete|trombone|flauta|sopro/.test(value)) return "🎷";
+  if (/compos|compositor|compositora/.test(value)) return "✍️";
+  return "🎵";
+}
+\nfunction CadastrarBanda() {
   const [form, setForm] = useState({
     name: "",
     genre: "",
@@ -20,7 +39,7 @@ function CadastrarBanda() {
     site: "",
     image: ""
   });
-  const [message, setMessage] = useState("");
+  const [members, setMembers] = useState([{ name: "", role: "", instagram: "" }]);\n  const [message, setMessage] = useState("");
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -40,7 +59,7 @@ function CadastrarBanda() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${API_URL}/api/bands/submit`, form);
+      const res = await axios.post(`${API_URL}/api/bands/submit`, { ...form, members: serializeBandMembers(members) });
       setMessage(res.data.message || "Banda cadastrada com sucesso! Aguarde a aprovação.");
       setForm({
         name: "",
@@ -155,15 +174,22 @@ function CadastrarBanda() {
                 style={{padding: "10px", border: "1px solid #ccc", borderRadius: "4px", background: "#111", color: "#fff"}}
               />
             </div>
-            <input
-              type="text"
-              name="members"
-              placeholder="Membros (Ex: João (Voz), Maria (Guitarra), Pedro (Baixo))"
-              value={form.members}
-              onChange={handleChange}
-              required
-              style={{width: "100%", padding: "10px", marginBottom: "10px", border: "1px solid #ccc", borderRadius: "4px", background: "#111", color: "#fff"}}
-            />
+            <h3>Integrantes da banda</h3>
+            <div style={{display: "grid", gap: "10px", marginBottom: "14px"}}>
+              {members.map((member, index) => (
+                <div key={index} style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "8px", padding: "12px", border: "1px solid #444", borderRadius: "8px", background: "#111"}}>
+                  <input aria-label={`Nome do integrante ${index + 1}`} value={member.name} onChange={(e) => setMembers(current => current.map((item, i) => i === index ? {...item, name: e.target.value} : item))} placeholder="Nome do integrante" />
+                  <input aria-label={`Instrumento de ${member.name || index + 1}`} value={member.role} onChange={(e) => setMembers(current => current.map((item, i) => i === index ? {...item, role: e.target.value} : item))} placeholder="Instrumento / função" />
+                  <input aria-label={`Instagram de ${member.name || index + 1}`} value={member.instagram} onChange={(e) => setMembers(current => current.map((item, i) => i === index ? {...item, instagram: e.target.value} : item))} placeholder="Instagram (opcional, @perfil)" />
+                  <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
+                    <span title="Ícone identificado automaticamente" style={{fontSize: "22px"}}>{instrumentIcon(member.role)}</span>
+                    <button type="button" className="btn btn-secondary" disabled={members.length === 1} onClick={() => setMembers(current => current.filter((_, i) => i !== index))}>Remover</button>
+                  </div>
+                </div>
+              ))}
+              <button type="button" className="btn btn-secondary" onClick={() => setMembers(current => [...current, {name: "", role: "", instagram: ""}])}>+ Adicionar integrante</button>
+              <small style={{color: "#aaa"}}>Cadastre cada integrante separadamente. O ícone acompanha o instrumento ou função informado; Instagram é opcional.</small>
+            </div>
             <textarea
               name="biography"
               placeholder="Biografia"
