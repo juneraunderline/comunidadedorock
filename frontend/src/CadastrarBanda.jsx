@@ -12,7 +12,7 @@ function serializeBandMembers(members) {
   }).join("\n");
 }
 function instrumentIcon(role) {
-  const value = String(role || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+  const value = String(role || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   if (/vocal|voz|cantor|cantora|vocalista/.test(value)) return "🎤";
   if (/bateria|baterista|drum|percuss/.test(value)) return "🥁";
   if (/baixo|baixista|bass|guitarra|guitarrista|violao|violonista|cordas/.test(value)) return "🎸";
