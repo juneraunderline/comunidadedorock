@@ -24,7 +24,7 @@ function Contato() {
     e.preventDefault();
     setSending(true);
     try {
-      await fetch("https://formsubmit.co/ajax/comunidadedorock@hotmail.com", {
+      const response = await fetch("https://formsubmit.co/ajax/comunidadedorock@hotmail.com", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({
@@ -36,6 +36,18 @@ function Contato() {
           _template: "table"
         })
       });
+
+      let result = null;
+      try {
+        result = await response.json();
+      } catch {
+        result = null;
+      }
+
+      if (!response.ok || !result || result.success === false || result.success === "false") {
+        throw new Error("O serviço de contato não confirmou o recebimento.");
+      }
+
       setSent(true);
       setNome("");
       setEmail("");
