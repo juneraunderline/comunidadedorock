@@ -116,6 +116,7 @@ function App() {
 
   return (
     <Router>
+      <CanonicalUrl />
       <div className="app">
         {/* HEADER */}
         <header className="header">
