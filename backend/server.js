@@ -1343,7 +1343,7 @@ app.post("/api/event-submissions", async (req, res) => {
 
 app.post("/api/events", async (req, res) => {
   const e = req.body;
-  if (!e.title || !e.date) return res.status(400).json({ error: "Título e data são obrigatórios" });
+  if ((!String(e.title || "").trim() && !String(e.artist || "").trim()) || !e.date) return res.status(400).json({ error: "Informe o título ou pelo menos uma banda, além da data" });
   const insertedEvent = await db.getOne("INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, ticket_location, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id",
     [e.title || e.artist, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.ticket_location, e.description]);
   await notifyAdminByEmail("Novo evento cadastrado no site", {
