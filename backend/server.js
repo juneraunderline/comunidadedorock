@@ -1314,8 +1314,8 @@ app.get("/api/events", async (req, res) => {
 app.post("/api/event-submissions", async (req, res) => {
   try {
     const e = req.body || {};
-    const title = String(e.title || "").trim() || String(e.artist || "").trim() || "Evento sem título";
     const artist = String(e.artist || "").trim();
+    const title = String(e.title || "").trim() || artist.split(/\r?\n/).map(name => name.trim()).filter(Boolean).join(" + ") || "Evento sem título";
     const date = String(e.date || "").trim();
     const contactEmail = String(e.contact_email || "").trim();
     if (!artist || !date || !contactEmail) {
@@ -1345,7 +1345,7 @@ app.post("/api/events", async (req, res) => {
   const e = req.body;
   if ((!String(e.title || "").trim() && !String(e.artist || "").trim()) || !e.date) return res.status(400).json({ error: "Informe o título ou pelo menos uma banda, além da data" });
   const insertedEvent = await db.getOne("INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, ticket_location, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id",
-    [e.title || e.artist, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.ticket_location, e.description]);
+    [String(e.title || "").trim() || String(e.artist || "").split(/\r?\n/).map(name => name.trim()).filter(Boolean).join(" + "), e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.ticket_location, e.description]);
   await notifyAdminByEmail("Novo evento cadastrado no site", {
     "Evento": e.title, "Banda / artista": e.artist, "Data": e.date, "Horário": e.time,
     "Local": e.location, "Cidade": [e.city, e.state].filter(Boolean).join(" / "),
