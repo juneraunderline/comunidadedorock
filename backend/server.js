@@ -1818,7 +1818,7 @@ app.get("/sitemap.xml", async (req, res) => {
       db.getAll("SELECT id, created_at FROM interviews ORDER BY created_at DESC"),
       db.getAll("SELECT id, created_at FROM events WHERE status = 'approved' ORDER BY created_at DESC")
     ]);
-    const staticPaths = ["/", "/noticias", "/bandas", "/entrevistas", "/eventos", "/cadastrar-banda", "/sobre", "/privacidade", "/termos", "/contato"];
+    const staticPaths = ["/", "/noticias", "/bandas", "/entrevistas", "/eventos", "/guias/divulgacao-banda-independente", "/cadastrar-banda", "/sobre", "/privacidade", "/termos", "/contato"];
     const urls = staticPaths.map((path) => ({ loc: base + path }));
     for (const post of posts) urls.push({ loc: base + "/noticias/" + post.id, lastmod: post.created_at });
     for (const band of bands) urls.push({ loc: base + "/bandas/" + band.id, lastmod: band.created_at });
