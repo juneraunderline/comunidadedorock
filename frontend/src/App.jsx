@@ -24,6 +24,24 @@ import Sobre from "./Sobre";
 import PoliticaPrivacidade from "./PoliticaPrivacidade";
 import TermosDeUso from "./TermosDeUso";
 
+function CanonicalUrl() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // O HTML inicial é compartilhado por todas as rotas da SPA.
+    // Define um canonical único para o caminho que está aberto.
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute("href", `https://comunidadedorock.com.br${location.pathname}`);
+  }, [location.pathname]);
+
+  return null;
+}
+
 function App() {
   const [posts, setPosts] = useState(() => {
     try {
@@ -98,6 +116,7 @@ function App() {
 
   return (
     <Router>
+      <CanonicalUrl />
       <div className="app">
         {/* HEADER */}
         <header className="header">
