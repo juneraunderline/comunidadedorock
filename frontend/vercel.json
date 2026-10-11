@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "https://comunidadedorock-api.vercel.app/sitemap.xml" },
     { "source": "/og/:path*", "destination": "https://comunidadedorock-api.vercel.app/og/:path*" },
     { "source": "/(.*)", "destination": "/" }
   ]
