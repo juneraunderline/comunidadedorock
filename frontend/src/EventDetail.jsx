@@ -62,16 +62,18 @@ function EventDetail() {
         <div style={{ background: '#16161b', padding: '20px', borderRadius: '8px' }}>
           <p style={{ color: '#e9b61e', fontWeight: 700, marginBottom: '8px' }}>{formatWeekdayFull(event.date)}</p>
           {event.time && <p style={{ color: '#fff', marginBottom: '8px' }}>Hora: <strong>{event.time}</strong></p>}
-          {event.location && <p style={{ color: '#fff', marginBottom: '8px' }}>Local: <strong>{event.location}</strong></p>}
+          {event.location && <p style={{ color: '#fff', marginBottom: '8px' }}>Local do show: <strong>{event.location}</strong></p>}
           {event.city && event.state && <p style={{ color: '#fff', marginBottom: '8px' }}>Cidade: {event.city} - {event.state}</p>}
-          {event.description && <p style={{ color: '#ccc', marginBottom: '16px' }}>{event.description}</p>}
+          {event.artist && <p style={{ color: '#fff', marginBottom: '8px' }}>Bandas / artistas: <strong style={{ whiteSpace: 'pre-line' }}>{event.artist}</strong></p>}
+          {event.ticket_location && <p style={{ color: '#fff', marginBottom: '12px' }}>Ponto físico de venda: <strong>{event.ticket_location}</strong></p>}
+          {event.description && <p style={{ color: '#ccc', marginBottom: '16px', whiteSpace: 'pre-line' }}>{event.description}</p>}
           {event.ticket_link ? (
             <a href={event.ticket_link} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-              Comprar ingresso
+              Comprar ingresso online
             </a>
-          ) : (
-            <span style={{ color: '#999' }}>Link de ingresso não disponível</span>
-          )}
+          ) : !event.ticket_location ? (
+            <span style={{ color: '#999' }}>Informações de venda de ingressos não disponíveis</span>
+          ) : null}
         </div>
       </div>
       <div style={{ maxWidth: '900px', margin: '20px auto 0' }}>
