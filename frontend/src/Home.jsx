@@ -262,9 +262,15 @@ function Home({ posts }) {
                 <div style={{gridColumn: "1/-1", textAlign: "center", padding: "20px"}}>
                   <button 
                     className="btn btn-primary"
-                    onClick={() => setDisplayCount(displayCount + 8)}
+                    onClick={() => {
+                      if (displayCount >= 12) {
+                        navigate("/noticias");
+                      } else {
+                        setDisplayCount(Math.min(displayCount + 6, 12));
+                      }
+                    }}
                   >
-                    Ver Mais ↓
+                    {displayCount >= 12 ? "Ver todas as notícias →" : "Ver Mais ↓"}
                   </button>
                 </div>
               )}
