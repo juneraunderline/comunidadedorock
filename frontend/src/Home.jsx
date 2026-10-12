@@ -258,7 +258,7 @@ function Home({ posts }) {
                   </div>
                 </div>
               ))}
-              {posts.length > displayCount && (
+              {(posts.length > displayCount || displayCount >= 12) && (
                 <div style={{gridColumn: "1/-1", textAlign: "center", padding: "20px"}}>
                   <button 
                     className="btn btn-primary"
