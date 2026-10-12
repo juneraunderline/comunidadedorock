@@ -1,6 +1,9 @@
 name: Importar RSS periodicamente
 
 on:
+  push:
+    paths:
+      - ".github/workflows/rss-import.yml"
   schedule:
     - cron: "7/15 * * * *"
   workflow_dispatch:
