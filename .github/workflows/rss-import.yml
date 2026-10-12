@@ -8,10 +8,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: importar-rss
+  cancel-in-progress: false
+
 jobs:
   import-rss:
     name: Importar notícias RSS
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - name: Chamar backend
         env:
@@ -26,6 +31,12 @@ jobs:
           response_file=$(mktemp)
           set +e
           status=$(curl --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 75 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-max-time 240 \
+            --retry-all-errors \
             -o "$response_file" \
             -w "%{http_code}" \
             -H "Authorization: Bearer $CRON_SECRET" \
@@ -37,11 +48,11 @@ jobs:
           rm -f "$response_file"
 
           if [ "$curl_exit" -ne 0 ]; then
-            echo "Falha de comunicação com o backend (curl exit $curl_exit)."
+            echo "Falha de comunicação com o backend após novas tentativas (curl exit $curl_exit)."
             exit "$curl_exit"
           fi
 
           if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
-            echo "Backend retornou HTTP $status."
+            echo "Backend retornou HTTP $status mesmo após novas tentativas."
             exit 1
           fi
