@@ -256,11 +256,14 @@ async function migrateLegacyBandImage(band, table = "bands") {
   const original = band?.image;
   if (!original || typeof original !== "string") return original || null;
   if (!["bands", "pending_bands"].includes(table)) throw new Error("Tabela de imagens não permitida");
-  if (/^https?:\/\/res\.cloudinary\.com\//i.test(original)) return original;
+  // Nunca buscar nem importar URLs externas no servidor. Links remotos legados
+  // continuam sendo exibidos como estão; apenas imagens Base64 enviadas em fluxos
+  // autenticados/moderados podem ser processadas e enviadas ao Cloudinary.
+  if (/^https?:\/\//i.test(original)) return original;
 
   try {
     let uploadSource = original;
-    const isRemoteUrl = /^https?:\/\//i.test(original);
+    const isRemoteUrl = false;
 
     if (!isRemoteUrl) {
       let imageBuffer;
@@ -1398,7 +1401,9 @@ app.get("/api/bands/:id", async (req, res) => {
       band = await db.getOne(`SELECT * FROM bands WHERE ${slugExpression} = $1 LIMIT 1`, [key]);
     }
     if (!band) return res.status(404).json({ error: "Banda não encontrada" });
-    band.image = await migrateLegacyBandImage(band);
+    // Leitura pública não deve disparar migração/upload de imagem.
+    // Imagens legadas permanecem exibidas pela URL original até uma edição autorizada.
+    band.image = band.image;
     const slug = band.name ? band.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.json({ ...band, slug });
@@ -1446,11 +1451,12 @@ app.get("/api/bands", async (req, res) => {
     }
     const bands = await db.getAll(sql, params);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
-    // Migra as imagens antigas do lote em paralelo para reduzir a espera no primeiro acesso.
-    // O banco só recebe URLs depois que cada upload termina; falhas preservam a imagem original.
-    const responseBands = await Promise.all(bands.map(async (band) => {
-      const image = full ? band.image : await migrateLegacyBandImage(band);
-      return { ...band, image, slug: mkSlug(band.name) };
+    // Listagem pública é somente leitura: não deve provocar uploads ou migrações
+    // de imagens no Cloudinary durante um GET.
+    const responseBands = bands.map((band) => ({
+      ...band,
+      image: band.image,
+      slug: mkSlug(band.name)
     }));
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.json(responseBands);
