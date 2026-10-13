@@ -1228,7 +1228,12 @@ app.get("/api/session", authenticate, (req, res) => {
   res.json({ user: req.authUser });
 });
 
+function isValidPositiveId(value) {
+  return /^\\d+$/.test(String(value)) && Number.isSafeInteger(Number(value)) && Number(value) > 0;
+}
+
 app.get("/api/user/:id", async (req, res) => {
+  if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido" });
   try {
     const user = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
@@ -1239,6 +1244,7 @@ app.get("/api/user/:id", async (req, res) => {
 });
 
 app.put("/api/user/:id", async (req, res) => {
+  if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido" });
   try {
     const { display_name, username, avatar, new_password, current_password } = req.body;
     const user = await db.getOne("SELECT * FROM users WHERE id = $1", [req.params.id]);
@@ -1283,6 +1289,7 @@ app.get("/api/users", async (req, res) => {
 });
 
 app.put("/api/user/:id/role", async (req, res) => {
+  if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido" });
   try {
     const { role } = req.body;
     if (!["admin", "editor", "user"].includes(role)) return res.status(400).json({ error: "Role inválida" });
@@ -1295,6 +1302,7 @@ app.put("/api/user/:id/role", async (req, res) => {
 });
 
 app.delete("/api/user/:id", async (req, res) => {
+  if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido" });
   try {
     const user = await db.getOne("SELECT role FROM users WHERE id = $1", [req.params.id]);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });

@@ -99,8 +99,8 @@ async function waitForServer() {
     const adminToken = adminLogin.data.token;
 
     const malformedProfile = await request("/api/user/not-an-id", { token: adminToken });
-    assert.equal(malformedProfile.status, 500, "ID de perfil malformado deve falhar sem sucesso");
-    assert.equal(malformedProfile.data.error, "Não foi possível concluir a solicitação", "erro interno não deve expor detalhes do PostgreSQL");
+    assert.equal(malformedProfile.status, 400, "ID de perfil malformado deve ser rejeitado antes de consultar o banco");
+    assert.equal(malformedProfile.data.error, "ID de usuário inválido", "ID malformado deve receber erro de validação genérico");
 
 
     const register = await request("/api/register", {
