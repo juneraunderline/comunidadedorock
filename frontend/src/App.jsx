@@ -14,6 +14,7 @@ import BandaDetail from "./BandaDetail";
 import Entrevistas from "./Entrevistas";
 import EntrevistaDetail from "./EntrevistaDetail";
 import Eventos from "./Eventos";
+import CadastrarEvento from "./CadastrarEvento";
 import EventDetail from "./EventDetail";
 import Contato from "./Contato";
 import CadastrarBanda from "./CadastrarBanda";
@@ -179,7 +180,8 @@ function App() {
           <Route path="/bandas/:id" element={<BandaDetail />} />
           <Route path="/entrevistas" element={<Entrevistas />} />
           <Route path="/entrevistas/:id" element={<EntrevistaDetail />} />
-          <Route path="/eventos" element={<Eventos user={user} />} />
+          <Route path="/eventos" element={<Eventos />} />
+          <Route path="/cadastrar-evento" element={<CadastrarEvento user={user} />} />
           <Route path="/eventos/:id" element={<EventDetail />} />
           <Route path="/guias/divulgacao-banda-independente" element={<GuiaDivulgacaoBandas />} />
           <Route path="/contato" element={<Contato />} />
