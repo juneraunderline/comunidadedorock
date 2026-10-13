@@ -89,11 +89,15 @@ function App() {
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
       })
-      .catch(() => {
+      .catch((error) => {
         if (!active) return;
-        setUser(null);
-        localStorage.removeItem("user");
-        localStorage.removeItem("cdr_session_token");
+        // Revogar o estado local apenas quando o servidor confirmar sessão inválida.
+        // Falhas transitórias (ex.: API acordando após hibernação) não devem deslogar o usuário.
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          setUser(null);
+          localStorage.removeItem("user");
+          localStorage.removeItem("cdr_session_token");
+        }
       });
     return () => { active = false; };
   }, []);
