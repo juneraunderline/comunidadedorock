@@ -22,7 +22,7 @@ function Login({ onLogin }) {
     try {
       if (isRegister) {
         if (!username || !password) return setError("Preencha todos os campos");
-        if (password.length < 4) return setError("Senha deve ter pelo menos 4 caracteres");
+        if (password.length < 8) return setError("Senha deve ter pelo menos 8 caracteres");
         if (password !== confirmPassword) return setError("As senhas não conferem");
         const res = await axios.post(`${API_URL}/api/register`, {
           username,
