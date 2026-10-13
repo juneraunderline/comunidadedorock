@@ -45,6 +45,10 @@ jobs:
         working-directory: backend
         run: npm install --no-audit --no-fund
 
+      - name: Auditar dependências de produção do backend
+        working-directory: backend
+        run: npm audit --omit=dev
+
       - name: Testar autenticação e autorização em PostgreSQL descartável
         working-directory: backend
         env:
@@ -56,6 +60,10 @@ jobs:
       - name: Instalar dependências do frontend
         working-directory: frontend
         run: npm install --no-audit --no-fund
+
+      - name: Auditar dependências de produção do frontend
+        working-directory: frontend
+        run: npm audit --omit=dev
 
       - name: Compilar frontend
         working-directory: frontend
