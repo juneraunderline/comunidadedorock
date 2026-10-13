@@ -1092,9 +1092,15 @@ app.post("/api/upload-image", async (req, res) => {
 app.post("/api/register", async (req, res) => {
   try {
     const { username, password, display_name, is_band } = req.body;
-    if (!username || !password) return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
-    if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
-    if (String(password).length < 8) return res.status(400).json({ error: "Senha deve ter pelo menos 8 caracteres" });
+    if (typeof username !== "string" || !username.trim() || typeof password !== "string" || !password) {
+      return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
+    }
+    if (username.trim().length < 3 || username.length > 100) {
+      return res.status(400).json({ error: "Usuário deve ter entre 3 e 100 caracteres" });
+    }
+    if (password.length < 8 || password.length > 128) {
+      return res.status(400).json({ error: "Senha deve ter entre 8 e 128 caracteres" });
+    }
     const exists = await db.getOne("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
     if (exists) return res.status(409).json({ error: "Usuário já existe" });
     const result = await pool.query(
@@ -1111,9 +1117,13 @@ app.post("/api/register", async (req, res) => {
 
 app.post("/api/login", async (req, res) => {
   try {
-    const { user, pass } = req.body;
+    const { user, pass } = req.body || {};
+    // Limitar os valores antes de consultar o banco ou executar scrypt.
+    if (typeof user !== "string" || user.length > 100 || typeof pass !== "string" || pass.length > 128) {
+      return res.status(400).json({ success: false, error: "Usuário ou senha inválidos" });
+    }
     // Nunca criar conta administrativa com senha padrão durante um login.
-    const found = await db.getOne("SELECT * FROM users WHERE username = $1", [user?.toLowerCase()]);
+    const found = await db.getOne("SELECT * FROM users WHERE username = $1", [user.toLowerCase()]);
     if (!found || !(await verifyPassword(pass, found.password))) {
       return res.status(401).json({ success: false, error: "Usuário ou senha incorretos" });
     }

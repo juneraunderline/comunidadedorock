@@ -81,6 +81,16 @@ async function waitForServer() {
     assert.equal(healthBlocked.headers.get("access-control-allow-origin"), null, "origem externa não deve receber autorização CORS");
 
 
+    const oversizedLogin = await request("/api/login", { method: "POST", body: { user: adminName, pass: "x".repeat(129) } });
+    assert.equal(oversizedLogin.status, 400, "login deve rejeitar senhas maiores que 128 caracteres antes do hash");
+    const oversizedRegistration = await request("/api/register", {
+      method: "POST",
+      body: { username: "security-test-too-long-password", password: "x".repeat(129) }
+    });
+    assert.equal(oversizedRegistration.status, 400, "cadastro deve rejeitar senhas maiores que 128 caracteres");
+    const oversizedUser = await request("/api/login", { method: "POST", body: { user: "u".repeat(101), pass: "Valid-Test-123!" } });
+    assert.equal(oversizedUser.status, 400, "login deve rejeitar nomes de usuário excessivamente grandes");
+
     const adminLogin = await request("/api/login", { method: "POST", body: { user: adminName, pass: adminPass } });
     assert.equal(adminLogin.status, 200, "admin legado deve conseguir entrar com a senha atual");
     assert.ok(adminLogin.data.token, "login deve emitir token");
