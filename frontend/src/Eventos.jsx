@@ -106,9 +106,9 @@ function Eventos() {
                     </p>
                   )}
                   
-                  {event.ticket_link ? (
+                  {safeExternalUrl(event.ticket_link) ? (
                     <a
-                      href={event.ticket_link}
+                      href={safeExternalUrl(event.ticket_link)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-primary btn-buy-tickets"
