@@ -58,7 +58,7 @@ async function waitForServer() {
     // Banco PostgreSQL efêmero do job; nunca usar credenciais reais.
     const adminName = "security-test-admin";
     const adminPass = "Legacy-Admin-123!";
-    await client.query("DELETE FROM users WHERE username IN ($1, $2, $3)", [adminName, "security-test-user", "security-test-other"]);
+    await client.query("DELETE FROM users WHERE username IN ($1, $2, $3, $4)", [adminName, "security-test-user", "security-test-other", "security-test-editor"]);
     const inserted = await client.query(
       "INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, 'admin') RETURNING id",
       [adminName, adminPass, "Admin de Teste"]
@@ -106,6 +106,7 @@ async function waitForServer() {
     assert.equal(rssWriteAsEditor.status, 403, "editor não pode administrar feeds RSS");
 
     const editorPostTitle = "security-test-editor-post";
+    await client.query("DELETE FROM posts WHERE title IN ($1, $2)", [editorPostTitle, editorPostTitle + "-updated"]);
     const editorPostCreate = await request("/api/posts", {
       method: "POST", token: editorToken,
       body: { title: editorPostTitle, content: "Conteúdo de teste isolado" }
