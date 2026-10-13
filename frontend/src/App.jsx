@@ -66,8 +66,9 @@ function App() {
   };
 
   const handleLogout = () => {
-    // Revoga a sessão no servidor antes de remover o token local.
-    axios.post(`${API_URL}/api/logout`).catch(() => {}).finally(() => {});
+    // Envia explicitamente o token antes de apagá-lo do navegador.
+    const token = localStorage.getItem("cdr_session_token");
+    if (token) axios.post(`${API_URL}/api/logout`, {}, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
     setUser(null);
     localStorage.removeItem("user");
     localStorage.removeItem("cdr_session_token");
