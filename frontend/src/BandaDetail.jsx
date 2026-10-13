@@ -26,6 +26,16 @@ function parseMembersForDisplay(value) {
   }).filter(Boolean);
 }
 
+function safeExternalUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function normalizeSocialUrl(value, platform) {
   const raw = String(value || "").trim();
   if (!raw) return "";
@@ -67,7 +77,7 @@ function SocialIcon({ network, color }) {
 }
 
 function SocialLink({ network, label, href, color }) {
-  const url = normalizeSocialUrl(href, network);
+  const url = safeExternalUrl(normalizeSocialUrl(href, network));
   if (!url) return null;
   return (
     <a
@@ -199,7 +209,7 @@ function BandaDetail() {
                       <div>
                         <strong>{member.name}</strong>
                         {member.role && <span> — {member.role}</span>}
-                        {member.instagram && <div><a href={normalizeSocialUrl(member.instagram, "instagram")} target="_blank" rel="noopener noreferrer" style={{ color: "#E1306C", fontSize: "0.9em" }}>@{member.instagram.replace(/^@/, "")}</a></div>}
+                        {member.instagram && <div><a href={safeExternalUrl(normalizeSocialUrl(member.instagram, "instagram"))} target="_blank" rel="noopener noreferrer" style={{ color: "#E1306C", fontSize: "0.9em" }}>@{member.instagram.replace(/^@/, "")}</a></div>}
                       </div>
                     </div>
                   ))}
@@ -230,7 +240,7 @@ function BandaDetail() {
                       {releases.slice(0, 6).map(release => (
                         <article className="band-release-item" key={release.id}>
                           {release.image ? <img src={getImageUrl(release.image)} alt={release.title} loading="lazy" /> : <div className="band-release-placeholder">🎵</div>}
-                          <div><small>{release.type || "Lançamento"}{release.release_date ? " · " + new Date(release.release_date + "T00:00:00").toLocaleDateString("pt-BR") : ""}</small><h4>{release.title}</h4><div className="band-release-links">{release.spotify && <a href={release.spotify} target="_blank" rel="noopener noreferrer">🎧 Ouvir no Spotify</a>}{release.youtube && <a href={release.youtube} target="_blank" rel="noopener noreferrer">▶ Ver no YouTube</a>}</div></div>
+                          <div><small>{release.type || "Lançamento"}{release.release_date ? " · " + new Date(release.release_date + "T00:00:00").toLocaleDateString("pt-BR") : ""}</small><h4>{release.title}</h4><div className="band-release-links">{safeExternalUrl(release.spotify) && <a href={safeExternalUrl(release.spotify)} target="_blank" rel="noopener noreferrer">🎧 Ouvir no Spotify</a>}{safeExternalUrl(release.youtube) && <a href={safeExternalUrl(release.youtube)} target="_blank" rel="noopener noreferrer">▶ Ver no YouTube</a>}</div></div>
                         </article>
                       ))}
                     </div>
