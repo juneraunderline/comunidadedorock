@@ -22,13 +22,6 @@ function Eventos() {
       .catch(err => console.error("Erro ao carregar eventos:", err));
   }, []);
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "Data TBD";
-    const date = new Date(dateStr + "T00:00:00");
-    const options = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' };
-    return date.toLocaleDateString('pt-BR', options).toUpperCase();
-  };
-
   const formatWeekday = (dateStr) => {
     if (!dateStr) return "";
     const date = new Date(dateStr + "T00:00:00");

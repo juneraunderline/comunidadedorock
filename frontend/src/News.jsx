@@ -14,25 +14,19 @@ function safeExternalUrl(value) {
   }
 }
 
-function getNewsSummary(content) {
-  if (!content) return "";
-
-  const container = document.createElement("div");
-  container.innerHTML = DOMPurify.sanitize(content);
-  const paragraph = container.querySelector("p");
-  const text = (paragraph?.textContent || container.textContent || "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\.{3,}\s*$/, "");
-
-  return text ? `${text}...` : "";
-}
+function SkeletonCard() { return (
+    <div className="card skeleton-card">
+      <div className="skeleton skeleton-image"></div>
+      <div className="skeleton skeleton-text"></div>
+      <div className="skeleton skeleton-text short"></div>
+    </div>
+  ); }
 
 function News() {
   const [allPosts, setAllPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [brokenImages, setBrokenImages] = useState(new Set());
+  const [, setBrokenImages] = useState(new Set());
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
   const [searchParams] = useSearchParams();
@@ -127,13 +121,7 @@ function News() {
     setSourceFilter("");
   };
 
-  const SkeletonCard = () => (
-    <div className="card skeleton-card">
-      <div className="skeleton skeleton-image"></div>
-      <div className="skeleton skeleton-text"></div>
-      <div className="skeleton skeleton-text short"></div>
-    </div>
-  );
+
 
   return (
     <div>

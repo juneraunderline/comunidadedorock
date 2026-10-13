@@ -59,20 +59,6 @@ function NewsDetail() {
     return `${day}/${month}/${year} às ${hours}:${mins}`;
   };
 
-  useEffect(() => {
-    axios.get(`${API_URL}/api/posts?full=1`)
-      .then(res => {
-        const selectedPost = res.data.find(p => p.slug === id || p.id === parseInt(id));
-        setPost(selectedPost);
-        setLoading(false);
-        
-        // Atualizar meta tags para compartilhamento
-        if (selectedPost) {
-          updateMetaTags(selectedPost);
-        }
-      });
-  }, [id]);
-
   const updateMetaTags = (post) => {
     const summary = getNewsSummary(post.content);
     const pageUrl = window.location.href;
@@ -112,6 +98,22 @@ function NewsDetail() {
     // Atualizar título da página
     document.title = `${post.title} - Comunidade do Rock`;
   };
+
+  useEffect(() => {
+    axios.get(`${API_URL}/api/posts?full=1`)
+      .then(res => {
+        const selectedPost = res.data.find(p => p.slug === id || p.id === parseInt(id));
+        setPost(selectedPost);
+        setLoading(false);
+        
+        // Atualizar meta tags para compartilhamento
+        if (selectedPost) {
+          updateMetaTags(selectedPost);
+        }
+      });
+  }, [id]);
+
+
 
   const shareOnSocial = (platform) => {
     if (!post) return;

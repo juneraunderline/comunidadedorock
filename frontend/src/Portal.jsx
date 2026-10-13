@@ -8,16 +8,6 @@ function Portal() {
   const [feeds, setFeeds] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Função para extrair o domínio principal do URL
-  const getMainSiteUrl = (feedUrl) => {
-    try {
-      const url = new URL(feedUrl);
-      return url.origin; // Retorna apenas o protocolo + domínio
-    } catch (err) {
-      return feedUrl;
-    }
-  };
-
   // Função para obter favicon do site
   const getFaviconUrl = (feedUrl) => {
     try {
@@ -25,7 +15,7 @@ function Portal() {
       const domain = url.origin;
       // Tenta favicon.ico primeiro, depois a API do Google
       return `${domain}/favicon.ico`;
-    } catch (err) {
+    } catch {
       return null;
     }
   };

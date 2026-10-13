@@ -52,7 +52,7 @@ function Perfil({ user, setUser }) {
       };
       reader.onerror = () => setError("Não foi possível ler a foto.");
       reader.readAsDataURL(file);
-    } catch (err) {
+    } catch {
       setError("Erro ao preparar a foto.");
     }
   };
