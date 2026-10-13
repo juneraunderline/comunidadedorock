@@ -66,9 +66,36 @@ function App() {
   };
 
   const handleLogout = () => {
+    // Revoga a sessão no servidor antes de remover o token local.
+    axios.post(`${API_URL}/api/logout`).catch(() => {}).finally(() => {});
     setUser(null);
     localStorage.removeItem("user");
+    localStorage.removeItem("cdr_session_token");
   };
+
+  // O perfil em localStorage não é confiável: validar a sessão no servidor ao abrir o site.
+  useEffect(() => {
+    let active = true;
+    const token = localStorage.getItem("cdr_session_token");
+    if (!token) {
+      setUser(null);
+      localStorage.removeItem("user");
+      return () => { active = false; };
+    }
+    axios.get(`${API_URL}/api/session`, { timeout: 10000 })
+      .then((response) => {
+        if (!active) return;
+        setUser(response.data.user);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      })
+      .catch(() => {
+        if (!active) return;
+        setUser(null);
+        localStorage.removeItem("user");
+        localStorage.removeItem("cdr_session_token");
+      });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
