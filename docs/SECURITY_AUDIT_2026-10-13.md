@@ -221,3 +221,35 @@ A branch contém implementação de sessão e política central de autorização
 - Os testes exercitam a API com dados e credenciais fictícios. Isso confirma compatibilidade dos endpoints de leitura do painel no backend, mas **não substitui um teste visual/end-to-end do painel no navegador**. Não entrei na conta administrativa real nem alterei a senha.
 - **Ainda não liberar para produção:** aguardar o novo workflow e fazer a validação manual controlada dos fluxos de escrita do painel (criar/editar/excluir notícia, banda, entrevista, lançamento e evento; moderar cadastro de banda/evento; gerir RSS e usuários). Isso deve ocorrer em ambiente de teste ou preview, não diretamente na produção.
 - Não houve merge, deploy ou alteração da branch `main`. A ressalva operacional sobre chamadas HTTP públicas e possíveis efeitos indiretos está registrada no início deste relatório.
+
+
+## Atualização final da revisão técnica — 13/10/2026
+
+### Correções adicionais feitas nesta branch
+
+- **XSS no painel de notícias:** conteúdo HTML carregado no editor administrativo é sanitizado antes de ser colocado no DOM; HTML colado da área de transferência também é sanitizado, e o conteúdo é sanitizado novamente antes de salvar.
+- **Resumos de notícias:** a análise de HTML em elementos temporários usa DOMPurify; os pontos de renderização de notícias e entrevistas continuam sanitizados.
+- **Erros internos:** respostas de API que expunham `err.message` ou o detalhe de erro do PostgreSQL foram substituídas por mensagens genéricas ao cliente.
+- **CORS:** origens não permitidas não recebem `Access-Control-Allow-Origin`; a requisição não gera erro interno só por causa da origem. Isso não substitui autenticação e autorização no servidor.
+- **Dependência vulnerável:** a auditoria identificou uma vulnerabilidade alta na versão anterior de `sharp`; a dependência foi atualizada para `^0.35.5`.
+- **Upload de imagens:** limitado a admin/editor; valida URI Base64, formato declarado versus formato real, tipos PNG/JPEG/WebP/GIF, tamanho e limite de pixels antes de chamar o Cloudinary. SVG e imagens inválidas são rejeitados.
+- **Cobertura automatizada ampliada:** testes para cabeçalhos, CORS, detalhes de erros, leituras administrativas privadas, rotas de escrita anônimas, gestão de usuários, CRUD/moderação, rate limits e validação de upload. Os testes usam PostgreSQL efêmero `cdr_test` e não enviam e-mails nem fazem uploads reais para o Cloudinary.
+
+### Evidência de validação
+
+- [CI #42 — auditoria completa de dependências](https://github.com/juneraunderline/comunidadedorock/actions/runs/38473235335): sucesso; `npm audit` reportou zero vulnerabilidades nas dependências instaladas do backend e frontend, incluindo dependências de desenvolvimento.
+- [CI #44 — testes de autorização e validação de upload](https://github.com/juneraunderline/comunidadedorock/actions/runs/38473400928): sucesso; testes de integração e build passaram.
+- [CI #45 — sanitização de HTML colado no editor](https://github.com/juneraunderline/comunidadedorock/actions/runs/38473472132): sucesso; testes de integração, auditorias de dependências e build passaram.
+- O commit de documentação atualiza esta ressalva operacional e deve passar novamente pelo workflow. Nenhum merge, deploy ou alteração da branch `main` foi iniciado.
+
+### Limitações que ainda impedem declarar “tudo pronto para produção”
+
+1. **Sem E2E visual real:** não foi possível testar login e painel no navegador contra um preview isolado com banco descartável. Não foi criado preview porque não há confirmação de que as variáveis de ambiente dele apontariam para um banco de teste separado.
+2. **Sessão em `localStorage`:** o token ainda pode ser roubado se surgir outro XSS. A sanitização reduz vetores identificados, mas não equivale a CSP validada ou a uma arquitetura de cookie `HttpOnly`.
+3. **Rate limit distribuído:** `express-rate-limit` usa armazenamento em memória por instância; não é um limite global entre funções serverless. Um armazenamento compartilhado exige configuração própria.
+4. **Conta administrativa real:** os testes comprovam a migração de uma conta administrativa fictícia com senha legada, não as credenciais da conta real de produção. Não acessar nem redefinir a conta real durante esta revisão.
+5. **Migração de sessão em produção:** a tabela `auth_sessions` é criada pelo código de inicialização. A criação foi testada no banco descartável, mas não no banco de produção.
+6. **Reprodutibilidade:** as pastas backend/frontend instalam dependências sem lockfile próprio versionado, então a resolução de versões pode variar no futuro. Convém versionar lockfiles e usar instalação congelada antes da publicação.
+7. **Ressalva operacional:** a checagem pública HTTP e seus possíveis efeitos indiretos no Layerbase estão descritos no início deste relatório. Nenhuma outra chamada à API de produção deve ser feita durante as próximas validações.
+
+**Decisão:** a branch continua isolada e **não está liberada para produção**. Antes de qualquer merge/deploy, é necessária uma revisão humana final e um teste de navegador num ambiente preview comprovadamente ligado a um banco descartável, com plano de rollback.
