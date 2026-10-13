@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import DOMPurify from "dompurify";
 import API_URL, { getImageUrl } from "./config/api";
 
 
@@ -111,14 +112,14 @@ export default function Admin({ user: currentUser }) {
   // Sincronizar conteúdo do editor quando editingPost muda
   useEffect(() => {
     if (editingPost && editingContentRef.current) {
-      editingContentRef.current.innerHTML = editingPost.content;
+      editingContentRef.current.innerHTML = DOMPurify.sanitize(editingPost.content || "");
     }
   }, [editingPost?.id]);
 
   // Sincronizar conteúdo do novo post
   useEffect(() => {
     if (newContentRef.current) {
-      newContentRef.current.innerHTML = newPost.content;
+      newContentRef.current.innerHTML = DOMPurify.sanitize(newPost.content || "");
     }
   }, []);
 
@@ -288,7 +289,7 @@ export default function Admin({ user: currentUser }) {
           const sel = window.getSelection();
           const text = sel.toString() || url;
           const target = newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
-          document.execCommand("insertHTML", false, `<a href="${url}"${target} style="color:#e9b61e">${text}</a>`);
+          document.execCommand("insertHTML", false, DOMPurify.sanitize(`<a href="${url}"${target} style="color:#e9b61e">${text}</a>`));
         }
       }} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Inserir link">🔗 Link</button>
       <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
@@ -314,7 +315,7 @@ export default function Admin({ user: currentUser }) {
 
   const createPost = () => {
     // Ler conteúdo direto do ref para garantir que imagens coladas sejam incluídas
-    const finalContent = newContentRef.current ? newContentRef.current.innerHTML : newPost.content;
+    const finalContent = DOMPurify.sanitize(newContentRef.current ? newContentRef.current.innerHTML : newPost.content);
     
     if (!newPost.title.trim() || !finalContent.trim()) {
       alert("Preencha título e conteúdo");
@@ -351,7 +352,7 @@ export default function Admin({ user: currentUser }) {
 
   const saveEditPost = () => {
     // Ler conteúdo direto do ref para garantir que imagens coladas sejam incluídas
-    const finalContent = editingContentRef.current ? editingContentRef.current.innerHTML : editingPost.content;
+    const finalContent = DOMPurify.sanitize(editingContentRef.current ? editingContentRef.current.innerHTML : editingPost.content);
     
     if (!editingPost.title.trim() || !finalContent.trim()) {
       alert("Preencha título e conteúdo");
