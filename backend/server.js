@@ -32,7 +32,7 @@ app.use(cors({
   origin(origin, callback) {
     // Chamadas sem Origin incluem cron/health e clientes de servidor para servidor.
     if (!origin || allowedOrigins.has(origin)) return callback(null, true);
-    return callback(new Error("Origem não permitida pela política CORS"));
+    return callback(null, false);
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
