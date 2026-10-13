@@ -1536,7 +1536,7 @@ app.delete("/api/releases/:id", async (req, res) => {
     return res.status(200).json({ success: true, deletedId: result.rows[0].id });
   } catch (err) {
     console.error("Erro ao excluir lançamento:", err.message);
-    return res.status(500).json({ error: "Erro ao excluir lançamento", detail: err.message });
+    return res.status(500).json({ error: "Erro ao excluir lançamento" });
   }
 });
 
