@@ -211,3 +211,13 @@ A branch contém implementação de sessão e política central de autorização
 - Incluídos testes de bloqueio de acesso a bandas pendentes e de limite de submissões públicas de bandas.
 - Todos os testes continuam apontados exclusivamente ao PostgreSQL efêmero `cdr_test`; não consultam nem alteram Layerbase.
 - **Estado:** estas mudanças precisam passar pelo GitHub Actions antes de serem consideradas verificadas. Não houve merge nem deploy.
+
+
+## Verificação de CI e revisão do painel — 13/10/2026
+
+- O workflow da revisão anterior terminou com **success**: [execução #26](https://github.com/juneraunderline/comunidadedorock/actions/runs/38471576639). O log confirma a execução de `backend/tests/security.integration.test.js`, com saída `PASS`, e o build do frontend terminou sem falha. Permanecem avisos de dependências/chunk size, não erros que tenham falhado esse job.
+- Na revisão do painel `frontend/src/Admin.jsx`, identifiquei as leituras disparadas ao abrir o painel: notícias, bandas, bandas pendentes, entrevistas, eventos, lançamentos, feeds RSS, status RSS e usuários. Acrescentei verificações de que a conta **admin fictícia** consegue ler todos esses endpoints no PostgreSQL descartável.
+- O teste adicional foi enviado à mesma branch isolada no commit `c681168e4e48de27c82324536ec8fa2f9639fe1d`. A nova execução de CI precisa terminar com sucesso antes de considerar essa cobertura aprovada.
+- Os testes exercitam a API com dados e credenciais fictícios. Isso confirma compatibilidade dos endpoints de leitura do painel no backend, mas **não substitui um teste visual/end-to-end do painel no navegador**. Não entrei na conta administrativa real nem alterei a senha.
+- **Ainda não liberar para produção:** aguardar o novo workflow e fazer a validação manual controlada dos fluxos de escrita do painel (criar/editar/excluir notícia, banda, entrevista, lançamento e evento; moderar cadastro de banda/evento; gerir RSS e usuários). Isso deve ocorrer em ambiente de teste ou preview, não diretamente na produção.
+- Não houve merge, deploy, acesso ao banco Layerbase ou alteração da branch `main`.
