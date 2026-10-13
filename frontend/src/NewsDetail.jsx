@@ -9,7 +9,7 @@ function getNewsSummary(content) {
   if (!content) return "";
 
   const container = document.createElement("div");
-  container.innerHTML = content;
+  container.innerHTML = DOMPurify.sanitize(content);
   const paragraph = container.querySelector("p");
   const text = (paragraph?.textContent || container.textContent || "")
     .replace(/\s+/g, " ")
