@@ -72,7 +72,7 @@ cloudinary.config({
 // BANCO POSTGRESQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+  ssl: process.env.PGSSLMODE === "disable" ? false : (process.env.DATABASE_URL ? { rejectUnauthorized: false } : false),
   // O Layerbase tem limite restrito de conexões simultâneas.
   // Em Vercel serverless, manter apenas uma conexão por instância e liberá-la
   // rapidamente reduz o risco de esgotar max_client_conn.
