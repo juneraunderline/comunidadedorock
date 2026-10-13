@@ -1539,12 +1539,14 @@ app.post("/api/releases", async (req, res) => {
   res.json({ success:true });
 });
 app.put("/api/releases/:id", async (req, res) => {
+  if (!/^[1-9]\d*$/.test(String(req.params.id))) return res.status(400).json({ error: "ID de lançamento inválido" });
   const r=req.body;
   if(!r.title||!r.artist) return res.status(400).json({error:"Título e artista/banda são obrigatórios"});
   await db.run("UPDATE releases SET title=$1, artist=$2, type=$3, release_date=$4, image=$5, spotify=$6, youtube=$7, description=$8 WHERE id=$9",[r.title,r.artist,r.type||"Single",r.release_date||null,r.image||null,r.spotify||null,r.youtube||null,r.description||null,req.params.id]);
   res.json({success:true});
 });
 app.delete("/api/releases/:id", async (req, res) => {
+  if (!/^[1-9]\d*$/.test(String(req.params.id))) return res.status(400).json({ error: "ID de lançamento inválido" });
   try {
     const result = await db.query("DELETE FROM releases WHERE id = $1 RETURNING id", [req.params.id]);
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
