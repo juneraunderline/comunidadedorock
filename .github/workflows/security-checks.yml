@@ -72,7 +72,7 @@ jobs:
       - name: Instalar navegador para smoke test visual isolado
         working-directory: frontend
         run: |
-          npm install --no-save --no-package-lock playwright@1.55.0
+          npm install --no-save --no-package-lock playwright@1.63.0
           npx playwright install --with-deps chromium
 
       - name: Iniciar frontend com API fictícia

@@ -252,6 +252,9 @@ async function waitForServer() {
     const fullEvents = await request("/api/events?full=1", { token: userToken });
     assert.equal(fullEvents.status, 403, "usuário comum não pode ler eventos administrativos");
     assert.equal((await request("/api/events")).status, 200, "listagem pública de eventos deve continuar funcionando");
+    assert.equal((await request("/api/releases")).status, 200, "listagem pública de lançamentos deve continuar funcionando");
+    const fullReleasesAsUser = await request("/api/releases?full=1", { token: userToken });
+    assert.equal(fullReleasesAsUser.status, 403, "usuário comum não pode ler lançamentos administrativos");
 
     const eventUnauth = await request("/api/events", {
       method: "POST", body: { title: "Evento não autorizado", date: "2099-01-01" }
