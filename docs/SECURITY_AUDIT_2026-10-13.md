@@ -135,3 +135,41 @@ Executar primeiro em ambiente de teste com banco descartável e credenciais fict
 ## Critério de liberação
 
 Nenhum merge ou deploy até: revisão do diff, testes automatizados aprovados, teste manual dos fluxos de login/admin, confirmação de que a conta admin foi preservada e aprovação explícita. A execução dos testes deve usar banco isolado; nenhum teste destrutivo em Layerbase de produção.
+
+
+## Implementação em andamento na branch isolada
+
+Commits de implementação adicionados após a preparação inicial:
+
+- `7f3dee1`: criação de sessões de servidor com tokens aleatórios de 256 bits, validade de 8 horas e armazenamento apenas do SHA-256 do token no PostgreSQL.
+- `80cd328`: validação de sessão e logout com revogação no servidor.
+- `9fbb1b3`: CORS restrito às origens configuradas e redução do limite de JSON para 10 MB / URL-encoded para 1 MB.
+- `f580c37`, `3546c60`, `3510f99`, `aabb0f1` e `e5b36f8`: token enviado nas chamadas do frontend, validação da sessão ao abrir o site, logout e preservação do estado local em falhas transitórias da API.
+- `406d9b8`: workflow de CI isolado para verificar sintaxe do backend e build do frontend; não publica nem faz deploy.
+- `b95fa03`: resposta pública do health check minimizada.
+
+### Política de autorização implementada nesta etapa
+
+- Leitura pública permanece disponível para notícias, bandas, entrevistas, lançamentos, eventos aprovados, feeds RSS e comentários.
+- Login e cadastro público permanecem acessíveis; novo cadastro exige senha de pelo menos 8 caracteres.
+- Envio de banda continua público e grava em fila pendente; submissão de evento exige sessão autenticada.
+- Perfil só pode ser acessado/editado pelo próprio usuário ou por admin.
+- Escritas de posts, entrevistas e lançamentos exigem admin/editor.
+- Escritas de bandas/eventos, gerenciamento de usuários, feeds RSS, aprovação/rejeição, tarefas de manutenção e dados administrativos exigem admin.
+- Upload exige sessão autenticada.
+- Comentários exigem sessão; o autor e avatar são derivados da conta autenticada, não do corpo enviado pelo navegador. Exclusão só pelo autor ou admin/editor.
+- O cron RSS mantém sua verificação separada por `CRON_SECRET`.
+- As sessões são revogáveis no logout e ao excluir usuário; a expiração é verificada no servidor.
+
+### Bloqueios e ressalvas ainda existentes
+
+1. **Nenhum teste foi executado nesta sessão.** O workflow foi preparado, mas seu resultado precisa ser observado no GitHub Actions. O build e a sintaxe não devem ser considerados aprovados antes de aparecerem como sucesso.
+2. O teste real de login, migração de senhas legadas, conta administrativa existente, permissões e CRUD ainda exige um banco descartável e credenciais fictícias. Não foi feita conexão com Layerbase e não se deve apontar testes de escrita para produção.
+3. O token do SPA fica em `localStorage`; é enviado como Bearer e não é usado o objeto de usuário como prova de identidade, mas XSS ainda pode expor tokens. Uma fase posterior deve revisar a prevenção de XSS/CSP e decidir se uma arquitetura de cookie HttpOnly é viável entre o domínio `.com.br` e a API `.vercel.app`.
+4. O CORS usa `FRONTEND_ORIGINS` como lista separada por vírgulas; o padrão contém o domínio de produção e `localhost:5173`. Antes de testar um preview, configurar suas origens explicitamente. Não usar curingas.
+5. A criação da tabela `auth_sessions` ocorre durante a inicialização normal do backend quando este código for executado. Isso **não foi executado aqui**. Qualquer futura publicação precisará revisar essa migração de schema; esta branch não foi mesclada e nenhum deploy foi iniciado.
+6. A verificação de autorização central é uma primeira camada e precisa de teste rota por rota contra o painel real. Não declarar esta branch pronta para produção antes da revisão humana e da matriz de testes abaixo.
+
+### Estado atual
+
+A branch contém implementação de sessão e política central de autorização, mas **continua não liberada para produção**. Não houve merge, deploy manual, conexão ao Layerbase ou alteração na `main`. O workflow de CI está limitado a esta branch e a pull requests para `main`; ele executa verificações de sintaxe/build, não testes de integração de autenticação.
