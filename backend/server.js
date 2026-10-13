@@ -14,9 +14,22 @@ if (typeof fetch !== "undefined") {
 }
 
 const app = express();
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+const allowedOrigins = new Set(
+  (process.env.FRONTEND_ORIGINS || "https://comunidadedorock.com.br,https://www.comunidadedorock.com.br,http://localhost:5173")
+    .split(",").map(origin => origin.trim()).filter(Boolean)
+);
+app.use(cors({
+  origin(origin, callback) {
+    // Chamadas sem Origin incluem cron/health e clientes de servidor para servidor.
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error("Origem não permitida pela política CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  maxAge: 600
+}));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "1mb", extended: true }));
 // Upload de imagem via base64
 const path = require("path");
 const fs = require("fs");
