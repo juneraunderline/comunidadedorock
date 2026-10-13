@@ -303,6 +303,18 @@ async function waitForServer() {
     });
     assert.equal(deleteOwnComment.status, 200, "autor pode excluir o próprio comentário");
 
+    const roleChange = await request("/api/user/" + otherUser.data.user.id + "/role", {
+      method: "PUT", token: adminToken, body: { role: "editor" }
+    });
+    assert.equal(roleChange.status, 200, "admin deve alterar papel de usuário");
+    assert.equal(roleChange.data.user.role, "editor", "papel atualizado deve ser refletido na resposta");
+    const roleRestore = await request("/api/user/" + otherUser.data.user.id + "/role", {
+      method: "PUT", token: adminToken, body: { role: "user" }
+    });
+    assert.equal(roleRestore.status, 200, "admin deve poder restaurar papel de usuário");
+    assert.equal((await request("/api/user/" + otherUser.data.user.id, { method: "DELETE", token: adminToken })).status, 200, "admin deve excluir usuário comum");
+    assert.equal((await client.query("SELECT id FROM users WHERE id = $1", [otherUser.data.user.id])).rowCount, 0, "usuário excluído não deve permanecer no banco");
+
     const adminUsers = await request("/api/users", { token: adminToken });
     assert.equal(adminUsers.status, 200, "admin deve continuar acessando a gestão de usuários");
     const logout = await request("/api/logout", { method: "POST", token: userToken });
