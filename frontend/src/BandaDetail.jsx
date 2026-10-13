@@ -125,7 +125,7 @@ function BandaDetail() {
       .then(res => {
         if (!active) return;
         setBand(res.data);
-        Promise.allSettled([axios.get(`${API_URL}/api/releases?full=1`), axios.get(`${API_URL}/api/events?full=1`)]).then(([rr, er]) => { if (!active) return; if (rr.status === "fulfilled") setReleases(rr.value.data.filter(item => String(item.artist || "").trim().toLowerCase() === String(res.data.name || "").trim().toLowerCase())); if (er.status === "fulfilled") setEvents(er.value.data.filter(item => String(item.artist || "").toLowerCase().includes(String(res.data.name || "").toLowerCase()))); });
+        Promise.allSettled([axios.get(`${API_URL}/api/releases`), axios.get(`${API_URL}/api/events`)]).then(([rr, er]) => { if (!active) return; if (rr.status === "fulfilled") setReleases(rr.value.data.filter(item => String(item.artist || "").trim().toLowerCase() === String(res.data.name || "").trim().toLowerCase())); if (er.status === "fulfilled") setEvents(er.value.data.filter(item => String(item.artist || "").toLowerCase().includes(String(res.data.name || "").toLowerCase()))); });
         setLoading(false);
       })
       .catch(() => {
