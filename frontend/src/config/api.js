@@ -1,4 +1,5 @@
-// API Configuration - backend oficial no Vercel.\nimport axios from "axios";
+// API Configuration - backend oficial no Vercel.
+import axios from "axios";
 // Em desenvolvimento, VITE_API_URL pode sobrescrever esta URL.
 const API_URL = import.meta.env.VITE_API_URL || "https://comunidadedorock-api.vercel.app";
 
