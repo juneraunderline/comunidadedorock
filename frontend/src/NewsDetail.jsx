@@ -5,6 +5,16 @@ import API_URL, { getImageUrl } from "./config/api";
 import Comentarios from "./Comentarios";
 import DOMPurify from "dompurify";
 
+function safeExternalUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function getNewsSummary(content) {
   if (!content) return "";
 
@@ -162,7 +172,7 @@ function NewsDetail() {
             </div>
             
             <div className="news-detail-text">
-              {post.link ? (
+              {safeExternalUrl(post.link) ? (
                 <>
                   <p>{getNewsSummary(post.content)}</p>
                   <p style={{ marginTop: "18px", color: "#888", fontSize: "14px" }}>
@@ -177,7 +187,7 @@ function NewsDetail() {
             <div className="news-detail-actions">
               {post.link && (
                 <a 
-                  href={post.link} 
+                  href={safeExternalUrl(post.link)} 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="btn btn-primary"
