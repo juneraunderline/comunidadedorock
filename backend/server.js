@@ -69,17 +69,6 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
-app.post("/api/upload-image", async (req, res) => {
-  try {
-    const { image } = req.body;
-    if (!image) return res.status(400).json({ error: "Imagem obrigatoria" });
-    const result = await cloudinary.uploader.upload(image, { folder: "comunidadedorock" });
-    res.json({ success: true, path: result.secure_url });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // BANCO POSTGRESQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -1007,6 +996,27 @@ app.use("/api", async (req, res, next) => {
     if (isCommentDelete) return next();
     return requireRoles("admin")(req, res, next);
   });
+});
+
+// Upload fica registrado depois do middleware central de autenticação/autorização.
+app.post("/api/upload-image", async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (typeof image !== "string" || !image.startsWith("data:image/")) {
+      return res.status(400).json({ error: "Envie uma imagem válida" });
+    }
+    if (image.length > 8 * 1024 * 1024) {
+      return res.status(413).json({ error: "A imagem excede o limite permitido" });
+    }
+    const result = await cloudinary.uploader.upload(image, {
+      folder: "comunidadedorock",
+      resource_type: "image"
+    });
+    return res.json({ success: true, path: result.secure_url });
+  } catch (err) {
+    console.error("Erro no upload de imagem:", err.message);
+    return res.status(500).json({ error: "Não foi possível enviar a imagem" });
+  }
 });
 
 // --- ROTAS DA API ---
