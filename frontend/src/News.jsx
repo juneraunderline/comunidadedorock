@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
+import DOMPurify from "dompurify";
 import API_URL, { getImageUrl } from "./config/api";
 
 function getNewsSummary(content) {
   if (!content) return "";
 
   const container = document.createElement("div");
-  container.innerHTML = content;
+  container.innerHTML = DOMPurify.sanitize(content);
   const paragraph = container.querySelector("p");
   const text = (paragraph?.textContent || container.textContent || "")
     .replace(/\s+/g, " ")
