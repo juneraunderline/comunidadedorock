@@ -62,6 +62,36 @@ function CadastrarBanda() {
     e.preventDefault();
     try {
       const res = await axios.post(`${API_URL}/api/bands/submit`, { ...form, members: serializeBandMembers(members) });
+      // A notificação é enviada pelo navegador: o FormSubmit bloqueia chamadas server-to-server da Vercel com HTTP 403.
+      try {
+        const emailResponse = await fetch("https://formsubmit.co/ajax/comunidadedorock@hotmail.com", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            _subject: "Nova banda aguardando aprovação: " + form.name,
+            _template: "table",
+            _replyto: form.contact,
+            Tipo: "Novo cadastro de banda",
+            Banda: form.name,
+            Estilo: form.genre,
+            Cidade: [form.city, form.state].filter(Boolean).join(" - "),
+            "Ano de formação": form.year,
+            Integrantes: serializeBandMembers(members),
+            "E-mail de contato": form.contact,
+            Instagram: form.instagram,
+            Facebook: form.facebook,
+            YouTube: form.youtube,
+            Site: form.site,
+            "ID da inscrição": res.data.id || "Verificar painel administrativo"
+          })
+        });
+        const emailResult = await emailResponse.json().catch(() => null);
+        if (!emailResponse.ok || !emailResult || emailResult.success === false || emailResult.success === "false") {
+          console.error("[Notificação de banda] O FormSubmit não confirmou o envio.", emailResponse.status, emailResult);
+        }
+      } catch (emailError) {
+        console.error("[Notificação de banda] Falha ao enviar e-mail pelo navegador:", emailError);
+      }
       setMessage(res.data.message || "Banda cadastrada com sucesso! Aguarde a aprovação.");
       setForm({ name: "", genre: "", city: "", state: "", year: "", members: "", biography: "", contact: "", instagram: "", facebook: "", youtube: "", spotify: "", bandcamp: "", site: "", image: "" });
       setMembers([{ name: "", role: "", instagram: "" }]);
