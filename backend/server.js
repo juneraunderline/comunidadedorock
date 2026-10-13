@@ -1026,7 +1026,7 @@ app.use("/api", async (req, res, next) => {
     return authenticate(req, res, next);
   }
   if (method === "POST" && path === "/upload-image") {
-    return authenticate(req, res, next);
+    return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
   }
 
   return authenticate(req, res, () => {
@@ -1051,11 +1051,29 @@ app.use("/api", async (req, res, next) => {
 app.post("/api/upload-image", async (req, res) => {
   try {
     const { image } = req.body;
-    if (typeof image !== "string" || !image.startsWith("data:image/")) {
+    if (typeof image !== "string") {
       return res.status(400).json({ error: "Envie uma imagem válida" });
     }
     if (image.length > 8 * 1024 * 1024) {
       return res.status(413).json({ error: "A imagem excede o limite permitido" });
+    }
+    const match = /^data:image\/(png|jpe?g|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/i.exec(image);
+    if (!match) {
+      return res.status(400).json({ error: "Formato de imagem não permitido" });
+    }
+    const imageBuffer = Buffer.from(match[2], "base64");
+    if (!imageBuffer.length || imageBuffer.toString("base64").replace(/=+$/, "") !== match[2].replace(/=+$/, "")) {
+      return res.status(400).json({ error: "Conteúdo de imagem inválido" });
+    }
+    let metadata;
+    try {
+      metadata = await sharp(imageBuffer, { limitInputPixels: 40000000 }).metadata();
+    } catch {
+      return res.status(400).json({ error: "Arquivo de imagem inválido" });
+    }
+    const declaredFormat = match[1].toLowerCase().replace("jpg", "jpeg");
+    if (!["jpeg", "png", "webp", "gif"].includes(metadata.format) || metadata.format !== declaredFormat) {
+      return res.status(400).json({ error: "O conteúdo não corresponde ao formato declarado" });
     }
     const result = await cloudinary.uploader.upload(image, {
       folder: "comunidadedorock",
