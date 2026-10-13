@@ -253,3 +253,11 @@ A branch contém implementação de sessão e política central de autorização
 7. **Ressalva operacional:** a checagem pública HTTP e seus possíveis efeitos indiretos no Layerbase estão descritos no início deste relatório. Nenhuma outra chamada à API de produção deve ser feita durante as próximas validações.
 
 **Decisão:** a branch continua isolada e **não está liberada para produção**. Antes de qualquer merge/deploy, é necessária uma revisão humana final e um teste de navegador num ambiente preview comprovadamente ligado a um banco descartável, com plano de rollback.
+
+## Atualização de validação — links de notícias e reprodutibilidade
+
+- As URLs de saída de notícias agora são aceitas apenas quando são URLs absolutas com protocolo `http:` ou `https:`. A proteção está aplicada tanto na listagem quanto na página da notícia; o resumo da matéria continua sendo exibido mesmo quando o link de origem é inválido.
+- A execução de CI que inclui essa correção terminou com **success**: https://github.com/juneraunderline/comunidadedorock/actions/runs/38479420379
+- Revisão dos arquivos de dependências encontrou um problema concreto de reprodutibilidade: o `package-lock.json` da raiz declara o pacote `backend` e dependências antigas incluindo `sqlite3`, mas não corresponde às dependências atuais de `backend/package.json` (PostgreSQL, Cloudinary, Sharp e rate limiting). Não há lockfiles próprios versionados nas pastas `backend` e `frontend`; o CI usa `npm install`, portanto pode resolver versões diferentes em execuções futuras.
+- **Ação pendente antes de produção:** gerar e revisar lockfiles próprios em cada pacote usando a versão de Node/npm prevista para o deploy, conferir a árvore de dependências e trocar instalações de CI para `npm ci`. Não editei nem removi o lockfile da raiz nesta etapa, para evitar interferir na configuração de deploy sem conhecer toda a cadeia de build.
+- A branch validada neste momento é `fdeb64998767996b1b5b20da06f3ac15328d5cc7`; `main` permanece em `e63a7d4d171371a5ff7cefed0d03cd96c018a2cb`. Nenhum merge ou deploy foi feito.
