@@ -2131,3 +2131,26 @@ body {
   .band-detail-social-link span { display:none; }
   .band-detail-social-link { width:40px; padding:0 !important; }
 }
+
+
+/* Painel admin: permite acessar todas as abas com rolagem horizontal no celular */
+@media (max-width: 768px) {
+  .admin-tabs {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #e9b61e #16161b;
+    padding: 0 0 8px;
+    gap: 8px;
+  }
+
+  .admin-tabs button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
