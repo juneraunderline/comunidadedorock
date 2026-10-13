@@ -82,7 +82,7 @@ function Perfil({ user, setUser }) {
     setError("");
     if (!currentPassword) return setError("Digite sua senha atual");
     if (!newPassword) return setError("Digite a nova senha");
-    if (newPassword.length < 4) return setError("Nova senha deve ter pelo menos 4 caracteres");
+    if (newPassword.length < 8) return setError("Nova senha deve ter pelo menos 8 caracteres");
     if (newPassword !== confirmPassword) return setError("As senhas não conferem");
     try {
       const res = await axios.put(`${API_URL}/api/user/${user.id}`, {
