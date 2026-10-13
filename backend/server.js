@@ -1229,7 +1229,7 @@ app.get("/api/session", authenticate, (req, res) => {
 });
 
 function isValidPositiveId(value) {
-  return /^\\d+$/.test(String(value)) && Number.isSafeInteger(Number(value)) && Number(value) > 0;
+  return /^\d+$/.test(String(value)) && Number.isSafeInteger(Number(value)) && Number(value) > 0;
 }
 
 app.get("/api/user/:id", async (req, res) => {
