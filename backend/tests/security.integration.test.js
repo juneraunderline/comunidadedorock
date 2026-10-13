@@ -129,6 +129,23 @@ async function waitForServer() {
     const fullEventsAsAdmin = await request("/api/events?full=1", { token: adminToken });
     assert.equal(fullEventsAsAdmin.status, 200, "admin deve continuar acessando dados administrativos de eventos");
 
+    // Smoke test das leituras que o painel Admin.jsx dispara ao abrir.
+    const adminPanelReads = [
+      ["/api/posts?full=1", "admin deve carregar notícias no painel"],
+      ["/api/bands?full=1", "admin deve carregar bandas no painel"],
+      ["/api/pending-bands", "admin deve carregar bandas pendentes no painel"],
+      ["/api/interviews?full=1", "admin deve carregar entrevistas no painel"],
+      ["/api/events?full=1", "admin deve carregar eventos no painel"],
+      ["/api/releases?full=1", "admin deve carregar lançamentos no painel"],
+      ["/api/rss-feeds", "admin deve carregar portais RSS no painel"],
+      ["/api/rss-status", "admin deve carregar o status dos RSS no painel"],
+      ["/api/users", "admin deve carregar usuários no painel"]
+    ];
+    for (const [path, message] of adminPanelReads) {
+      const result = await request(path, { token: adminToken });
+      assert.equal(result.status, 200, message + " (" + path + ")");
+    }
+
     const usersAsUser = await request("/api/users", { token: userToken });
     assert.equal(usersAsUser.status, 403, "usuário comum não pode listar contas");
     const profileOther = await request("/api/user/" + adminId, { token: userToken });
