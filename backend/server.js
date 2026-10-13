@@ -1,5 +1,6 @@
 ﻿const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const { Pool } = require("pg");
 
 let fetchFunc;
@@ -14,6 +15,15 @@ if (typeof fetch !== "undefined") {
 }
 
 const app = express();
+// A Vercel edge proxy fica à frente da função; um salto confiável para obter o IP do cliente.
+app.set("trust proxy", 1);
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+});
 const allowedOrigins = new Set(
   (process.env.FRONTEND_ORIGINS || "https://comunidadedorock.com.br,https://www.comunidadedorock.com.br,http://localhost:5173")
     .split(",").map(origin => origin.trim()).filter(Boolean)
@@ -28,6 +38,40 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
   maxAge: 600
 }));
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 180,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Muitas solicitações. Tente novamente em instantes." }
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Muitas tentativas de acesso. Aguarde 15 minutos e tente novamente." }
+});
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 15,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Limite de envios de imagem atingido. Tente novamente mais tarde." }
+});
+const interactionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Muitas solicitações. Aguarde e tente novamente." }
+});
+app.use("/api", apiLimiter);
+app.use("/api/login", authLimiter);
+app.use("/api/register", authLimiter);
+app.use("/api/upload-image", uploadLimiter);
+app.use("/api/comments", interactionLimiter);
+app.use("/api/event-submissions", interactionLimiter);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "1mb", extended: true }));
 // Upload de imagem via base64
