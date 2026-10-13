@@ -231,6 +231,21 @@ async function waitForServer() {
     assert.equal((await client.query("SELECT id FROM pending_bands WHERE name = $1", [rejectedSvgBandName])).rowCount, 0,
       "inscrição com SVG não deve ser gravada");
 
+    // Uma inscrição legada com URL externa não pode provocar importação remota na aprovação.
+    const legacyRemoteBandName = "Security Test Legacy Remote Image";
+    await client.query("DELETE FROM pending_bands WHERE name = $1", [legacyRemoteBandName]);
+    const legacyRemoteBand = await client.query(
+      "INSERT INTO pending_bands (name, image) VALUES ($1, $2) RETURNING id",
+      [legacyRemoteBandName, "https://example.com/legacy-image.jpg"]
+    );
+    const legacyRemoteApproval = await request("/api/approve-band/" + legacyRemoteBand.rows[0].id, { method: "POST", token: adminToken });
+    assert.equal(legacyRemoteApproval.status, 400, "aprovação deve bloquear imagem externa antiga");
+    assert.equal((await client.query("SELECT id FROM bands WHERE name = $1", [legacyRemoteBandName])).rowCount, 0,
+      "imagem externa legada não deve publicar a banda");
+    assert.equal((await client.query("SELECT id FROM pending_bands WHERE id = $1", [legacyRemoteBand.rows[0].id])).rowCount, 1,
+      "inscrição bloqueada deve permanecer pendente para correção da imagem");
+    await client.query("DELETE FROM pending_bands WHERE id = $1", [legacyRemoteBand.rows[0].id]);
+
     // Exercita moderação de banda e exclusão administrativa de evento sem disparar e-mail real.
     const pendingBandName = "Security Test Pending Band";
     await client.query("DELETE FROM pending_bands WHERE name = $1", [pendingBandName]);
