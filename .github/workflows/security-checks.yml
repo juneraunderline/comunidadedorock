@@ -1,0 +1,40 @@
+name: Verificações de segurança (branch isolada)
+
+on:
+  push:
+    branches:
+      - security/audit-hardening-2026-10
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Verificar sintaxe do backend
+        run: node --check backend/server.js
+
+      - name: Instalar dependências do backend
+        working-directory: backend
+        run: npm install --no-audit --no-fund
+
+      - name: Instalar dependências do frontend
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Compilar frontend
+        working-directory: frontend
+        run: npm run build
