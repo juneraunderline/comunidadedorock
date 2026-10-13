@@ -47,7 +47,7 @@ jobs:
 
       - name: Auditar dependências de produção do backend
         working-directory: backend
-        run: npm audit --omit=dev
+        run: npm audit
 
       - name: Testar autenticação e autorização em PostgreSQL descartável
         working-directory: backend
@@ -63,7 +63,7 @@ jobs:
 
       - name: Auditar dependências de produção do frontend
         working-directory: frontend
-        run: npm audit --omit=dev
+        run: npm audit
 
       - name: Compilar frontend
         working-directory: frontend
