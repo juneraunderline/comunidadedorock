@@ -172,7 +172,7 @@ function NewsDetail() {
             </div>
             
             <div className="news-detail-text">
-              {safeExternalUrl(post.link) ? (
+              {post.link ? (
                 <>
                   <p>{getNewsSummary(post.content)}</p>
                   <p style={{ marginTop: "18px", color: "#888", fontSize: "14px" }}>
@@ -185,7 +185,7 @@ function NewsDetail() {
             </div>
             
             <div className="news-detail-actions">
-              {post.link && (
+              {safeExternalUrl(post.link) && (
                 <a 
                   href={safeExternalUrl(post.link)} 
                   target="_blank" 
