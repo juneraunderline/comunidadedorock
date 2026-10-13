@@ -5,7 +5,7 @@ on:
     paths:
       - ".github/workflows/rss-import.yml"
   schedule:
-    - cron: "7/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
