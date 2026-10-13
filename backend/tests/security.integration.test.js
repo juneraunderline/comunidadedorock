@@ -271,10 +271,21 @@ async function waitForServer() {
       ["POST", "/api/releases", { title: "Não criar", artist: "Teste" }],
       ["DELETE", "/api/releases/1"],
       ["POST", "/api/rss-feeds", { name: "Não criar", url: "https://example.com/feed" }],
+      ["PUT", "/api/rss-feeds/0", { name: "Não editar", url: "https://example.com/feed" }],
+      ["PUT", "/api/rss-feeds/0/logo", { logo: "https://example.com/logo.png" }],
+      ["DELETE", "/api/rss-feeds/0"],
       ["POST", "/api/import-rss", { feeds: [] }],
+      ["POST", "/api/import-rss-single", { url: "https://example.com/feed" }],
       ["POST", "/api/reimport-rss", { feeds: [] }],
       ["POST", "/api/fix-html-entities", {}],
+      ["POST", "/api/fix-missing-images", {}],
+      ["POST", "/api/test-rss-images", {}],
       ["POST", "/api/cleanup-duplicates", {}],
+      ["DELETE", "/api/posts-without-images"],
+      ["POST", "/api/approve-band/1", {}],
+      ["DELETE", "/api/pending-bands/1"],
+      ["POST", "/api/bands/1/weekly-featured", { featured: true }],
+      ["PUT", "/api/events/1", { title: "Não editar" }],
       ["PUT", "/api/events/1/status", { status: "approved" }],
       ["DELETE", "/api/events/1"]
     ];
@@ -282,6 +293,25 @@ async function waitForServer() {
       const result = await request(path, { method, ...(body === undefined ? {} : { body }) });
       assert.equal(result.status, 401, method + " " + path + " deve rejeitar usuário anônimo");
     }
+    const anonymousPrivateReads = [
+      "/api/posts?full=1",
+      "/api/bands?full=1",
+      "/api/interviews?full=1",
+      "/api/releases?full=1",
+      "/api/events?full=1",
+      "/api/pending-bands",
+      "/api/users",
+      "/api/rss-status",
+      "/api/debug-rss"
+    ];
+    for (const path of anonymousPrivateReads) {
+      assert.equal((await request(path)).status, 401, "GET " + path + " deve exigir papel autorizado");
+    }
+    const badCronSecret = await fetch(base + "/api/cron/rss", { headers: { Authorization: "Bearer invalid-test-secret" } });
+    assert.equal(badCronSecret.status, 401, "cron RSS deve rejeitar segredo incorreto sem iniciar importação");
+    const badReleaseDelete = await request("/api/releases/not-an-id", { method: "DELETE", token: adminToken });
+    assert.equal(badReleaseDelete.status, 500, "ID de lançamento inválido deve falhar");
+    assert.equal(badReleaseDelete.data.detail, undefined, "erro de lançamento não deve expor detalhe interno");
     // O formulário público de bandas continua acessível, mas tem limite próprio contra spam.
     let bandSubmissionRateLimited = false;
     for (let i = 0; i < 6; i++) {
