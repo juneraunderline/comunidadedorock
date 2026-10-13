@@ -84,6 +84,50 @@ async function waitForServer() {
     const userToken = register.data.token;
     const userId = register.data.user.id;
 
+    // Cria um editor fictício e valida permissões positivas e negativas por papel.
+    const editorRegister = await request("/api/register", {
+      method: "POST",
+      body: { username: "security-test-editor", password: "Editor-Test-123!", display_name: "Editor de Teste" }
+    });
+    assert.equal(editorRegister.status, 200, "cadastro de editor de teste deve funcionar");
+    const editorId = editorRegister.data.user.id;
+    const editorToken = editorRegister.data.token;
+    await client.query("UPDATE users SET role = 'editor' WHERE id = $1", [editorId]);
+
+    const postsFullAsEditor = await request("/api/posts?full=1", { token: editorToken });
+    assert.equal(postsFullAsEditor.status, 200, "editor deve acessar conteúdo completo editorial");
+    const eventsFullAsEditor = await request("/api/events?full=1", { token: editorToken });
+    assert.equal(eventsFullAsEditor.status, 403, "editor não pode acessar lista administrativa completa de eventos");
+    const pendingBandsAsUser = await request("/api/pending-bands", { token: userToken });
+    assert.equal(pendingBandsAsUser.status, 403, "usuário comum não pode listar bandas pendentes");
+    const rssWriteAsEditor = await request("/api/rss-feeds", {
+      method: "POST", token: editorToken, body: { name: "Não deve criar", url: "https://example.com/feed" }
+    });
+    assert.equal(rssWriteAsEditor.status, 403, "editor não pode administrar feeds RSS");
+
+    const editorPostTitle = "security-test-editor-post";
+    const editorPostCreate = await request("/api/posts", {
+      method: "POST", token: editorToken,
+      body: { title: editorPostTitle, content: "Conteúdo de teste isolado" }
+    });
+    assert.equal(editorPostCreate.status, 200, "editor deve poder criar notícia");
+    const editorPostRow = await client.query("SELECT id FROM posts WHERE title = $1", [editorPostTitle]);
+    assert.equal(editorPostRow.rowCount, 1, "notícia de teste deve ser gravada no PostgreSQL descartável");
+    const editorPostId = editorPostRow.rows[0].id;
+    const editorPostUpdate = await request("/api/posts/" + editorPostId, {
+      method: "PUT", token: editorToken,
+      body: { title: editorPostTitle + "-updated", content: "Conteúdo atualizado" }
+    });
+    assert.equal(editorPostUpdate.status, 200, "editor deve poder editar notícia");
+    const editorPostDelete = await request("/api/posts/" + editorPostId, { method: "DELETE", token: editorToken });
+    assert.equal(editorPostDelete.status, 200, "editor deve poder excluir notícia");
+    const userPostWrite = await request("/api/posts", {
+      method: "POST", token: userToken, body: { title: "Não permitido", content: "Teste" }
+    });
+    assert.equal(userPostWrite.status, 403, "usuário comum não pode criar notícia");
+    const fullEventsAsAdmin = await request("/api/events?full=1", { token: adminToken });
+    assert.equal(fullEventsAsAdmin.status, 200, "admin deve continuar acessando dados administrativos de eventos");
+
     const usersAsUser = await request("/api/users", { token: userToken });
     assert.equal(usersAsUser.status, 403, "usuário comum não pode listar contas");
     const profileOther = await request("/api/user/" + adminId, { token: userToken });
@@ -128,6 +172,15 @@ async function waitForServer() {
       const result = await request(path, { method, ...(body === undefined ? {} : { body }) });
       assert.equal(result.status, 401, method + " " + path + " deve rejeitar usuário anônimo");
     }
+    // O formulário público de bandas continua acessível, mas tem limite próprio contra spam.
+    let bandSubmissionRateLimited = false;
+    for (let i = 0; i < 6; i++) {
+      const attempt = await request("/api/bands/submit", { method: "POST", body: {} });
+      if (attempt.status === 429) { bandSubmissionRateLimited = true; break; }
+      assert.equal(attempt.status, 400, "inscrição inválida deve ser rejeitada sem criar banda");
+    }
+    assert.equal(bandSubmissionRateLimited, true, "inscrições públicas repetidas de banda devem ser limitadas");
+
     const uploadUnauth = await request("/api/upload-image", { method: "POST", body: { image: "data:image/png;base64,AA==" } });
     assert.equal(uploadUnauth.status, 401, "upload deve exigir sessão");
 
