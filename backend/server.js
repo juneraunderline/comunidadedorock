@@ -124,8 +124,10 @@ async function loadFeeds() {
 
 // Notificações por e-mail usando o mesmo FormSubmit do formulário de contato.
 async function notifyAdminByEmail(subject, details) {
+  const replyTo = String(details?.["E-mail de contato"] || details?.email || details?.contact || "").trim();
   const payload = {
     ...details,
+    ...( /^\S+@\S+\.\S+$/.test(replyTo) ? { _replyto: replyTo } : {}),
     _subject: subject,
     _template: "table"
   };
@@ -1180,13 +1182,14 @@ app.post("/api/bands/submit", async (req, res) => {
     if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
     const inserted = await db.getOne(`INSERT INTO pending_bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
       [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site]);
-    await migrateLegacyBandImage({ id: inserted.id, image: b.image }, "pending_bands");
+    // Dispara o aviso assim que a inscrição é gravada, antes de processar a imagem.
     await notifyAdminByEmail("Nova banda aguardando aprovação", {
       "Banda": b.name, "Estilo": b.genre, "Cidade": [b.city, b.state].filter(Boolean).join(" / "),
       "Ano de formação": b.year, "Integrantes": b.members, "Contato": b.contact,
       "Instagram": b.instagram, "Facebook": b.facebook, "YouTube": b.youtube, "Site": b.site,
       "ID da inscrição": inserted.id
     });
+    await migrateLegacyBandImage({ id: inserted.id, image: b.image }, "pending_bands");
     res.json({ success: true, message: "Banda cadastrada com sucesso! Aguarde a aprovação." });
   } catch (err) {
     console.error("Erro ao enviar banda para aprovação:", err.message);
