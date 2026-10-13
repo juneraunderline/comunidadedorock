@@ -4,6 +4,16 @@ import axios from "axios";
 import DOMPurify from "dompurify";
 import API_URL, { getImageUrl } from "./config/api";
 
+function safeExternalUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function getNewsSummary(content) {
   if (!content) return "";
 
@@ -209,9 +219,9 @@ function News() {
                     {p.source && <small className="card-source-label" style={{display: "block", color: "#999", fontSize: "12px", marginBottom: "8px"}}>Fonte: {p.source}</small>}
                     {!p.source && <small className="card-source-label" style={{display: "block", color: "#e9b61e", fontSize: "12px", marginBottom: "8px"}}>📝 Publicação própria</small>}
                     <h3>{p.title}</h3>
-                    {p.link && (
+                    {safeExternalUrl(p.link) && (
                       <a
-                        href={p.link}
+                        href={safeExternalUrl(p.link)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn btn-primary"
