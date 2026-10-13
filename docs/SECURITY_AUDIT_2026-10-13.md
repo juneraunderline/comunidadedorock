@@ -83,6 +83,14 @@ Correção necessária: limites específicos por rota, rate limiting, validaçã
 
 `GET /api/health` e `GET /api/cron/rss` existem. O cron já compara `Authorization: Bearer` com `CRON_SECRET`, o que é uma proteção positiva. Confirmar que o segredo existe na Vercel e que a rota de saúde não expõe stack trace ou configuração sensível. Não imprimir valores secretos em logs.
 
+## Estado da branch após a preparação inicial
+
+Commits adicionais nesta branch:
+- `d71dc6f`: novos cadastros armazenam senhas com scrypt; login verifica senha com comparação de hash e migra senha legada após autenticação válida; alteração de senha armazena hash; removida a criação automática de `admin/1234` e a exclusão automática de contas admin duplicadas.
+- `912ad58` e `b5ff0f0`: mensagens e validação visual de cadastro/troca de senha alinhadas ao mínimo de 8 caracteres.
+
+**Importante:** estes são passos parciais, não uma correção completa da segurança. A compatibilidade com contas legadas precisa ser testada em banco descartável. A autenticação/sessão do servidor e a autorização das rotas administrativas e de propriedade ainda não foram implementadas; portanto, esta branch não deve ser publicada nem mesclada. O login de uma conta admin existente só deve ser considerado preservado depois dos testes controlados previstos abaixo. Nenhum dado do Layerbase foi lido ou modificado por esta preparação.
+
 ## Plano de correção — sem tocar em produção
 
 ### Fase A — Preparação (esta branch)
