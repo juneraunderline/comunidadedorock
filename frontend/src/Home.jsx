@@ -51,7 +51,6 @@ function Home({ posts }) {
 	  const [loadingEvents, setLoadingEvents] = useState(() => !hasHomeCache("cdr_home_events_v1"));
 	  const loadingPosts = posts.length === 0;
 
-;
   const [displayCount, setDisplayCount] = useState(6);
   const [, setBrokenImages] = useState(new Set());
   useEffect(() => {

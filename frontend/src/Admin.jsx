@@ -70,7 +70,7 @@ function normalizeInstagramUrl(value) {
   return username ? `https://www.instagram.com/${username}/` : "";
 }
 
-function FormatToolbar({ onFormat }) { return (
+function FormatToolbar({ onFormat, onClearFormatting }) { return (
     <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "6px", padding: "6px", background: "#12121f", borderRadius: "4px", border: "1px solid #2c2c38" }}>
       <button type="button" onClick={() => onFormat("bold")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", fontSize: "13px" }} title="Negrito">B</button>
       <button type="button" onClick={() => onFormat("italic")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontStyle: "italic", fontSize: "13px" }} title="Itálico">I</button>
@@ -95,7 +95,7 @@ function FormatToolbar({ onFormat }) { return (
         }
       }} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Inserir link">🔗 Link</button>
       <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
-      <button type="button" onClick={clearFormatting} style={{ background: "#3d2a2a", border: "1px solid #644", color: "#f88", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Limpar formatação">✕ Limpar</button>
+      <button type="button" onClick={onClearFormatting} style={{ background: "#3d2a2a", border: "1px solid #644", color: "#f88", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Limpar formatação">✕ Limpar</button>
     </div>
   ); }
 
@@ -1080,7 +1080,7 @@ export default function Admin({ user: currentUser }) {
             </div>
             <div className="form-group">
               <label>Conteúdo</label>
-              <FormatToolbar onFormat={execFormat} />
+              <FormatToolbar onFormat={execFormat} onClearFormatting={clearFormatting} />
               <div
                 ref={editingContentRef}
                 contentEditable
@@ -1148,7 +1148,7 @@ export default function Admin({ user: currentUser }) {
             </div>
             <div className="form-group">
               <label>Conteúdo</label>
-              <FormatToolbar onFormat={execFormat} />
+              <FormatToolbar onFormat={execFormat} onClearFormatting={clearFormatting} />
               <div
                 ref={newContentRef}
                 contentEditable
