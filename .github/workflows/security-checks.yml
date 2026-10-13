@@ -68,3 +68,95 @@ jobs:
       - name: Compilar frontend
         working-directory: frontend
         run: npm run build
+
+      - name: Instalar navegador para smoke test visual isolado
+        working-directory: frontend
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Iniciar frontend com API fictícia
+        working-directory: frontend
+        env:
+          VITE_API_URL: http://127.0.0.1:4317
+        run: |
+          (npm run dev -- --host 127.0.0.1 > /tmp/cdr-vite.log 2>&1 & echo $! > /tmp/cdr-vite.pid)
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:5173/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/cdr-vite.log
+          exit 1
+
+      - name: Teste visual desktop e mobile sem API de produção
+        working-directory: frontend
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+
+          const browser = await chromium.launch({ headless: true });
+          const failures = [];
+          const apiHosts = new Set();
+          try {
+            for (const viewport of [
+              { name: 'desktop', width: 1280, height: 800 },
+              { name: 'mobile', width: 390, height: 844 }
+            ]) {
+              const page = await browser.newPage({ viewport });
+              page.on('pageerror', error => failures.push(`${viewport.name}: ${error.message}`));
+              page.on('request', request => {
+                if (request.url().includes('/api/')) {
+                  const url = new URL(request.url());
+                  apiHosts.add(url.origin);
+                  if (url.origin !== 'http://127.0.0.1:4317') {
+                    failures.push(`Requisição de API fora do mock: ${request.url()}`);
+                  }
+                }
+              });
+              await page.route('http://127.0.0.1:4317/**', async route => {
+                await route.fulfill({
+                  status: 200,
+                  contentType: 'application/json',
+                  body: JSON.stringify([])
+                });
+              });
+              await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle', timeout: 30000 });
+              await page.waitForTimeout(500);
+              const title = await page.title();
+              if (!title.toLowerCase().includes('comunidade do rock')) {
+                failures.push(`${viewport.name}: título inesperado: ${title}`);
+              }
+              const root = page.locator('#root');
+              if (!(await root.isVisible())) failures.push(`${viewport.name}: aplicação não visível`);
+              const linkCount = await page.locator('a:visible').count();
+              if (linkCount < 3) failures.push(`${viewport.name}: poucos links visíveis (${linkCount})`);
+              const overflow = await page.evaluate(() =>
+                document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+              );
+              if (overflow) failures.push(`${viewport.name}: overflow horizontal`);
+              await page.screenshot({ path: `/tmp/cdr-${viewport.name}.png`, fullPage: true });
+              console.log(`PASS visual ${viewport.name}: title="${title}", links=${linkCount}, sem overflow horizontal`);
+              await page.close();
+            }
+            if (apiHosts.size && [...apiHosts].some(host => host !== 'http://127.0.0.1:4317')) {
+              failures.push('A interface tentou acessar uma API fora do ambiente fictício.');
+            }
+            if (failures.length) {
+              console.error(failures.join('\n'));
+              process.exitCode = 1;
+            } else {
+              console.log('PASS: smoke test visual isolado; nenhuma chamada à API de produção.');
+            }
+          } finally {
+            await browser.close();
+          }
+          NODE
+
+      - name: Guardar screenshots do teste visual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdr-browser-smoke-screenshots
+          path: /tmp/cdr-*.png
+          if-no-files-found: ignore
+          retention-days: 3
