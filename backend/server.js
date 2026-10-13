@@ -123,6 +123,9 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS releases (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, type TEXT DEFAULT 'Single', release_date TEXT, image TEXT, spotify TEXT, youtube TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, display_name TEXT, avatar TEXT, role TEXT DEFAULT 'user', created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_band BOOLEAN NOT NULL DEFAULT FALSE`);
+  await db.run(`CREATE TABLE IF NOT EXISTS auth_sessions (id BIGSERIAL PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions (user_id)`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions (expires_at)`);
   await db.run(`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, page_type TEXT NOT NULL, page_id INTEGER NOT NULL, user_id INTEGER, user_name TEXT NOT NULL, user_avatar TEXT, content TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW())`);
 };
 
@@ -872,6 +875,125 @@ async function cleanupRssPostsPerSource() {
   `);
 }
 
+// --- SEGURANÇA DE SESSÃO E AUTORIZAÇÃO ---
+// Token aleatório de curta duração; somente o hash é persistido no banco.
+// O frontend envia o token no cabeçalho Authorization (nunca confiar no objeto user do localStorage).
+const SESSION_TTL_HOURS = 8;
+function hashSessionToken(token) {
+  return crypto.createHash("sha256").update(String(token)).digest("hex");
+}
+async function createSession(userId) {
+  const token = crypto.randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000);
+  await db.run("DELETE FROM auth_sessions WHERE expires_at <= NOW()");
+  await db.run("INSERT INTO auth_sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)", [hashSessionToken(token), userId, expiresAt]);
+  return token;
+}
+function bearerToken(req) {
+  const header = req.get("authorization") || "";
+  const match = header.match(/^Bearer ([A-Za-z0-9_-]{40,})$/);
+  return match ? match[1] : null;
+}
+async function authenticate(req, res, next) {
+  const token = bearerToken(req);
+  if (!token) return res.status(401).json({ error: "Autenticação necessária" });
+  try {
+    const user = await db.getOne(
+      "SELECT u.id, u.username, u.display_name, u.avatar, u.role, u.is_band, u.created_at FROM auth_sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > NOW()",
+      [hashSessionToken(token)]
+    );
+    if (!user) return res.status(401).json({ error: "Sessão inválida ou expirada" });
+    req.authUser = user;
+    req.authTokenHash = hashSessionToken(token);
+    return next();
+  } catch (err) {
+    console.error("Falha ao validar sessão:", err.code || "UNKNOWN");
+    return res.status(503).json({ error: "Não foi possível validar a sessão" });
+  }
+}
+function requireRoles(...roles) {
+  return (req, res, next) => {
+    if (!req.authUser) return res.status(401).json({ error: "Autenticação necessária" });
+    if (!roles.includes(req.authUser.role)) return res.status(403).json({ error: "Acesso não autorizado" });
+    return next();
+  };
+}
+function isPath(path, pattern) { return pattern.test(path); }
+
+// Política central: nenhuma rota de escrita fica pública por omissão.
+// Exceções públicas são explícitas; /api/cron/rss conserva sua validação CRON_SECRET.
+app.use("/api", async (req, res, next) => {
+  const path = req.path;
+  const method = req.method.toUpperCase();
+  if (path === "/health" || path === "/login" || path === "/register" ||
+      path === "/bands/submit" || path === "/cron/rss") return next();
+
+  const isUserProfile = isPath(path, /^\/user\/\d+$/);
+  const isCommentDelete = isPath(path, /^\/comments\/\d+$/) && method === "DELETE";
+  const isPublicRead = method === "GET" && (
+    /^\/(posts|bands|band-genres|interviews|releases|events|rss-feeds|comments\/[^/]+\/\d+)$/.test(path) ||
+    /^\/posts\/\d+$/.test(path) ||
+    /^\/bands\/[^/]+$/.test(path) ||
+    /^\/interviews\/\d+$/.test(path) ||
+    /^\/releases\/\d+$/.test(path) ||
+    /^\/events\/\d+$/.test(path)
+  );
+  if (isPublicRead) {
+    if ((path === "/events" && req.query.full === "1") ||
+        (path === "/bands" && req.query.full === "1") ||
+        (path === "/posts" && req.query.full === "1") ||
+        (path === "/interviews" && req.query.full === "1") ||
+        (path === "/releases" && req.query.full === "1")) {
+      return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
+    }
+    return next();
+  }
+
+  if (method === "GET" && path === "/debug-rss") {
+    return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
+  }
+  if (method === "GET" && ["/users", "/pending-bands", "/rss-status"].includes(path)) {
+    return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
+  }
+  if (isUserProfile && (method === "GET" || method === "PUT")) {
+    return authenticate(req, res, () => {
+      if (String(req.authUser.id) !== req.params?.id && String(req.authUser.id) !== path.split("/")[2] && req.authUser.role !== "admin") {
+        return res.status(403).json({ error: "Você só pode acessar seu próprio perfil" });
+      }
+      return next();
+    });
+  }
+  if (isCommentDelete) {
+    return authenticate(req, res, next);
+  }
+  if (method === "POST" && path === "/event-submissions") {
+    return authenticate(req, res, next);
+  }
+  if (method === "POST" && path === "/comments") {
+    return authenticate(req, res, next);
+  }
+  if (method === "POST" && path === "/upload-image") {
+    return authenticate(req, res, next);
+  }
+
+  return authenticate(req, res, () => {
+    // Ações de administração e manutenção são exclusivas de admin.
+    const adminOnly =
+      /^\/(user\/\d+\/role|users?|pending-bands|approve-band\/\d+|rss-feeds|import-rss(?:-single)?|reimport-rss|fix-html-entities|fix-missing-images|test-rss-images|cleanup-duplicates|posts-without-images|debug-rss|rss-status)(?:\/|$)/.test(path) ||
+      /^\/events\/\d+\/status$/.test(path) ||
+      /^\/bands\/\d+\/weekly-featured$/.test(path) ||
+      (method !== "GET" && /^\/(bands|events)(?:\/|$)/.test(path));
+    if (adminOnly) return requireRoles("admin")(req, res, next);
+    const editorAllowed = ["admin", "editor"];
+    if (method !== "GET" && /^\/(posts|interviews|releases)(?:\/|$)/.test(path)) {
+      return requireRoles(...editorAllowed)(req, res, next);
+    }
+    if (path === "/comments" && method === "POST") return next();
+    if (isCommentDelete) return next();
+    return requireRoles("admin")(req, res, next);
+  });
+});
+
 // --- ROTAS DA API ---
 
 // Autenticação
@@ -883,11 +1005,13 @@ app.post("/api/register", async (req, res) => {
     if (password.length < 4) return res.status(400).json({ error: "Senha deve ter pelo menos 4 caracteres" });
     const exists = await db.getOne("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
     if (exists) return res.status(409).json({ error: "Usuário já existe" });
+    if (String(password).length < 8) return res.status(400).json({ error: "Senha deve ter pelo menos 8 caracteres" });
     const result = await pool.query(
       "INSERT INTO users (username, password, display_name, role, is_band) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, display_name, avatar, role, is_band, created_at",
       [username.toLowerCase(), await hashPassword(password), display_name || username, "user", Boolean(is_band)]
     );
-    res.json({ success: true, user: result.rows[0] });
+    const token = await createSession(result.rows[0].id);
+    res.json({ success: true, token, user: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -907,10 +1031,25 @@ app.post("/api/login", async (req, res) => {
       await db.run("UPDATE users SET password = $1 WHERE id = $2", [migratedPassword, found.id]);
       found.password = migratedPassword;
     }
-    res.json({ success: true, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role, is_band: Boolean(found.is_band), created_at: found.created_at } });
+    const token = await createSession(found.id);
+    res.json({ success: true, token, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role, is_band: Boolean(found.is_band), created_at: found.created_at } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+app.post("/api/logout", authenticate, async (req, res) => {
+  try {
+    await db.run("DELETE FROM auth_sessions WHERE token_hash = $1", [req.authTokenHash]);
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: "Não foi possível encerrar a sessão" });
+  }
+});
+
+app.get("/api/session", authenticate, (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.json({ user: req.authUser });
 });
 
 app.get("/api/user/:id", async (req, res) => {
@@ -1429,15 +1568,15 @@ app.get("/api/comments/:pageType/:pageId", async (req, res) => {
 
 app.post("/api/comments", async (req, res) => {
   try {
-    const { page_type, page_id, user_id, user_name, user_avatar, content } = req.body;
-    if (!page_type || !page_id || !user_name || !content) {
-      return res.status(400).json({ error: "Campos obrigatórios: page_type, page_id, user_name, content" });
+    const { page_type, page_id, content } = req.body;
+    if (!page_type || !/^\d+$/.test(String(page_id || "")) || !content) {
+      return res.status(400).json({ error: "Campos obrigatórios: page_type, page_id e content" });
     }
     if (content.trim().length < 2) return res.status(400).json({ error: "Comentário muito curto" });
     if (content.length > 1000) return res.status(400).json({ error: "Comentário muito longo (máx 1000 caracteres)" });
     const result = await pool.query(
       "INSERT INTO comments (page_type, page_id, user_id, user_name, user_avatar, content) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-      [page_type, parseInt(page_id), user_id || null, user_name, user_avatar || null, content.trim()]
+      [String(page_type).slice(0, 40), parseInt(page_id, 10), req.authUser.id, req.authUser.display_name || req.authUser.username, req.authUser.avatar || null, content.trim()]
     );
     res.json({ success: true, comment: result.rows[0] });
   } catch (err) {
@@ -1447,10 +1586,15 @@ app.post("/api/comments", async (req, res) => {
 
 app.delete("/api/comments/:id", async (req, res) => {
   try {
+    const comment = await db.getOne("SELECT user_id FROM comments WHERE id = $1", [req.params.id]);
+    if (!comment) return res.status(404).json({ error: "Comentário não encontrado" });
+    if (Number(comment.user_id) !== Number(req.authUser.id) && !["admin", "editor"].includes(req.authUser.role)) {
+      return res.status(403).json({ error: "Você só pode excluir seu próprio comentário" });
+    }
     await db.run("DELETE FROM comments WHERE id = $1", [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível excluir o comentário" });
   }
 });
 
