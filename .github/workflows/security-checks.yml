@@ -70,16 +70,19 @@ jobs:
         run: npm run lint
 
       - name: Compilar frontend
+        if: always()
         working-directory: frontend
         run: npm run build
 
       - name: Instalar navegador para smoke test visual isolado
+        if: always()
         working-directory: frontend
         run: |
           npm install --no-save --no-package-lock playwright@1.63.0
           npx playwright install --with-deps chromium
 
       - name: Iniciar frontend com API fictícia
+        if: always()
         working-directory: frontend
         env:
           VITE_API_URL: http://127.0.0.1:4317
@@ -93,6 +96,7 @@ jobs:
           exit 1
 
       - name: Teste visual desktop e mobile sem API de produção
+        if: always()
         working-directory: frontend
         run: |
           node --input-type=module <<'NODE'
