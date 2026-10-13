@@ -15,6 +15,20 @@ permissions:
 jobs:
   static-and-build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: security-test-password
+          POSTGRES_DB: cdr_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cdr_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -30,6 +44,13 @@ jobs:
       - name: Instalar dependências do backend
         working-directory: backend
         run: npm install --no-audit --no-fund
+
+      - name: Testar autenticação e autorização em PostgreSQL descartável
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://postgres:security-test-password@localhost:5432/cdr_test
+          CRON_SECRET: test-only-cron-secret
+        run: node tests/security.integration.test.js
 
       - name: Instalar dependências do frontend
         working-directory: frontend
