@@ -1037,7 +1037,8 @@ app.post("/api/register", async (req, res) => {
     const token = await createSession(result.rows[0].id);
     res.json({ success: true, token, user: result.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Erro no cadastro:", err.code || "UNKNOWN");
+    res.status(500).json({ error: "Não foi possível concluir o cadastro" });
   }
 });
 
@@ -1058,7 +1059,8 @@ app.post("/api/login", async (req, res) => {
     const token = await createSession(found.id);
     res.json({ success: true, token, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role, is_band: Boolean(found.is_band), created_at: found.created_at } });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Erro no login:", err.code || "UNKNOWN");
+    res.status(500).json({ error: "Não foi possível concluir o login" });
   }
 });
 
