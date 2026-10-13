@@ -173,3 +173,12 @@ Commits de implementação adicionados após a preparação inicial:
 ### Estado atual
 
 A branch contém implementação de sessão e política central de autorização, mas **continua não liberada para produção**. Não houve merge, deploy manual, conexão ao Layerbase ou alteração na `main`. O workflow de CI está limitado a esta branch e a pull requests para `main`; ele executa verificações de sintaxe/build, não testes de integração de autenticação.
+
+## Atualização de 13/10/2026 — testes de integração isolados
+
+- A resposta do middleware de inicialização agora retorna uma mensagem genérica ao cliente; detalhes técnicos permanecem somente nos logs do servidor.
+- Foi criado `backend/tests/security.integration.test.js` para testar login e migração de senha legada, emissão de sessão, acesso por papel, isolamento de perfis, criação e exclusão de comentários, proteção de upload, leitura pública de eventos e revogação de sessão no logout.
+- O workflow `.github/workflows/security-checks.yml` agora provisiona um serviço PostgreSQL 16 descartável dentro do GitHub Actions e executa os testes contra `cdr_test`. As credenciais são exclusivamente de teste e não apontam para Layerbase.
+- Execução de CI com os testes integrados: https://github.com/juneraunderline/comunidadedorock/actions/runs/38468389074
+- **A aprovação dessa execução ainda precisa ser confirmada.** Não considerar os testes integrados aprovados enquanto o job não terminar com conclusão `success`.
+- Nenhum deploy ou merge foi feito. A branch continua separada da `main`.
