@@ -21,6 +21,31 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
+// Senhas novas usam scrypt com salt individual. Senhas legadas são migradas
+// somente depois de um login válido, sem resetar contas existentes.
+const scryptAsync = (password, salt, keylen = 64) => new Promise((resolve, reject) => {
+  crypto.scrypt(String(password), salt, keylen, { N: 16384, r: 8, p: 1 }, (err, key) => {
+    if (err) return reject(err);
+    resolve(key);
+  });
+});
+async function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const key = await scryptAsync(password, salt);
+  return "scrypt$" + salt + "$" + key.toString("hex");
+}
+async function verifyPassword(password, storedPassword) {
+  const stored = String(storedPassword || "");
+  if (stored.startsWith("scrypt$")) {
+    const parts = stored.split("$");
+    if (parts.length !== 3 || !/^[a-f0-9]{32}$/i.test(parts[1]) || !/^[a-f0-9]{128}$/i.test(parts[2])) return false;
+    const candidate = await scryptAsync(password, parts[1]);
+    const expected = Buffer.from(parts[2], "hex");
+    return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
+  }
+  return stored.length > 0 && String(password) === stored;
+}
+
 const sharp = require("sharp");
 const imagesDir = process.env.VERCEL ? path.join("/tmp", "comunidadedorock-images") : path.join(__dirname, "public", "images");
 if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir, { recursive: true });
@@ -860,7 +885,7 @@ app.post("/api/register", async (req, res) => {
     if (exists) return res.status(409).json({ error: "Usuário já existe" });
     const result = await pool.query(
       "INSERT INTO users (username, password, display_name, role, is_band) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, display_name, avatar, role, is_band, created_at",
-      [username.toLowerCase(), password, display_name || username, "user", Boolean(is_band)]
+      [username.toLowerCase(), await hashPassword(password), display_name || username, "user", Boolean(is_band)]
     );
     res.json({ success: true, user: result.rows[0] });
   } catch (err) {
@@ -871,22 +896,17 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   try {
     const { user, pass } = req.body;
-    // Garantir que admin existe no banco (apenas 1)
-    const admins = await db.getAll("SELECT * FROM users WHERE username = 'admin' ORDER BY id ASC");
-    if (admins.length === 0) {
-      await pool.query(
-        "INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, $4)",
-        ["admin", "1234", "Administrador", "admin"]
-      );
-    } else if (admins.length > 1) {
-      // Remover duplicados, manter só o primeiro
-      for (let i = 1; i < admins.length; i++) {
-        await db.run("DELETE FROM users WHERE id = $1", [admins[i].id]);
-      }
+    // Nunca criar conta administrativa com senha padrão durante um login.
+    const found = await db.getOne("SELECT * FROM users WHERE username = $1", [user?.toLowerCase()]);
+    if (!found || !(await verifyPassword(pass, found.password))) {
+      return res.status(401).json({ success: false, error: "Usuário ou senha incorretos" });
     }
-    // Login — sempre verifica senha do banco
-    const found = await db.getOne("SELECT * FROM users WHERE username = $1 AND password = $2", [user?.toLowerCase(), pass]);
-    if (!found) return res.status(401).json({ success: false, error: "Usuário ou senha incorretos" });
+    // Migrar senha legada somente após autenticação válida, sem resetar a conta.
+    if (!String(found.password || "").startsWith("scrypt$")) {
+      const migratedPassword = await hashPassword(pass);
+      await db.run("UPDATE users SET password = $1 WHERE id = $2", [migratedPassword, found.id]);
+      found.password = migratedPassword;
+    }
     res.json({ success: true, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role, is_band: Boolean(found.is_band), created_at: found.created_at } });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -909,11 +929,11 @@ app.put("/api/user/:id", async (req, res) => {
     const user = await db.getOne("SELECT * FROM users WHERE id = $1", [req.params.id]);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
     if (new_password) {
-      if (!current_password || current_password !== user.password) {
+      if (!current_password || !(await verifyPassword(current_password, user.password))) {
         return res.status(403).json({ error: "Senha atual incorreta" });
       }
-      if (new_password.length < 4) return res.status(400).json({ error: "Nova senha deve ter pelo menos 4 caracteres" });
-      await db.run("UPDATE users SET password = $1 WHERE id = $2", [new_password, req.params.id]);
+      if (new_password.length < 8) return res.status(400).json({ error: "Nova senha deve ter pelo menos 8 caracteres" });
+      await db.run("UPDATE users SET password = $1 WHERE id = $2", [await hashPassword(new_password), req.params.id]);
     }
     if (username !== undefined && username !== user.username) {
       if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
