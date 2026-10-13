@@ -950,8 +950,10 @@ app.use("/api", async (req, res, next) => {
   );
   if (isPublicRead) {
     if ((path === "/events" && req.query.full === "1") ||
-        (path === "/bands" && req.query.full === "1") ||
-        (path === "/posts" && req.query.full === "1") ||
+        (path === "/bands" && req.query.full === "1")) {
+      return authenticate(req, res, () => requireRoles("admin")(req, res, next));
+    }
+    if ((path === "/posts" && req.query.full === "1") ||
         (path === "/interviews" && req.query.full === "1") ||
         (path === "/releases" && req.query.full === "1")) {
       return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
@@ -962,7 +964,10 @@ app.use("/api", async (req, res, next) => {
   if (method === "GET" && path === "/debug-rss") {
     return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
   }
-  if (method === "GET" && ["/users", "/pending-bands", "/rss-status"].includes(path)) {
+  if (method === "GET" && ["/users", "/pending-bands"].includes(path)) {
+    return authenticate(req, res, () => requireRoles("admin")(req, res, next));
+  }
+  if (method === "GET" && path === "/rss-status") {
     return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
   }
   if (isUserProfile && (method === "GET" || method === "PUT")) {
