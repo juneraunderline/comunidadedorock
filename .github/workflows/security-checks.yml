@@ -105,12 +105,21 @@ jobs:
               const page = await browser.newPage({ viewport });
               page.on('pageerror', error => failures.push(`${viewport.name}: ${error.message}`));
               page.on('request', request => {
-                if (request.url().includes('/api/')) {
-                  const url = new URL(request.url());
+                const url = new URL(request.url());
+                if (url.pathname.startsWith('/api/')) {
                   apiHosts.add(url.origin);
                   if (url.origin !== 'http://127.0.0.1:4317') {
                     failures.push(`Requisição de API fora do mock: ${request.url()}`);
                   }
+                }
+              });
+              // Isola o teste: anúncios, embeds, analytics e Sentry externos não são necessários.
+              await page.route('**/*', async route => {
+                const url = new URL(route.request().url());
+                if (url.hostname === '127.0.0.1' || url.hostname === 'localhost') {
+                  await route.continue();
+                } else {
+                  await route.abort();
                 }
               });
               await page.route('http://127.0.0.1:4317/**', async route => {
