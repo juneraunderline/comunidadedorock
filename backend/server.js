@@ -1133,7 +1133,7 @@ app.get("/api/user/:id", async (req, res) => {
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1168,7 +1168,7 @@ app.put("/api/user/:id", async (req, res) => {
     const updated = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
     res.json({ success: true, user: updated });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1177,7 +1177,7 @@ app.get("/api/users", async (req, res) => {
   try {
     res.json(await db.getAll("SELECT id, username, display_name, avatar, role, created_at FROM users ORDER BY created_at DESC"));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1189,7 +1189,7 @@ app.put("/api/user/:id/role", async (req, res) => {
     const updated = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
     res.json({ success: true, user: updated });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1201,7 +1201,7 @@ app.delete("/api/user/:id", async (req, res) => {
     await db.run("DELETE FROM users WHERE id = $1", [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1249,7 +1249,7 @@ app.get("/api/posts", async (req, res) => {
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.json(posts.map(p => ({ ...p, slug: mkSlug(p.title) })));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1460,7 +1460,7 @@ app.delete("/api/pending-bands/:id", async (req, res) => {
     await db.run("DELETE FROM pending_bands WHERE id = $1", [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1641,7 +1641,7 @@ app.get("/api/comments/:pageType/:pageId", async (req, res) => {
     res.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=30");
     res.json(comments);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1659,7 +1659,7 @@ app.post("/api/comments", async (req, res) => {
     );
     res.json({ success: true, comment: result.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1689,7 +1689,7 @@ app.get("/api/rss-status", async (req, res) => {
     res.set("Cache-Control", "no-store");
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1768,7 +1768,7 @@ app.post("/api/import-rss", async (req, res) => {
     await cleanupRssPostsPerSource();
     res.json({ success: true, imported });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1800,7 +1800,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     res.json({ success: true, imported });
   } catch (err) {
     if (feedForStatus) await saveRssFeedStatus(feedForStatus, { status: "error", message: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1852,7 +1852,7 @@ app.post("/api/reimport-rss", async (req, res) => {
     await cleanupRssPostsPerSource();
     res.json({ success: true, updated, created });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1870,7 +1870,7 @@ app.post("/api/fix-html-entities", async (req, res) => {
     }
     res.json({ success: true, fixed, total: allPosts.length, message: `${fixed} posts corrigidos de ${allPosts.length} total` });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1887,7 +1887,7 @@ app.post("/api/fix-missing-images", async (req, res) => {
     }
     res.json({ success: true, fixed, total: postsWithoutImages.length, message: `${fixed} imagens corrigidas de ${postsWithoutImages.length} posts sem imagem` });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1908,7 +1908,7 @@ app.post("/api/test-rss-images", async (req, res) => {
     }
     res.json({ success: true, feedUrl, totalItems: items.length, itemsWithImages, itemsWithoutImages });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1920,7 +1920,7 @@ app.post("/api/cleanup-duplicates", async (req, res) => {
     const result = await cleanupDuplicatePosts();
     res.json({ success: true, ...result, message: `${result.total} duplicatas removidas` });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 // --- OPEN GRAPH HELPERS ---
@@ -2024,7 +2024,7 @@ app.delete("/api/posts-without-images", async (req, res) => {
     const result = await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' RETURNING id");
     res.json({ success: true, deleted: result.rowCount });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -2050,7 +2050,7 @@ app.get("/api/debug-rss", async (req, res) => {
     });
     res.json({ feedUrl, statusCode, contentType, hasItems, hasEntry, totalItems: items.length, xmlPreview, results });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -2093,7 +2093,7 @@ app.get("/api/cron/rss", async (req, res) => {
     res.json({ success: true, message: "Importação RSS concluída" });
   } catch (err) {
     console.error("Erro no cron RSS:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
