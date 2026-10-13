@@ -66,12 +66,20 @@ const interactionLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Muitas solicitações. Aguarde e tente novamente." }
 });
+const bandSubmissionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Limite de inscrições de bandas atingido. Aguarde 15 minutos e tente novamente." }
+});
 app.use("/api", apiLimiter);
 app.use("/api/login", authLimiter);
 app.use("/api/register", authLimiter);
 app.use("/api/upload-image", uploadLimiter);
 app.use("/api/comments", interactionLimiter);
 app.use("/api/event-submissions", interactionLimiter);
+app.use("/api/bands/submit", bandSubmissionLimiter);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "1mb", extended: true }));
 // Upload de imagem via base64
