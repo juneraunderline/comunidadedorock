@@ -329,6 +329,80 @@ async function migrateLegacyBandImage(band, table = "bands") {
   }
 }
 
+// Prepara a imagem de uma inscrição pública sem chamar serviços externos.
+// O envio ao Cloudinary fica para a aprovação administrativa.
+async function preparePendingBandImage(image) {
+  if (image == null || image === "") return null;
+  if (typeof image !== "string") {
+    const error = new Error("Imagem inválida. Envie uma imagem JPEG, PNG, WebP ou GIF.");
+    error.code = "INVALID_BAND_IMAGE";
+    throw error;
+  }
+
+  if (image.length > 7 * 1024 * 1024) {
+    const error = new Error("A imagem enviada é muito grande. Escolha uma imagem menor que 5 MB.");
+    error.code = "INVALID_BAND_IMAGE";
+    throw error;
+  }
+
+  // Só aceitamos imagens já hospedadas no Cloudinary em URLs HTTPS confiáveis.
+  if (/^https:\/\/res\.cloudinary\.com\/[a-z0-9_-]+\/image\/upload\//i.test(image)) return image;
+
+  const match = image.match(/^data:image\/(jpeg|png|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/i);
+  if (!match) {
+    const error = new Error("Imagem inválida. Envie JPEG, PNG, WebP ou GIF; links externos não são aceitos.");
+    error.code = "INVALID_BAND_IMAGE";
+    throw error;
+  }
+
+  const imageBuffer = Buffer.from(match[2], "base64");
+  if (!imageBuffer.length || imageBuffer.length > 5 * 1024 * 1024) {
+    const error = new Error("A imagem deve ter no máximo 5 MB.");
+    error.code = "INVALID_BAND_IMAGE";
+    throw error;
+  }
+
+  try {
+    const metadata = await sharp(imageBuffer, { limitInputPixels: 25000000 }).metadata();
+    const expectedFormat = match[1].toLowerCase() === "jpg" ? "jpeg" : match[1].toLowerCase();
+    if (!["jpeg", "png", "webp", "gif"].includes(metadata.format) ||
+        metadata.format !== expectedFormat ||
+        !metadata.width || !metadata.height ||
+        metadata.width * metadata.height > 25000000) {
+      throw new Error("Formato ou dimensões da imagem inválidos.");
+    }
+
+    let optimized = null;
+    for (const attempt of [
+      { width: 1200, quality: 72 },
+      { width: 1000, quality: 62 },
+      { width: 800, quality: 52 },
+      { width: 640, quality: 42 }
+    ]) {
+      const candidate = await sharp(imageBuffer, { limitInputPixels: 25000000 })
+        .rotate()
+        .resize({ width: attempt.width, height: attempt.width, fit: "inside", withoutEnlargement: true })
+        .flatten({ background: "#ffffff" })
+        .jpeg({ quality: attempt.quality, mozjpeg: true })
+        .toBuffer();
+      if (!optimized || candidate.length < optimized.length) optimized = candidate;
+      if (candidate.length <= 1024 * 1024) {
+        optimized = candidate;
+        break;
+      }
+    }
+
+    if (!optimized || optimized.length > 1024 * 1024) {
+      throw new Error("Não foi possível reduzir a imagem. Escolha outra imagem menor.");
+    }
+    return "data:image/jpeg;base64," + optimized.toString("base64");
+  } catch (cause) {
+    const error = new Error(cause.message || "Não foi possível validar a imagem enviada.");
+    error.code = "INVALID_BAND_IMAGE";
+    throw error;
+  }
+}
+
 // Evita depender do estado de memória de uma máquina/instância.
 // Em Vercel, a função pode ser criada e encerrada entre requisições.
 let initializationPromise = null;
@@ -1445,9 +1519,20 @@ app.delete("/api/bands/:id", async (req, res) => {
 app.post("/api/bands/submit", async (req, res) => {
   try {
     const b = req.body;
-    if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
+    if (!b || typeof b !== "object" || Array.isArray(b) || !b.name) {
+      return res.status(400).json({ error: "Nome da banda é obrigatório" });
+    }
+    let pendingImage;
+    try {
+      pendingImage = await preparePendingBandImage(b.image);
+    } catch (imageError) {
+      if (imageError.code === "INVALID_BAND_IMAGE") {
+        return res.status(400).json({ error: imageError.message });
+      }
+      throw imageError;
+    }
     const inserted = await db.getOne(`INSERT INTO pending_bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
-      [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site]);
+      [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, pendingImage, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site]);
     // Dispara o aviso assim que a inscrição é gravada, antes de processar a imagem.
     await notifyAdminByEmail("Nova banda aguardando aprovação", {
       "Banda": b.name, "Estilo": b.genre, "Cidade": [b.city, b.state].filter(Boolean).join(" / "),
@@ -1455,8 +1540,9 @@ app.post("/api/bands/submit", async (req, res) => {
       "Instagram": b.instagram, "Facebook": b.facebook, "YouTube": b.youtube, "Site": b.site,
       "ID da inscrição": inserted.id
     });
-    await migrateLegacyBandImage({ id: inserted.id, image: b.image }, "pending_bands");
-    res.json({ success: true, message: "Banda cadastrada com sucesso! Aguarde a aprovação." });
+    // Nenhum upload externo na inscrição pública: a imagem validada fica compactada
+    // na fila pendente e só é enviada ao Cloudinary quando um administrador aprova.
+    res.json({ success: true, id: inserted.id, message: "Banda cadastrada com sucesso! Aguarde a aprovação." });
   } catch (err) {
     console.error("Erro ao enviar banda para aprovação:", err.message);
     res.status(500).json({ error: "Não foi possível cadastrar a banda" });
