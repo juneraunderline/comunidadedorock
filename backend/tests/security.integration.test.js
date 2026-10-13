@@ -68,12 +68,29 @@ async function waitForServer() {
     const unauthUsers = await request("/api/users");
     assert.equal(unauthUsers.status, 401, "lista de usuários deve exigir autenticação");
 
+    // Cabeçalhos de segurança e política CORS: a origem permitida recebe ACAO;
+    // uma origem externa não recebe autorização de leitura cross-origin.
+    const allowedOrigin = "https://comunidadedorock.com.br";
+    const healthAllowed = await fetch(base + "/api/health", { headers: { Origin: allowedOrigin } });
+    assert.equal(healthAllowed.status, 200, "health deve responder para origem autorizada");
+    assert.equal(healthAllowed.headers.get("access-control-allow-origin"), allowedOrigin, "CORS deve refletir apenas a origem autorizada");
+    assert.equal(healthAllowed.headers.get("x-content-type-options"), "nosniff", "API deve incluir X-Content-Type-Options");
+    assert.equal(healthAllowed.headers.get("x-frame-options"), "DENY", "API deve impedir enquadramento");
+    const healthBlocked = await fetch(base + "/api/health", { headers: { Origin: "https://evil.example" } });
+    assert.equal(healthBlocked.headers.get("access-control-allow-origin"), null, "origem externa não deve receber autorização CORS");
+
+
     const adminLogin = await request("/api/login", { method: "POST", body: { user: adminName, pass: adminPass } });
     assert.equal(adminLogin.status, 200, "admin legado deve conseguir entrar com a senha atual");
     assert.ok(adminLogin.data.token, "login deve emitir token");
     const migrated = await client.query("SELECT password FROM users WHERE id = $1", [adminId]);
     assert.match(migrated.rows[0].password, /^scrypt\$/, "senha legada deve migrar para scrypt após login válido");
     const adminToken = adminLogin.data.token;
+
+    const malformedProfile = await request("/api/user/not-an-id", { token: adminToken });
+    assert.equal(malformedProfile.status, 500, "ID de perfil malformado deve falhar sem sucesso");
+    assert.equal(malformedProfile.data.error, "Não foi possível concluir a solicitação", "erro interno não deve expor detalhes do PostgreSQL");
+
 
     const register = await request("/api/register", {
       method: "POST",
