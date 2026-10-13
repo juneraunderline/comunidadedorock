@@ -261,3 +261,15 @@ A branch contém implementação de sessão e política central de autorização
 - Revisão dos arquivos de dependências encontrou um problema concreto de reprodutibilidade: o `package-lock.json` da raiz declara o pacote `backend` e dependências antigas incluindo `sqlite3`, mas não corresponde às dependências atuais de `backend/package.json` (PostgreSQL, Cloudinary, Sharp e rate limiting). Não há lockfiles próprios versionados nas pastas `backend` e `frontend`; o CI usa `npm install`, portanto pode resolver versões diferentes em execuções futuras.
 - **Ação pendente antes de produção:** gerar e revisar lockfiles próprios em cada pacote usando a versão de Node/npm prevista para o deploy, conferir a árvore de dependências e trocar instalações de CI para `npm ci`. Não editei nem removi o lockfile da raiz nesta etapa, para evitar interferir na configuração de deploy sem conhecer toda a cadeia de build.
 - A branch validada neste momento é `fdeb64998767996b1b5b20da06f3ac15328d5cc7`; `main` permanece em `e63a7d4d171371a5ff7cefed0d03cd96c018a2cb`. Nenhum merge ou deploy foi feito.
+
+## Verificação complementar — 13/10/2026
+
+- O workflow mais recente, após a validação de IDs de usuário, terminou com **success**: https://github.com/juneraunderline/comunidadedorock/actions/runs/38480470630
+- O teste integrado confirma que um ID de perfil malformado é rejeitado com HTTP 400 antes da consulta ao banco.
+- A revisão de links externos foi ampliada para páginas de eventos, detalhes de eventos e perfis de bandas/lançamentos: somente links absolutos HTTP/HTTPS são usados como destinos clicáveis.
+- O workflow inclui agora um smoke test visual básico em Chromium, em desktop (1280×800) e celular (390×844), usando API fictícia local e bloqueando requisições externas. Ele valida título, raiz visível, quantidade mínima de links, erros de JavaScript e overflow horizontal. **Isso não é um teste E2E completo do painel administrativo nem cobre todas as ações de escrita.**
+- A main permanece no commit e63a7d4d171371a5ff7cefed0d03cd96c018a2cb; a branch isolada foi atualizada para a60efe75820b095e36a0182689c93527ad1f7354. Não houve merge nem deploy.
+- Permanecem pendentes antes de produção: lockfiles próprios e instalação congelada por pacote; teste E2E dos fluxos administrativos em preview comprovadamente isolado; avaliação futura de CSP e sessão com cookie HttpOnly; revisão humana final e plano de rollback.
+- **Não repetir chamadas HTTP à API de produção durante esta auditoria** e não executar SQL ou testes de escrita contra Layerbase. Toda a suíte de integração usa o PostgreSQL efêmero cdr_test.
+
+**Decisão atual:** os testes automatizados da branch passam, mas a auditoria ainda não libera a publicação em produção devido às limitações listadas acima.
