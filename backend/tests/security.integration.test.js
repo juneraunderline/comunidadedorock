@@ -211,6 +211,26 @@ async function waitForServer() {
     assert.equal((await request("/api/releases/" + releaseId, { method: "DELETE", token: adminToken })).status, 200, "admin deve excluir lançamento");
     assert.equal((await client.query("SELECT id FROM releases WHERE id = $1", [releaseId])).rowCount, 0, "lançamento excluído não deve permanecer no banco");
 
+    // Inscrições públicas não podem fazer o servidor buscar URLs arbitrárias nem
+    // disparar uploads ao Cloudinary antes da aprovação administrativa.
+    const rejectedRemoteBandName = "Security Test Remote Image Rejected";
+    const remoteImageSubmission = await request("/api/bands/submit", {
+      method: "POST",
+      body: { name: rejectedRemoteBandName, image: "https://example.com/external-image.jpg" }
+    });
+    assert.equal(remoteImageSubmission.status, 400, "inscrição pública deve rejeitar URLs de imagem externas");
+    assert.equal((await client.query("SELECT id FROM pending_bands WHERE name = $1", [rejectedRemoteBandName])).rowCount, 0,
+      "inscrição com URL externa não deve ser gravada");
+
+    const rejectedSvgBandName = "Security Test SVG Image Rejected";
+    const svgImageSubmission = await request("/api/bands/submit", {
+      method: "POST",
+      body: { name: rejectedSvgBandName, image: "data:image/svg+xml;base64,PHN2Zy8+" }
+    });
+    assert.equal(svgImageSubmission.status, 400, "inscrição pública deve rejeitar SVG como imagem");
+    assert.equal((await client.query("SELECT id FROM pending_bands WHERE name = $1", [rejectedSvgBandName])).rowCount, 0,
+      "inscrição com SVG não deve ser gravada");
+
     // Exercita moderação de banda e exclusão administrativa de evento sem disparar e-mail real.
     const pendingBandName = "Security Test Pending Band";
     await client.query("DELETE FROM pending_bands WHERE name = $1", [pendingBandName]);
