@@ -263,9 +263,7 @@ async function migrateLegacyBandImage(band, table = "bands") {
 
   try {
     let uploadSource = original;
-    const isRemoteUrl = false;
-
-    if (!isRemoteUrl) {
+    {
       let imageBuffer;
       if (/^data:image\//i.test(original)) {
         const comma = original.indexOf(",");
@@ -1403,7 +1401,6 @@ app.get("/api/bands/:id", async (req, res) => {
     if (!band) return res.status(404).json({ error: "Banda não encontrada" });
     // Leitura pública não deve disparar migração/upload de imagem.
     // Imagens legadas permanecem exibidas pela URL original até uma edição autorizada.
-    band.image = band.image;
     const slug = band.name ? band.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.json({ ...band, slug });
