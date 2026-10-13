@@ -89,7 +89,7 @@ Commits adicionais nesta branch:
 - `d71dc6f`: novos cadastros armazenam senhas com scrypt; login verifica senha com comparação de hash e migra senha legada após autenticação válida; alteração de senha armazena hash; removida a criação automática de `admin/1234` e a exclusão automática de contas admin duplicadas.
 - `912ad58` e `b5ff0f0`: mensagens e validação visual de cadastro/troca de senha alinhadas ao mínimo de 8 caracteres.
 
-**Importante:** estes são passos parciais, não uma correção completa da segurança. A compatibilidade com contas legadas precisa ser testada em banco descartável. A autenticação/sessão do servidor e a autorização das rotas administrativas e de propriedade ainda não foram implementadas; portanto, esta branch não deve ser publicada nem mesclada. O login de uma conta admin existente só deve ser considerado preservado depois dos testes controlados previstos abaixo. Nenhum dado do Layerbase foi lido ou modificado por esta preparação.
+**Estado atualizado:** a branch já contém autenticação por token de sessão no servidor, autorização central por rota/papel e testes de integração contra PostgreSQL descartável. A execução nº 13 do GitHub Actions passou. Novas verificações de rate limiting, sanitização de HTML e cabeçalhos de segurança foram adicionadas depois dessa execução e ainda precisam concluir no CI. Esta branch continua isolada: não publicar nem mesclar até a execução final passar e até revisar as limitações descritas no fim deste relatório. Nenhum dado do Layerbase foi lido ou modificado.
 
 ## Plano de correção — sem tocar em produção
 
@@ -182,3 +182,24 @@ A branch contém implementação de sessão e política central de autorização
 - Execução de CI com os testes integrados: https://github.com/juneraunderline/comunidadedorock/actions/runs/38468389074
 - **A aprovação dessa execução ainda precisa ser confirmada.** Não considerar os testes integrados aprovados enquanto o job não terminar com conclusão `success`.
 - Nenhum deploy ou merge foi feito. A branch continua separada da `main`.
+
+
+## Atualização complementar — 2026-10-13
+
+### Proteções adicionais adicionadas à branch
+
+- **Rate limiting:** limite geral de 180 requisições por minuto à API por IP; 10 tentativas em 15 minutos nos endpoints de login/cadastro; 15 envios de imagem em 15 minutos; 20 interações em 15 minutos para comentários e submissões de eventos.
+- **XSS em conteúdo HTML:** `DOMPurify` é aplicado antes de renderizar HTML de notícias e entrevistas, nos dois pontos encontrados com `dangerouslySetInnerHTML`.
+- **Cabeçalhos do frontend:** `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` e HSTS.
+- **Cabeçalhos da API:** `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` e `Permissions-Policy`.
+- **Teste automatizado:** foi incluído cenário que verifica que tentativas repetidas de login passam a receber HTTP 429.
+
+### Limitações que continuam abertas
+
+1. O armazenamento padrão do `express-rate-limit` é em memória por instância. Em Vercel serverless, isso reduz abusos repetidos na mesma instância, mas não constitui um limite global distribuído entre todas as instâncias. Uma solução compartilhada (Redis/serviço equivalente) exigiria configuração e credenciais adicionais; não foi conectada nesta branch.
+2. O token de sessão ainda fica no `localStorage`; portanto, um XSS em qualquer outro ponto da aplicação ainda poderia tentar roubá-lo. Sanitizar os dois pontos de HTML conhecidos reduz um vetor importante, mas não substitui uma revisão completa de todos os usos de HTML/URLs nem uma migração futura para cookie `HttpOnly` com proteção CSRF.
+3. Não foi imposto um CSP restritivo nesta etapa porque o frontend usa Google AdSense e embeds externos; uma política incompatível poderia quebrar anúncios ou conteúdo incorporado. O CSP deve ser introduzido em modo de relatório e testado antes de bloquear recursos.
+4. Os cabeçalhos, sanitização e limites novos precisam passar pelo CI. Os limites são heurísticos e podem precisar de ajuste depois de testes funcionais; nenhuma mudança foi publicada em produção.
+5. Nenhum teste de ponta a ponta foi executado contra o domínio público nem contra Layerbase. O banco usado pelo workflow é efêmero e descartável.
+
+**Regra de publicação:** não mesclar nem implantar esta branch até o workflow mais recente concluir com sucesso, revisar os testes de regressão do painel/admin e planejar uma publicação controlada com rollback. 
