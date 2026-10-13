@@ -323,6 +323,12 @@ async function waitForServer() {
 
     const uploadUnauth = await request("/api/upload-image", { method: "POST", body: { image: "data:image/png;base64,AA==" } });
     assert.equal(uploadUnauth.status, 401, "upload deve exigir sessão");
+    const uploadUser = await request("/api/upload-image", { method: "POST", token: userToken, body: { image: "data:image/png;base64,AA==" } });
+    assert.equal(uploadUser.status, 403, "usuário comum não pode consumir o serviço de upload");
+    const uploadInvalidAdmin = await request("/api/upload-image", { method: "POST", token: adminToken, body: { image: "data:image/png;base64,AA==" } });
+    assert.equal(uploadInvalidAdmin.status, 400, "imagem inválida deve ser rejeitada antes de chamar o provedor");
+    const uploadSvgAdmin = await request("/api/upload-image", { method: "POST", token: adminToken, body: { image: "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" } });
+    assert.equal(uploadSvgAdmin.status, 400, "SVG não permitido deve ser rejeitado antes de chamar o provedor");
 
     const commentUnauth = await request("/api/comments", {
       method: "POST", body: { page_type: "posts", page_id: 1, content: "Sem sessão" }
