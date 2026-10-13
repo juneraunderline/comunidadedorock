@@ -2143,10 +2143,15 @@ body {
     overflow-y: hidden;
     flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: #e9b61e #16161b;
-    padding: 0 0 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0 0 4px;
     gap: 8px;
+  }
+
+  .admin-tabs::-webkit-scrollbar {
+    display: none;
+    height: 0;
   }
 
   .admin-tabs button {
