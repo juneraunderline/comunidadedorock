@@ -310,8 +310,10 @@ async function waitForServer() {
     const badCronSecret = await fetch(base + "/api/cron/rss", { headers: { Authorization: "Bearer invalid-test-secret" } });
     assert.equal(badCronSecret.status, 401, "cron RSS deve rejeitar segredo incorreto sem iniciar importação");
     const badReleaseDelete = await request("/api/releases/not-an-id", { method: "DELETE", token: adminToken });
-    assert.equal(badReleaseDelete.status, 500, "ID de lançamento inválido deve falhar");
+    assert.equal(badReleaseDelete.status, 400, "ID de lançamento inválido deve ser rejeitado antes de consultar o banco");
     assert.equal(badReleaseDelete.data.detail, undefined, "erro de lançamento não deve expor detalhe interno");
+    const badReleaseUpdate = await request("/api/releases/not-an-id", { method: "PUT", token: adminToken, body: { title: "Não salvar", artist: "Teste" } });
+    assert.equal(badReleaseUpdate.status, 400, "ID inválido não deve executar UPDATE no banco");
     // O formulário público de bandas continua acessível, mas tem limite próprio contra spam.
     let bandSubmissionRateLimited = false;
     for (let i = 0; i < 6; i++) {
