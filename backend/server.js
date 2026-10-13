@@ -608,17 +608,14 @@ app.use(async (req, res, next) => {
   } catch (err) {
     const code = typeof err.code === "string" ? err.code : "UNKNOWN";
     const detail = String(err.message || "Erro sem mensagem").slice(0, 300);
-    console.error("❌ Falha ao inicializar backend:", {
+    console.error("Falha ao inicializar backend:", {
       stage: initializationStage,
       code,
       detail
     });
-    // Retorna diagnóstico sem expor DATABASE_URL ou credenciais.
+    // Detalhes técnicos ficam apenas nos logs; a resposta pública é genérica.
     res.status(503).json({
-      error: "Banco de dados indisponível",
-      stage: initializationStage,
-      code,
-      detail
+      error: "Serviço temporariamente indisponível"
     });
   }
 });
