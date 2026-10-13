@@ -140,7 +140,14 @@ async function waitForServer() {
     const sessionAfterLogout = await request("/api/session", { token: userToken });
     assert.equal(sessionAfterLogout.status, 401, "token revogado não pode reutilizar a sessão");
 
-    console.log("PASS: autenticação, migração de senha, autorização por papel, perfis, comentários, upload e logout.");
+    let rateLimited = false;
+    for (let i = 0; i < 12; i++) {
+      const attempt = await request("/api/login", { method: "POST", body: { user: "no-such-user", pass: "invalid-password" } });
+      if (attempt.status === 429) { rateLimited = true; break; }
+    }
+    assert.equal(rateLimited, true, "tentativas repetidas de login devem ser limitadas");
+
+    console.log("PASS: autenticação, migração de senha, autorização por papel, perfis, comentários, upload, logout e rate limit.");
   } catch (error) {
     console.error("FAIL: teste de segurança", error);
     process.exitCode = 1;
