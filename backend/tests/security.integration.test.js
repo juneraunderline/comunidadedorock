@@ -146,6 +146,80 @@ async function waitForServer() {
       assert.equal(result.status, 200, message + " (" + path + ")");
     }
 
+    // Testes de CRUD do painel contra PostgreSQL descartável.
+    const bandName = "Security Test Band";
+    await client.query("DELETE FROM bands WHERE name = $1", [bandName]);
+    const bandCreate = await request("/api/bands", { method: "POST", token: adminToken, body: { name: bandName, genre: "Rock", city: "São Paulo", state: "SP" } });
+    assert.equal(bandCreate.status, 200, "admin deve criar banda");
+    const bandRow = await client.query("SELECT id FROM bands WHERE name = $1", [bandName]);
+    assert.equal(bandRow.rowCount, 1, "banda deve ser gravada");
+    const bandId = bandRow.rows[0].id;
+    const bandUpdate = await request("/api/bands/" + bandId, { method: "PUT", token: adminToken, body: { name: bandName + " Updated", genre: "Punk", city: "São Paulo", state: "SP" } });
+    assert.equal(bandUpdate.status, 200, "admin deve editar banda");
+    const featureBand = await request("/api/bands/" + bandId + "/weekly-featured", { method: "POST", token: adminToken, body: { featured: true } });
+    assert.equal(featureBand.status, 200, "admin deve definir Banda da Semana");
+    const bandDelete = await request("/api/bands/" + bandId, { method: "DELETE", token: adminToken });
+    assert.equal(bandDelete.status, 200, "admin deve excluir banda");
+    assert.equal((await client.query("SELECT id FROM bands WHERE id = $1", [bandId])).rowCount, 0, "banda excluída não deve permanecer no banco");
+
+    const interviewTitle = "Security Test Interview";
+    await client.query("DELETE FROM interviews WHERE title = $1", [interviewTitle]);
+    const interviewCreate = await request("/api/interviews", { method: "POST", token: adminToken, body: { title: interviewTitle, artist: "Banda Teste", content: "Conteúdo teste" } });
+    assert.equal(interviewCreate.status, 200, "admin deve criar entrevista");
+    const interviewRow = await client.query("SELECT id FROM interviews WHERE title = $1", [interviewTitle]);
+    assert.equal(interviewRow.rowCount, 1, "entrevista deve ser gravada");
+    const interviewId = interviewRow.rows[0].id;
+    assert.equal((await request("/api/interviews/" + interviewId, { method: "PUT", token: adminToken, body: { title: interviewTitle + " Updated", artist: "Banda Teste", content: "Atualizado" } })).status, 200, "admin deve editar entrevista");
+    assert.equal((await request("/api/interviews/" + interviewId, { method: "DELETE", token: adminToken })).status, 200, "admin deve excluir entrevista");
+    assert.equal((await client.query("SELECT id FROM interviews WHERE id = $1", [interviewId])).rowCount, 0, "entrevista excluída não deve permanecer no banco");
+
+    const releaseTitle = "Security Test Release";
+    await client.query("DELETE FROM releases WHERE title = $1", [releaseTitle]);
+    assert.equal((await request("/api/releases", { method: "POST", token: adminToken, body: { title: releaseTitle, artist: "Banda Teste", type: "Single" } })).status, 200, "admin deve criar lançamento");
+    const releaseRow = await client.query("SELECT id FROM releases WHERE title = $1", [releaseTitle]);
+    assert.equal(releaseRow.rowCount, 1, "lançamento deve ser gravado");
+    const releaseId = releaseRow.rows[0].id;
+    assert.equal((await request("/api/releases/" + releaseId, { method: "PUT", token: adminToken, body: { title: releaseTitle + " Updated", artist: "Banda Teste", type: "EP" } })).status, 200, "admin deve editar lançamento");
+    assert.equal((await request("/api/releases/" + releaseId, { method: "DELETE", token: adminToken })).status, 200, "admin deve excluir lançamento");
+    assert.equal((await client.query("SELECT id FROM releases WHERE id = $1", [releaseId])).rowCount, 0, "lançamento excluído não deve permanecer no banco");
+
+    // Exercita moderação de banda e exclusão administrativa de evento sem disparar e-mail real.
+    const pendingBandName = "Security Test Pending Band";
+    await client.query("DELETE FROM pending_bands WHERE name = $1", [pendingBandName]);
+    const pendingBand = await client.query(
+      "INSERT INTO pending_bands (name, genre, city, state) VALUES ($1, $2, $3, $4) RETURNING id",
+      [pendingBandName, "Rock", "São Paulo", "SP"]
+    );
+    const approveBand = await request("/api/approve-band/" + pendingBand.rows[0].id, { method: "POST", token: adminToken });
+    assert.equal(approveBand.status, 200, "admin deve aprovar banda pendente");
+    assert.equal((await client.query("SELECT id FROM bands WHERE name = $1", [pendingBandName])).rowCount, 1, "aprovação deve criar banda publicada");
+    assert.equal((await client.query("SELECT id FROM pending_bands WHERE id = $1", [pendingBand.rows[0].id])).rowCount, 0, "banda aprovada deve sair da fila pendente");
+
+    const event = await client.query(
+      "INSERT INTO events (title, artist, date, status) VALUES ($1, $2, $3, 'pending') RETURNING id",
+      ["Security Test Event", "Banda Teste", "2099-01-01"]
+    );
+    const eventId = event.rows[0].id;
+    assert.equal((await request("/api/events/" + eventId + "/status", { method: "PUT", token: adminToken, body: { status: "approved" } })).status, 200, "admin deve aprovar evento");
+    assert.equal((await client.query("SELECT status FROM events WHERE id = $1", [eventId])).rows[0].status, "approved", "status do evento deve ser atualizado");
+    assert.equal((await request("/api/events/" + eventId, { method: "DELETE", token: adminToken })).status, 200, "admin deve excluir evento");
+    assert.equal((await client.query("SELECT id FROM events WHERE id = $1", [eventId])).rowCount, 0, "evento excluído não deve permanecer no banco");
+
+    // Testa criar, editar e remover portal RSS no estado em memória e no banco descartável.
+    const rssUrl = "https://security-test.example/feed.xml";
+    await client.query("DELETE FROM rss_feeds WHERE url = $1", [rssUrl]);
+    const rssCreate = await request("/api/rss-feeds", { method: "POST", token: adminToken, body: { name: "Security Test RSS", url: rssUrl } });
+    assert.equal(rssCreate.status, 200, "admin deve criar portal RSS");
+    const rssList = await request("/api/rss-feeds", { token: adminToken });
+    const rssIndex = rssList.data.findIndex(feed => feed.url === rssUrl);
+    assert.ok(rssIndex >= 0, "portal RSS recém-criado deve aparecer na lista");
+    assert.equal((await request("/api/rss-feeds/" + rssIndex, { method: "PUT", token: adminToken, body: { name: "Security Test RSS Updated", url: rssUrl } })).status, 200, "admin deve editar portal RSS");
+    const rssListUpdated = await request("/api/rss-feeds", { token: adminToken });
+    const rssUpdatedIndex = rssListUpdated.data.findIndex(feed => feed.url === rssUrl);
+    assert.ok(rssUpdatedIndex >= 0, "portal RSS editado deve continuar na lista");
+    assert.equal((await request("/api/rss-feeds/" + rssUpdatedIndex, { method: "DELETE", token: adminToken })).status, 200, "admin deve excluir portal RSS");
+    assert.equal((await client.query("SELECT id FROM rss_feeds WHERE url = $1", [rssUrl])).rowCount, 0, "portal RSS excluído não deve permanecer no banco");
+
     const usersAsUser = await request("/api/users", { token: userToken });
     assert.equal(usersAsUser.status, 403, "usuário comum não pode listar contas");
     const profileOther = await request("/api/user/" + adminId, { token: userToken });
