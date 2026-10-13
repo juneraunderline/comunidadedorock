@@ -202,4 +202,12 @@ A branch contém implementação de sessão e política central de autorização
 4. Os cabeçalhos, sanitização e limites novos precisam passar pelo CI. Os limites são heurísticos e podem precisar de ajuste depois de testes funcionais; nenhuma mudança foi publicada em produção.
 5. Nenhum teste de ponta a ponta foi executado contra o domínio público nem contra Layerbase. O banco usado pelo workflow é efêmero e descartável.
 
-**Regra de publicação:** não mesclar nem implantar esta branch até o workflow mais recente concluir com sucesso, revisar os testes de regressão do painel/admin e planejar uma publicação controlada com rollback. 
+**Regra de publicação:** não mesclar nem implantar esta branch até o workflow mais recente concluir com sucesso, revisar os testes de regressão do painel/admin e planejar uma publicação controlada com rollback.
+
+## Atualização complementar — revisão de permissões e abuso de formulários
+
+- Adicionado limite dedicado ao endpoint público `POST /api/bands/submit`: 5 tentativas por IP em 15 minutos. O formulário continua público e as submissões válidas continuam no fluxo de aprovação, mas chamadas repetidas passam a receber HTTP 429.
+- A suíte de integração agora verifica que um editor consegue criar, editar e excluir uma notícia no PostgreSQL descartável, que usuário comum não consegue publicar notícia, que editor não acessa a listagem administrativa completa de eventos nem administra feeds RSS e que a administração continua acessando a listagem completa de eventos.
+- Incluídos testes de bloqueio de acesso a bandas pendentes e de limite de submissões públicas de bandas.
+- Todos os testes continuam apontados exclusivamente ao PostgreSQL efêmero `cdr_test`; não consultam nem alteram Layerbase.
+- **Estado:** estas mudanças precisam passar pelo GitHub Actions antes de serem consideradas verificadas. Não houve merge nem deploy.
