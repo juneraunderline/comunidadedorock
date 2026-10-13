@@ -210,6 +210,23 @@ export default function Admin({ user: currentUser }) {
     const items = e.clipboardData?.items;
     if (!items) return;
 
+    const containsImage = Array.from(items).some(item => item.type.includes("image"));
+    if (!containsImage) {
+      const pastedHtml = e.clipboardData?.getData("text/html");
+      if (pastedHtml) {
+        e.preventDefault();
+        document.execCommand("insertHTML", false, DOMPurify.sanitize(pastedHtml));
+        const editor = e.currentTarget;
+        const newContent = editor.innerHTML;
+        if (isEditing) {
+          setEditingPost({ ...editingPost, content: newContent });
+        } else {
+          setNewPost({ ...newPost, content: newContent });
+        }
+      }
+      return;
+    }
+
     for (let item of items) {
       if (item.type.includes("image")) {
         e.preventDefault();
