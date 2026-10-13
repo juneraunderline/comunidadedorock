@@ -103,6 +103,31 @@ async function waitForServer() {
       method: "POST", body: { title: "Evento não autorizado", date: "2099-01-01" }
     });
     assert.equal(eventUnauth.status, 401, "criação administrativa de evento deve exigir sessão");
+
+    // Toda rota de escrita/admin deve bloquear chamadas anônimas antes de executar lógica ou SQL.
+    const anonymousWriteChecks = [
+      ["POST", "/api/posts", { title: "Não criar" }],
+      ["PUT", "/api/posts/1", { title: "Não editar" }],
+      ["DELETE", "/api/posts/1"],
+      ["POST", "/api/bands", { name: "Não criar" }],
+      ["PUT", "/api/bands/1", { name: "Não editar" }],
+      ["DELETE", "/api/bands/1"],
+      ["POST", "/api/interviews", { title: "Não criar", artist: "Teste" }],
+      ["DELETE", "/api/interviews/1"],
+      ["POST", "/api/releases", { title: "Não criar", artist: "Teste" }],
+      ["DELETE", "/api/releases/1"],
+      ["POST", "/api/rss-feeds", { name: "Não criar", url: "https://example.com/feed" }],
+      ["POST", "/api/import-rss", { feeds: [] }],
+      ["POST", "/api/reimport-rss", { feeds: [] }],
+      ["POST", "/api/fix-html-entities", {}],
+      ["POST", "/api/cleanup-duplicates", {}],
+      ["PUT", "/api/events/1/status", { status: "approved" }],
+      ["DELETE", "/api/events/1"]
+    ];
+    for (const [method, path, body] of anonymousWriteChecks) {
+      const result = await request(path, { method, ...(body === undefined ? {} : { body }) });
+      assert.equal(result.status, 401, method + " " + path + " deve rejeitar usuário anônimo");
+    }
     const uploadUnauth = await request("/api/upload-image", { method: "POST", body: { image: "data:image/png;base64,AA==" } });
     assert.equal(uploadUnauth.status, 401, "upload deve exigir sessão");
 
@@ -147,7 +172,7 @@ async function waitForServer() {
     }
     assert.equal(rateLimited, true, "tentativas repetidas de login devem ser limitadas");
 
-    console.log("PASS: autenticação, migração de senha, autorização por papel, perfis, comentários, upload, logout e rate limit.");
+    console.log("PASS: autenticação, migração de senha, autorização por papel, bloqueio de rotas de escrita anônimas, perfis, comentários, upload, logout e rate limit.");
   } catch (error) {
     console.error("FAIL: teste de segurança", error);
     process.exitCode = 1;
