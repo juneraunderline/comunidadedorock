@@ -927,6 +927,8 @@ app.use("/api", async (req, res, next) => {
   const method = req.method.toUpperCase();
   if (path === "/health" || path === "/login" || path === "/register" ||
       path === "/bands/submit" || path === "/cron/rss") return next();
+  if (path === "/logout" && method === "POST") return authenticate(req, res, next);
+  if (path === "/session" && method === "GET") return authenticate(req, res, next);
 
   const isUserProfile = isPath(path, /^\/user\/\d+$/);
   const isCommentDelete = isPath(path, /^\/comments\/\d+$/) && method === "DELETE";
