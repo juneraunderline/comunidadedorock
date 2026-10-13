@@ -1027,10 +1027,9 @@ app.post("/api/register", async (req, res) => {
     const { username, password, display_name, is_band } = req.body;
     if (!username || !password) return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
     if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
-    if (password.length < 4) return res.status(400).json({ error: "Senha deve ter pelo menos 4 caracteres" });
+    if (String(password).length < 8) return res.status(400).json({ error: "Senha deve ter pelo menos 8 caracteres" });
     const exists = await db.getOne("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
     if (exists) return res.status(409).json({ error: "Usuário já existe" });
-    if (String(password).length < 8) return res.status(400).json({ error: "Senha deve ter pelo menos 8 caracteres" });
     const result = await pool.query(
       "INSERT INTO users (username, password, display_name, role, is_band) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, display_name, avatar, role, is_band, created_at",
       [username.toLowerCase(), await hashPassword(password), display_name || username, "user", Boolean(is_band)]
@@ -1098,6 +1097,10 @@ app.put("/api/user/:id", async (req, res) => {
       }
       if (new_password.length < 8) return res.status(400).json({ error: "Nova senha deve ter pelo menos 8 caracteres" });
       await db.run("UPDATE users SET password = $1 WHERE id = $2", [await hashPassword(new_password), req.params.id]);
+      // Invalidar outras sessões da conta após a troca de senha, preservando esta requisição.
+      if (req.authTokenHash) {
+        await db.run("DELETE FROM auth_sessions WHERE user_id = $1 AND token_hash <> $2", [req.params.id, req.authTokenHash]);
+      }
     }
     if (username !== undefined && username !== user.username) {
       if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
