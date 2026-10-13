@@ -65,6 +65,10 @@ jobs:
         working-directory: frontend
         run: npm audit
 
+      - name: Verificar lint do frontend
+        working-directory: frontend
+        run: npm run lint
+
       - name: Compilar frontend
         working-directory: frontend
         run: npm run build
