@@ -77,6 +77,7 @@ async function waitForServer() {
     assert.equal(healthAllowed.headers.get("x-content-type-options"), "nosniff", "API deve incluir X-Content-Type-Options");
     assert.equal(healthAllowed.headers.get("x-frame-options"), "DENY", "API deve impedir enquadramento");
     const healthBlocked = await fetch(base + "/api/health", { headers: { Origin: "https://evil.example" } });
+    assert.equal(healthBlocked.status, 200, "origem externa não deve provocar erro interno no servidor");
     assert.equal(healthBlocked.headers.get("access-control-allow-origin"), null, "origem externa não deve receber autorização CORS");
 
 
