@@ -3,6 +3,16 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_URL from "./config/api";
 
+function safeExternalUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function Eventos() {
   const [events, setEvents] = useState([]);
 
