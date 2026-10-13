@@ -49,6 +49,7 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgres://postgres:security-test-password@localhost:5432/cdr_test
+          PGSSLMODE: disable
           CRON_SECRET: test-only-cron-secret
         run: node tests/security.integration.test.js
 
