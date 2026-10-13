@@ -3,7 +3,7 @@
 Data da revisão: 2026-10-13
 Base analisada: commit `e63a7d4d171371a5ff7cefed0d03cd96c018a2cb` (antes desta branch).
 Escopo: revisão estática do backend Express e dos fluxos de autenticação/perfil no frontend.
-Restrições respeitadas: nenhuma conexão ao Layerbase, nenhuma consulta ou alteração de dados de produção, nenhuma alteração na branch `main`, nenhum deploy solicitado.
+Restrições: a branch `main` não foi alterada e nenhum merge/deploy foi iniciado. Não houve conexão direta nem consulta SQL manual ao Layerbase. Durante a checagem final, porém, foram feitas requisições HTTP GET públicas para o site, `/api/health`, `/api/bands` e `/api/events`. Pelo comportamento do código, `/api/health` pode inicializar o esquema e `/api/bands` pode migrar imagens legadas; portanto, não é possível garantir ausência de efeitos indiretos no banco. Nenhuma rota de escrita foi chamada intencionalmente. Não repetir chamadas de produção; manter o restante da validação no banco descartável.
 
 > Esta é uma revisão estática preliminar, não um pentest nem uma confirmação de exploração em produção. Os itens abaixo devem ser verificados por testes controlados antes de afirmar que foram corrigidos.
 
@@ -89,7 +89,7 @@ Commits adicionais nesta branch:
 - `d71dc6f`: novos cadastros armazenam senhas com scrypt; login verifica senha com comparação de hash e migra senha legada após autenticação válida; alteração de senha armazena hash; removida a criação automática de `admin/1234` e a exclusão automática de contas admin duplicadas.
 - `912ad58` e `b5ff0f0`: mensagens e validação visual de cadastro/troca de senha alinhadas ao mínimo de 8 caracteres.
 
-**Estado atualizado:** a branch já contém autenticação por token de sessão no servidor, autorização central por rota/papel e testes de integração contra PostgreSQL descartável. A execução nº 13 do GitHub Actions passou. Novas verificações de rate limiting, sanitização de HTML e cabeçalhos de segurança foram adicionadas depois dessa execução e ainda precisam concluir no CI. Esta branch continua isolada: não publicar nem mesclar até a execução final passar e até revisar as limitações descritas no fim deste relatório. Nenhum dado do Layerbase foi lido ou modificado.
+**Estado atualizado:** a branch já contém autenticação por token de sessão no servidor, autorização central por rota/papel e testes de integração contra PostgreSQL descartável. A execução nº 13 do GitHub Actions passou. Novas verificações de rate limiting, sanitização de HTML e cabeçalhos de segurança foram adicionadas depois dessa execução e ainda precisam concluir no CI. Esta branch continua isolada: não publicar nem mesclar até a execução final passar e até revisar as limitações descritas no fim deste relatório. Não houve conexão direta ao Layerbase; consulte a ressalva operacional no início deste relatório sobre as chamadas HTTP públicas e seus possíveis efeitos indiretos.
 
 ## Plano de correção — sem tocar em produção
 
@@ -164,7 +164,7 @@ Commits de implementação adicionados após a preparação inicial:
 ### Bloqueios e ressalvas ainda existentes
 
 1. **Nenhum teste foi executado nesta sessão.** O workflow foi preparado, mas seu resultado precisa ser observado no GitHub Actions. O build e a sintaxe não devem ser considerados aprovados antes de aparecerem como sucesso.
-2. O teste real de login, migração de senhas legadas, conta administrativa existente, permissões e CRUD ainda exige um banco descartável e credenciais fictícias. Não foi feita conexão com Layerbase e não se deve apontar testes de escrita para produção.
+2. O teste real de login, migração de senhas legadas, conta administrativa existente, permissões e CRUD ainda exige um banco descartável e credenciais fictícias. Não houve conexão direta ao Layerbase; consulte a ressalva operacional no início deste relatório sobre as chamadas HTTP públicas e seus possíveis efeitos indiretos. Não apontar testes de escrita para produção.
 3. O token do SPA fica em `localStorage`; é enviado como Bearer e não é usado o objeto de usuário como prova de identidade, mas XSS ainda pode expor tokens. Uma fase posterior deve revisar a prevenção de XSS/CSP e decidir se uma arquitetura de cookie HttpOnly é viável entre o domínio `.com.br` e a API `.vercel.app`.
 4. O CORS usa `FRONTEND_ORIGINS` como lista separada por vírgulas; o padrão contém o domínio de produção e `localhost:5173`. Antes de testar um preview, configurar suas origens explicitamente. Não usar curingas.
 5. A criação da tabela `auth_sessions` ocorre durante a inicialização normal do backend quando este código for executado. Isso **não foi executado aqui**. Qualquer futura publicação precisará revisar essa migração de schema; esta branch não foi mesclada e nenhum deploy foi iniciado.
@@ -172,7 +172,7 @@ Commits de implementação adicionados após a preparação inicial:
 
 ### Estado atual
 
-A branch contém implementação de sessão e política central de autorização, mas **continua não liberada para produção**. Não houve merge, deploy manual, conexão ao Layerbase ou alteração na `main`. O workflow de CI está limitado a esta branch e a pull requests para `main`; ele executa verificações de sintaxe/build, não testes de integração de autenticação.
+A branch contém implementação de sessão e política central de autorização, mas **continua não liberada para produção**. Não houve merge, deploy manual ou alteração na `main`. A ressalva sobre chamadas HTTP públicas e possíveis efeitos indiretos está registrada no início deste relatório. O workflow de CI está limitado a esta branch e a pull requests para `main`; ele executa verificações de sintaxe/build, não testes de integração de autenticação.
 
 ## Atualização de 13/10/2026 — testes de integração isolados
 
@@ -200,7 +200,7 @@ A branch contém implementação de sessão e política central de autorização
 2. O token de sessão ainda fica no `localStorage`; portanto, um XSS em qualquer outro ponto da aplicação ainda poderia tentar roubá-lo. Sanitizar os dois pontos de HTML conhecidos reduz um vetor importante, mas não substitui uma revisão completa de todos os usos de HTML/URLs nem uma migração futura para cookie `HttpOnly` com proteção CSRF.
 3. Não foi imposto um CSP restritivo nesta etapa porque o frontend usa Google AdSense e embeds externos; uma política incompatível poderia quebrar anúncios ou conteúdo incorporado. O CSP deve ser introduzido em modo de relatório e testado antes de bloquear recursos.
 4. Os cabeçalhos, sanitização e limites novos precisam passar pelo CI. Os limites são heurísticos e podem precisar de ajuste depois de testes funcionais; nenhuma mudança foi publicada em produção.
-5. Nenhum teste de ponta a ponta foi executado contra o domínio público nem contra Layerbase. O banco usado pelo workflow é efêmero e descartável.
+5. Nenhum teste de ponta a ponta no navegador foi executado. Houve apenas smoke checks HTTP públicos de GET; eles não validam fluxos de interface e seus possíveis efeitos indiretos estão descritos no início deste relatório. Os testes automatizados usam exclusivamente o banco efêmero e descartável `cdr_test`.
 
 **Regra de publicação:** não mesclar nem implantar esta branch até o workflow mais recente concluir com sucesso, revisar os testes de regressão do painel/admin e planejar uma publicação controlada com rollback.
 
@@ -209,7 +209,7 @@ A branch contém implementação de sessão e política central de autorização
 - Adicionado limite dedicado ao endpoint público `POST /api/bands/submit`: 5 tentativas por IP em 15 minutos. O formulário continua público e as submissões válidas continuam no fluxo de aprovação, mas chamadas repetidas passam a receber HTTP 429.
 - A suíte de integração agora verifica que um editor consegue criar, editar e excluir uma notícia no PostgreSQL descartável, que usuário comum não consegue publicar notícia, que editor não acessa a listagem administrativa completa de eventos nem administra feeds RSS e que a administração continua acessando a listagem completa de eventos.
 - Incluídos testes de bloqueio de acesso a bandas pendentes e de limite de submissões públicas de bandas.
-- Todos os testes continuam apontados exclusivamente ao PostgreSQL efêmero `cdr_test`; não consultam nem alteram Layerbase.
+- Todos os testes automatizados continuam apontados exclusivamente ao PostgreSQL efêmero `cdr_test`; eles não consultam nem alteram Layerbase. A ressalva sobre as chamadas HTTP públicas de verificação está registrada no início deste relatório.
 - **Estado:** estas mudanças precisam passar pelo GitHub Actions antes de serem consideradas verificadas. Não houve merge nem deploy.
 
 
@@ -220,4 +220,4 @@ A branch contém implementação de sessão e política central de autorização
 - O teste adicional foi enviado à mesma branch isolada no commit `c681168e4e48de27c82324536ec8fa2f9639fe1d`. A nova execução de CI precisa terminar com sucesso antes de considerar essa cobertura aprovada.
 - Os testes exercitam a API com dados e credenciais fictícios. Isso confirma compatibilidade dos endpoints de leitura do painel no backend, mas **não substitui um teste visual/end-to-end do painel no navegador**. Não entrei na conta administrativa real nem alterei a senha.
 - **Ainda não liberar para produção:** aguardar o novo workflow e fazer a validação manual controlada dos fluxos de escrita do painel (criar/editar/excluir notícia, banda, entrevista, lançamento e evento; moderar cadastro de banda/evento; gerir RSS e usuários). Isso deve ocorrer em ambiente de teste ou preview, não diretamente na produção.
-- Não houve merge, deploy, acesso ao banco Layerbase ou alteração da branch `main`.
+- Não houve merge, deploy ou alteração da branch `main`. A ressalva operacional sobre chamadas HTTP públicas e possíveis efeitos indiretos está registrada no início deste relatório.
