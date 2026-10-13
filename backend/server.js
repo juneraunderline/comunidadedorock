@@ -1557,10 +1557,23 @@ app.post("/api/approve-band/:id", async (req, res) => {
   try {
     const band = await db.getOne("SELECT * FROM pending_bands WHERE id = $1", [req.params.id]);
     if (!band) return res.status(404).send();
+
+    // Linhas antigas da fila podem conter URLs externas. Não as importe no servidor
+    // durante a aprovação: aceite somente imagem validada ou URL já hospedada no Cloudinary.
+    let approvedImage;
+    try {
+      approvedImage = await preparePendingBandImage(band.image);
+    } catch (imageError) {
+      if (imageError.code === "INVALID_BAND_IMAGE") {
+        return res.status(400).json({ error: "A imagem desta inscrição é inválida ou externa. Atualize a imagem antes de aprovar." });
+      }
+      throw imageError;
+    }
+
     // created_at = NOW() na aprovação para que a banda apareça como "nova" na Home.
     const inserted = await db.getOne(`INSERT INTO bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, NOW()) RETURNING id`,
-      [band.name, band.genre, band.city, band.state, band.year, band.members, band.biography, band.contact, band.image, band.instagram, band.facebook, band.youtube, band.spotify, band.bandcamp, band.site]);
-    await migrateLegacyBandImage({ id: inserted.id, image: band.image }, "bands");
+      [band.name, band.genre, band.city, band.state, band.year, band.members, band.biography, band.contact, approvedImage, band.instagram, band.facebook, band.youtube, band.spotify, band.bandcamp, band.site]);
+    await migrateLegacyBandImage({ id: inserted.id, image: approvedImage }, "bands");
     await db.run("DELETE FROM pending_bands WHERE id = $1", [req.params.id]);
     res.json({ success: true });
   } catch (err) {
