@@ -263,8 +263,7 @@ async function migrateLegacyBandImage(band, table = "bands") {
 
   try {
     let uploadSource = original;
-    {
-      let imageBuffer;
+    let imageBuffer;
       if (/^data:image\//i.test(original)) {
         const comma = original.indexOf(",");
         if (comma < 0) return original;
@@ -313,7 +312,6 @@ async function migrateLegacyBandImage(band, table = "bands") {
         throw new Error("Não foi possível reduzir a imagem para menos de 7 MB");
       }
       uploadSource = "data:image/jpeg;base64," + optimized.toString("base64");
-    }
 
     const result = await cloudinary.uploader.upload(uploadSource, {
       folder: "comunidadedorock/bandas",
