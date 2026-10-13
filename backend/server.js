@@ -1245,8 +1245,26 @@ app.get("/api/user/:id", async (req, res) => {
 
 app.put("/api/user/:id", async (req, res) => {
   if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido" });
+  if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+    return res.status(400).json({ error: "Dados de perfil inválidos" });
+  }
   try {
     const { display_name, username, avatar, new_password, current_password } = req.body;
+    if (username !== undefined && (typeof username !== "string" || username.trim().length < 3 || username.trim().length > 100)) {
+      return res.status(400).json({ error: "Nome de usuário deve ter entre 3 e 100 caracteres" });
+    }
+    if (display_name !== undefined && (typeof display_name !== "string" || display_name.length > 100)) {
+      return res.status(400).json({ error: "Nome de exibição inválido" });
+    }
+    if (avatar !== undefined && (typeof avatar !== "string" || avatar.length > 2048)) {
+      return res.status(400).json({ error: "Avatar inválido" });
+    }
+    if (new_password && (typeof new_password !== "string" || new_password.length < 8 || new_password.length > 128)) {
+      return res.status(400).json({ error: "Nova senha deve ter entre 8 e 128 caracteres" });
+    }
+    if (new_password && (typeof current_password !== "string" || current_password.length > 128)) {
+      return res.status(400).json({ error: "Senha atual inválida" });
+    }
     const user = await db.getOne("SELECT * FROM users WHERE id = $1", [req.params.id]);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
     if (new_password) {
@@ -1260,11 +1278,11 @@ app.put("/api/user/:id", async (req, res) => {
         await db.run("DELETE FROM auth_sessions WHERE user_id = $1 AND token_hash <> $2", [req.params.id, req.authTokenHash]);
       }
     }
-    if (username !== undefined && username !== user.username) {
-      if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
-      const exists = await db.getOne("SELECT id FROM users WHERE username = $1 AND id != $2", [username.toLowerCase(), req.params.id]);
+    if (username !== undefined && username.trim().toLowerCase() !== user.username) {
+      const normalizedUsername = username.trim().toLowerCase();
+      const exists = await db.getOne("SELECT id FROM users WHERE username = $1 AND id != $2", [normalizedUsername, req.params.id]);
       if (exists) return res.status(409).json({ error: "Este nome de usuário já está em uso" });
-      await db.run("UPDATE users SET username = $1 WHERE id = $2", [username.toLowerCase(), req.params.id]);
+      await db.run("UPDATE users SET username = $1 WHERE id = $2", [normalizedUsername, req.params.id]);
     }
     if (display_name !== undefined) {
       await db.run("UPDATE users SET display_name = $1 WHERE id = $2", [display_name, req.params.id]);

@@ -283,6 +283,15 @@ async function waitForServer() {
     assert.equal((await request("/api/rss-feeds/" + rssUpdatedIndex, { method: "DELETE", token: adminToken })).status, 200, "admin deve excluir portal RSS");
     assert.equal((await client.query("SELECT id FROM rss_feeds WHERE url = $1", [rssUrl])).rowCount, 0, "portal RSS excluído não deve permanecer no banco");
 
+    const invalidUsernameType = await request("/api/user/" + userId, { method: "PUT", token: userToken, body: { username: { invalid: true } } });
+    assert.equal(invalidUsernameType.status, 400, "perfil deve rejeitar username que não seja texto");
+    const invalidProfileBody = await request("/api/user/" + userId, { method: "PUT", token: userToken, body: null });
+    assert.equal(invalidProfileBody.status, 400, "perfil deve rejeitar corpo JSON nulo");
+    const invalidNewPassword = await request("/api/user/" + userId, { method: "PUT", token: userToken, body: { current_password: "User-Test-123!", new_password: 12345678 } });
+    assert.equal(invalidNewPassword.status, 400, "perfil deve rejeitar nova senha que não seja texto");
+    const tooLongDisplayName = await request("/api/user/" + userId, { method: "PUT", token: userToken, body: { display_name: "x".repeat(101) } });
+    assert.equal(tooLongDisplayName.status, 400, "perfil deve rejeitar nome de exibição excessivamente grande");
+
     const usersAsUser = await request("/api/users", { token: userToken });
     assert.equal(usersAsUser.status, 403, "usuário comum não pode listar contas");
     const profileOther = await request("/api/user/" + adminId, { token: userToken });
