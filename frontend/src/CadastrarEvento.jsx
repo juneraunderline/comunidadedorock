@@ -36,6 +36,35 @@ function CadastrarEvento({ user }) {
             e.preventDefault(); setSending(true); setSubmitMessage("");
             try {
               const response = await axios.post(API_URL + "/api/event-submissions", submission);
+              // Enviar a notificação no navegador evita o bloqueio HTTP 403 do FormSubmit nas chamadas server-to-server da Vercel.
+              try {
+                const emailResponse = await fetch("https://formsubmit.co/ajax/comunidadedorock@hotmail.com", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                  body: JSON.stringify({
+                    _subject: "Novo evento aguardando aprovação: " + (submission.title || submission.artist || "Evento"),
+                    _template: "table",
+                    _replyto: submission.contact_email,
+                    Tipo: "Novo cadastro de evento",
+                    Evento: submission.title || "Não informado",
+                    "Bandas / artistas": submission.artist,
+                    Data: submission.date,
+                    Horário: submission.time,
+                    Local: submission.location,
+                    Cidade: [submission.city, submission.state].filter(Boolean).join(" - "),
+                    "E-mail de contato": submission.contact_email,
+                    "Link de ingressos": submission.ticket_link,
+                    "Ponto de venda": submission.ticket_location,
+                    Descrição: submission.description
+                  })
+                });
+                const emailResult = await emailResponse.json().catch(() => null);
+                if (!emailResponse.ok || !emailResult || emailResult.success === false || emailResult.success === "false") {
+                  console.error("[Notificação de evento] O FormSubmit não confirmou o envio.", emailResponse.status, emailResult);
+                }
+              } catch (emailError) {
+                console.error("[Notificação de evento] Falha ao enviar e-mail pelo navegador:", emailError);
+              }
               setSubmitMessage(response.data.message || "Evento enviado para análise da administração!");
               setSubmission(emptySubmission);
             } catch (error) {
