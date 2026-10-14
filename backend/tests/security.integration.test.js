@@ -213,9 +213,9 @@ async function waitForServer() {
     assert.equal(notificationAfterRead.data.find(item => Number(item.id) === Number(testNotification.id)).is_read, true, "notificação deve ficar marcada como lida");
     assert.equal((await request("/api/fan/notifications")).status, 401, "notificações devem exigir autenticação");
 
-    const fanComment = await request("/api/comments", { method: "POST", token: userToken, body: { page_type: "fan-area", page_id: 0, content: "Comentário de teste da Área do Fã" } });
+    const fanComment = await request("/api/comments", { method: "POST", token: userToken, body: { page_type: "fan-area", page_id: 1, content: "Comentário de teste da Área do Fã" } });
     assert.equal(fanComment.status, 200, "usuário autenticado deve publicar comentário na conversa entre fãs");
-    const fanComments = await request("/api/comments/fan-area/0");
+    const fanComments = await request("/api/comments/fan-area/1");
     assert.ok(fanComments.data.some(comment => comment.content === "Comentário de teste da Área do Fã"), "comentário publicado deve aparecer na conversa");
 
     const bandDelete = await request("/api/bands/" + bandId, { method: "DELETE", token: adminToken });
