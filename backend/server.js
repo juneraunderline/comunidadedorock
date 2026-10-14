@@ -187,6 +187,10 @@ const initDb = async () => {
   await db.run(`CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions (user_id)`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions (expires_at)`);
   await db.run(`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, page_type TEXT NOT NULL, page_id INTEGER NOT NULL, user_id INTEGER, user_name TEXT NOT NULL, user_avatar TEXT, content TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`CREATE TABLE IF NOT EXISTS fan_favorite_bands (user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, band_id INTEGER NOT NULL REFERENCES bands(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (user_id, band_id))`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_fan_favorite_bands_band_id ON fan_favorite_bands (band_id)`);
+  await db.run(`CREATE TABLE IF NOT EXISTS fan_event_watchlist (user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (user_id, event_id))`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_fan_event_watchlist_event_id ON fan_event_watchlist (event_id)`);
 };
 
 // Carregar Feeds
@@ -1052,6 +1056,7 @@ app.use("/api", async (req, res, next) => {
   const method = req.method.toUpperCase();
   if (path === "/health" || path === "/login" || path === "/register" ||
       path === "/bands/submit" || path === "/cron/rss") return next();
+  if (path === "/fan/data" || /^\/fan\/(favorites|events)(?:\/\d+)?$/.test(path)) return authenticate(req, res, next);
   if (path === "/logout" && method === "POST") return authenticate(req, res, next);
   if (path === "/session" && method === "GET") return authenticate(req, res, next);
 
@@ -1699,6 +1704,78 @@ app.delete("/api/releases/:id", async (req, res) => {
   } catch (err) {
     console.error("Erro ao excluir lançamento:", err.message);
     return res.status(500).json({ error: "Erro ao excluir lançamento" });
+  }
+});
+
+// Área do Fã: dados privados associados exclusivamente à sessão autenticada.
+app.get("/api/fan/data", authenticate, async (req, res) => {
+  try {
+    const [favorites, watchlist] = await Promise.all([
+      db.getAll(`SELECT b.id, b.name, b.genre, b.city, b.state, b.image, b.created_at, f.created_at AS favorited_at
+        FROM fan_favorite_bands f JOIN bands b ON b.id = f.band_id
+        WHERE f.user_id = $1 ORDER BY f.created_at DESC`, [req.authUser.id]),
+      db.getAll(`SELECT e.id, e.title, e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.created_at, w.created_at AS saved_at
+        FROM fan_event_watchlist w JOIN events e ON e.id = w.event_id
+        WHERE w.user_id = $1 AND e.status = 'approved'
+        ORDER BY e.date ASC NULLS LAST`, [req.authUser.id])
+    ]);
+    res.set("Cache-Control", "no-store");
+    return res.json({ favorites, watchlist });
+  } catch (err) {
+    console.error("Erro ao carregar Área do Fã:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível carregar sua área." });
+  }
+});
+
+app.post("/api/fan/favorites", authenticate, async (req, res) => {
+  const bandId = Number(req.body?.band_id);
+  if (!Number.isSafeInteger(bandId) || bandId <= 0) return res.status(400).json({ error: "Banda inválida." });
+  try {
+    const band = await db.getOne("SELECT id FROM bands WHERE id = $1", [bandId]);
+    if (!band) return res.status(404).json({ error: "Banda não encontrada." });
+    await db.run("INSERT INTO fan_favorite_bands (user_id, band_id) VALUES ($1, $2) ON CONFLICT (user_id, band_id) DO NOTHING", [req.authUser.id, bandId]);
+    return res.status(201).json({ success: true });
+  } catch (err) {
+    console.error("Erro ao favoritar banda:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível favoritar esta banda." });
+  }
+});
+
+app.delete("/api/fan/favorites/:id", authenticate, async (req, res) => {
+  const bandId = Number(req.params.id);
+  if (!Number.isSafeInteger(bandId) || bandId <= 0) return res.status(400).json({ error: "Banda inválida." });
+  try {
+    await db.run("DELETE FROM fan_favorite_bands WHERE user_id = $1 AND band_id = $2", [req.authUser.id, bandId]);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao remover banda favorita:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível remover esta banda." });
+  }
+});
+
+app.post("/api/fan/events", authenticate, async (req, res) => {
+  const eventId = Number(req.body?.event_id);
+  if (!Number.isSafeInteger(eventId) || eventId <= 0) return res.status(400).json({ error: "Evento inválido." });
+  try {
+    const event = await db.getOne("SELECT id FROM events WHERE id = $1 AND status = 'approved'", [eventId]);
+    if (!event) return res.status(404).json({ error: "Evento não encontrado ou ainda não publicado." });
+    await db.run("INSERT INTO fan_event_watchlist (user_id, event_id) VALUES ($1, $2) ON CONFLICT (user_id, event_id) DO NOTHING", [req.authUser.id, eventId]);
+    return res.status(201).json({ success: true });
+  } catch (err) {
+    console.error("Erro ao salvar evento:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível salvar este evento." });
+  }
+});
+
+app.delete("/api/fan/events/:id", authenticate, async (req, res) => {
+  const eventId = Number(req.params.id);
+  if (!Number.isSafeInteger(eventId) || eventId <= 0) return res.status(400).json({ error: "Evento inválido." });
+  try {
+    await db.run("DELETE FROM fan_event_watchlist WHERE user_id = $1 AND event_id = $2", [req.authUser.id, eventId]);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao remover evento salvo:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível remover este evento." });
   }
 });
 

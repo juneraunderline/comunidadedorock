@@ -19,6 +19,7 @@ import Contato from "./Contato";
 import CadastrarBanda from "./CadastrarBanda";
 import Admin from "./Admin";
 import Perfil from "./Perfil";
+import AreaDoFa from "./AreaDoFa";
 import Login from "./Login";
 import Sobre from "./Sobre";
 import PoliticaPrivacidade from "./PoliticaPrivacidade";
@@ -162,6 +163,7 @@ function App() {
             <NavLink to="/bandas" onClick={() => setMenuOpen(false)}>BANDAS NOVAS</NavLink>
             <NavLink to="/entrevistas" onClick={() => setMenuOpen(false)}>ENTREVISTAS</NavLink>
             <NavLink to="/eventos" onClick={() => setMenuOpen(false)}>EVENTOS</NavLink>
+            {user && <NavLink to="/minha-area" onClick={() => setMenuOpen(false)}>MINHA ÁREA</NavLink>}
             <NavLink to="/contato" onClick={() => setMenuOpen(false)}>CONTATO</NavLink>
           </nav>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
@@ -219,6 +221,7 @@ function App() {
           <Route path="/cadastrar-banda" element={<CadastrarBanda />} />
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/perfil" element={<Perfil user={user} setUser={handleLogin} />} />
+          <Route path="/minha-area" element={<AreaDoFa user={user} />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/privacidade" element={<PoliticaPrivacidade />} />
           <Route path="/termos" element={<TermosDeUso />} />
