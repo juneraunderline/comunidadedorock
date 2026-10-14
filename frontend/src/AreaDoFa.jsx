@@ -205,7 +205,7 @@ function AreaDoFa({ user }) {
       <div style={{ maxWidth: "1120px", margin: "0 auto" }}>
         <div style={{ marginBottom: "26px" }}>
           <p style={{ color: "#e9b61e", fontWeight: 800, letterSpacing: "2px", fontSize: "12px", marginBottom: "8px" }}>SEU ESPAÇO NA CENA</p>
-          <h1 style={{ margin: 0, fontSize: "clamp(28px, 5vw, 42px)" }}>MINHA <span style={{ color: "#e9b61e" }}>ÁREA</span></h1>
+          <h1 style={{ margin: 0, color: "#ffffff", fontSize: "clamp(28px, 5vw, 42px)" }}>MINHA <span style={{ color: "#e9b61e" }}>ÁREA</span></h1>
           <p style={{ color: "#a6a6b3", lineHeight: 1.6, maxWidth: "700px" }}>Guarde as bandas que você curte e monte sua lista de shows para acompanhar. Tudo fica vinculado à sua conta.</p>
         </div>
 
