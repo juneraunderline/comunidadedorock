@@ -1799,7 +1799,676 @@ app.post("/api/fan/vote", authenticate, async (req, res) => {
 });
 app.get("/api/fan/notifications", authenticate, async (req, res) => {
   try {
-    const notifications = await db.getAll("SELECT id, type, title, message, link, is_read, created_at FROM fan_notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30", [req.authUser.id]);
+    const userId = req.authUser.id;
+    // Uma notificação por fã e por semana, sem serviços externos nem tarefas agendadas.
+    const currentWeek = await db.getOne("SELECT to_char(date_trunc('week', CURRENT_DATE), 'YYYY-MM-DD') AS week_start");
+    if (currentWeek?.week_start) {
+      await db.run(`INSERT INTO fan_notifications (user_id, type, title, message, link, source_key)
+        SELECT DISTINCT f.user_id, 'vote', 'Nova votação da Banda da Semana',
+          'A votação desta semana está aberta. Escolha sua banda favorita!',
+          '/votacao', 'weekly-vote:' || $1::text
+        FROM fan_favorite_bands f
+        WHERE f.user_id = $2
+        ON CONFLICT (user_id, source_key) DO NOTHING`, [currentWeek.week_start, userId]);
+    }
+
+    // Lembretes somente para shows salvos, aprovados e com data ISO válida hoje ou amanhã.
+    const upcomingEvents = await db.getAll(`SELECT e.id, e.title, e.artist, e.date
+      FROM fan_event_watchlist w
+      JOIN events e ON e.id = w.event_id
+      WHERE w.user_id = $1
+        AND e.status = 'approved'
+        AND e.date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}
+app.post("/api/fan/notifications/:id/read", authenticate, async (req, res) => {
+  if (!/^[1-9]\d*$/.test(String(req.params.id))) return res.status(400).json({ error: "Notificação inválida." });
+  try {
+    await db.run("UPDATE fan_notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2", [req.params.id, req.authUser.id]);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao marcar notificação:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível atualizar a notificação." });
+  }
+});
+
+app.post("/api/fan/favorites", authenticate, async (req, res) => {
+  const bandId = Number(req.body?.band_id);
+  if (!Number.isSafeInteger(bandId) || bandId <= 0) return res.status(400).json({ error: "Banda inválida." });
+  try {
+    const band = await db.getOne("SELECT id FROM bands WHERE id = $1", [bandId]);
+    if (!band) return res.status(404).json({ error: "Banda não encontrada." });
+    await db.run("INSERT INTO fan_favorite_bands (user_id, band_id) VALUES ($1, $2) ON CONFLICT (user_id, band_id) DO NOTHING", [req.authUser.id, bandId]);
+    return res.status(201).json({ success: true });
+  } catch (err) {
+    console.error("Erro ao favoritar banda:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível favoritar esta banda." });
+  }
+});
+
+app.delete("/api/fan/favorites/:id", authenticate, async (req, res) => {
+  const bandId = Number(req.params.id);
+  if (!Number.isSafeInteger(bandId) || bandId <= 0) return res.status(400).json({ error: "Banda inválida." });
+  try {
+    await db.run("DELETE FROM fan_favorite_bands WHERE user_id = $1 AND band_id = $2", [req.authUser.id, bandId]);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao remover banda favorita:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível remover esta banda." });
+  }
+});
+
+app.post("/api/fan/events", authenticate, async (req, res) => {
+  const eventId = Number(req.body?.event_id);
+  if (!Number.isSafeInteger(eventId) || eventId <= 0) return res.status(400).json({ error: "Evento inválido." });
+  try {
+    const event = await db.getOne("SELECT id FROM events WHERE id = $1 AND status = 'approved'", [eventId]);
+    if (!event) return res.status(404).json({ error: "Evento não encontrado ou ainda não publicado." });
+    await db.run("INSERT INTO fan_event_watchlist (user_id, event_id) VALUES ($1, $2) ON CONFLICT (user_id, event_id) DO NOTHING", [req.authUser.id, eventId]);
+    return res.status(201).json({ success: true });
+  } catch (err) {
+    console.error("Erro ao salvar evento:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível salvar este evento." });
+  }
+});
+
+app.delete("/api/fan/events/:id", authenticate, async (req, res) => {
+  const eventId = Number(req.params.id);
+  if (!Number.isSafeInteger(eventId) || eventId <= 0) return res.status(400).json({ error: "Evento inválido." });
+  try {
+    await db.run("DELETE FROM fan_event_watchlist WHERE user_id = $1 AND event_id = $2", [req.authUser.id, eventId]);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao remover evento salvo:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível remover este evento." });
+  }
+});
+
+// Eventos
+app.get("/api/events", async (req, res) => {
+  const full = req.query.full === "1";
+  const limit = req.query.limit ? Math.max(1, Math.min(parseInt(req.query.limit) || 0, 100)) : null;
+  const fields = full ? "*" : "id, title, artist, date, time, location, city, state, image, ticket_link, ticket_location, LEFT(COALESCE(description, ''), 300) AS description, created_at";
+  const limitSql = limit ? `LIMIT ${limit}` : "";
+  const events = await db.getAll(`SELECT ${fields} FROM events ${full ? "" : "WHERE status = 'approved'"} ORDER BY date ASC ${limitSql}`);
+  const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+  res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
+  res.json(events.map(e => ({ ...e, slug: mkSlug(e.title) })));
+});
+
+app.post("/api/event-submissions", async (req, res) => {
+  try {
+    const e = req.body || {};
+    const artist = String(e.artist || "").trim();
+    const title = String(e.title || "").trim() || artist.split(/\r?\n/).map(name => name.trim()).filter(Boolean).join(" + ") || "Evento sem título";
+    const date = String(e.date || "").trim();
+    const contactEmail = String(e.contact_email || "").trim();
+    if (!artist || !date || !contactEmail) {
+      return res.status(400).json({ error: "Preencha a banda/artista, data e e-mail de contato." });
+    }
+    if (!/^\S+@\S+\.\S+$/.test(contactEmail)) {
+      return res.status(400).json({ error: "Informe um e-mail de contato válido." });
+    }
+    const insertedEvent = await db.getOne(
+      "INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, ticket_location, description, contact_email, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'pending') RETURNING id",
+      [title, artist, date, e.time || null, String(e.location || "").trim(), String(e.city || "").trim(), String(e.state || "").trim(), String(e.image || "").trim(), String(e.ticket_link || "").trim(), String(e.ticket_location || "").trim(), String(e.description || "").trim(), contactEmail]
+    );
+    await notifyAdminByEmail("Novo evento aguardando aprovação", {
+      "Evento": title, "Banda / artista": artist, "Data": date, "Horário": e.time,
+      "Local": e.location, "Cidade": [e.city, e.state].filter(Boolean).join(" / "),
+      "E-mail de contato": contactEmail, "Link de ingressos": e.ticket_link, "Ponto físico de venda": e.ticket_location,
+      "ID da inscrição": insertedEvent.id
+    });
+    res.status(201).json({ success: true, message: "Evento enviado para análise da administração." });
+  } catch (err) {
+    console.error("Erro ao receber evento:", err);
+    res.status(500).json({ error: "Não foi possível enviar o evento agora. Tente novamente." });
+  }
+});
+
+app.post("/api/events", async (req, res) => {
+  const e = req.body;
+  if ((!String(e.title || "").trim() && !String(e.artist || "").trim()) || !e.date) return res.status(400).json({ error: "Informe o título ou pelo menos uma banda, além da data" });
+  const insertedEvent = await db.getOne("INSERT INTO events (title, artist, date, time, location, city, state, image, ticket_link, ticket_location, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id",
+    [String(e.title || "").trim() || String(e.artist || "").split(/\r?\n/).map(name => name.trim()).filter(Boolean).join(" + "), e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.ticket_location, e.description]);
+  await notifyAdminByEmail("Novo evento cadastrado no site", {
+    "Evento": e.title, "Banda / artista": e.artist, "Data": e.date, "Horário": e.time,
+    "Local": e.location, "Cidade": [e.city, e.state].filter(Boolean).join(" / "),
+    "ID do evento": insertedEvent.id
+  });
+  res.json({ success: true });
+});
+
+app.put("/api/events/:id", async (req, res) => {
+  const e = req.body;
+  if ((!String(e.title || "").trim() && !String(e.artist || "").trim()) || !e.date) return res.status(400).json({ error: "Informe o título ou pelo menos uma banda, além da data" });
+  await db.run("UPDATE events SET title=$1, artist=$2, date=$3, time=$4, location=$5, city=$6, state=$7, image=$8, ticket_link=$9, ticket_location=$10, description=$11 WHERE id=$12",
+    [String(e.title || "").trim() || String(e.artist || "").split(/\r?\n/).map(name => name.trim()).filter(Boolean).join(" + "), e.artist, e.date, e.time, e.location, e.city, e.state, e.image, e.ticket_link, e.ticket_location, e.description, req.params.id]);
+  res.json({ success: true });
+});
+
+app.put("/api/events/:id/status", async (req, res) => {
+  const status = String(req.body?.status || "");
+  if (!["approved", "pending"].includes(status)) {
+    return res.status(400).json({ error: "Status inválido." });
+  }
+  try {
+    await db.run("UPDATE events SET status = $1 WHERE id = $2", [status, req.params.id]);
+    res.json({ success: true, status });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível atualizar o status do evento." });
+  }
+});
+
+app.delete("/api/events/:id", async (req, res) => {
+  try {
+    const result = await pool.query("DELETE FROM events WHERE id = $1 RETURNING id", [req.params.id]);
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.set("CDN-Cache-Control", "no-store");
+    res.set("Vercel-CDN-Cache-Control", "no-store");
+    if (result.rowCount === 0) return res.status(404).json({ error: "Evento não encontrado." });
+    return res.status(200).json({ success: true, deletedId: result.rows[0].id });
+  } catch (err) {
+    console.error("Erro ao excluir evento:", err.message);
+    return res.status(500).json({ error: "Não foi possível excluir o evento." });
+  }
+});
+
+// Comentários
+app.get("/api/comments/:pageType/:pageId", async (req, res) => {
+  try {
+    const { pageType, pageId } = req.params;
+    const comments = await db.getAll(
+      "SELECT * FROM comments WHERE page_type = $1 AND page_id = $2 ORDER BY created_at DESC",
+      [pageType, parseInt(pageId)]
+    );
+    res.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=30");
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+app.post("/api/comments", async (req, res) => {
+  try {
+    const { page_type, page_id, content } = req.body;
+    if (!page_type || !/^\d+$/.test(String(page_id || "")) || !content) {
+      return res.status(400).json({ error: "Campos obrigatórios: page_type, page_id e content" });
+    }
+    if (content.trim().length < 2) return res.status(400).json({ error: "Comentário muito curto" });
+    if (content.length > 1000) return res.status(400).json({ error: "Comentário muito longo (máx 1000 caracteres)" });
+    const result = await pool.query(
+      "INSERT INTO comments (page_type, page_id, user_id, user_name, user_avatar, content) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [String(page_type).slice(0, 40), parseInt(page_id, 10), req.authUser.id, req.authUser.display_name || req.authUser.username, req.authUser.avatar || null, content.trim()]
+    );
+    res.json({ success: true, comment: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+app.delete("/api/comments/:id", async (req, res) => {
+  try {
+    const comment = await db.getOne("SELECT user_id FROM comments WHERE id = $1", [req.params.id]);
+    if (!comment) return res.status(404).json({ error: "Comentário não encontrado" });
+    if (Number(comment.user_id) !== Number(req.authUser.id) && !["admin", "editor"].includes(req.authUser.role)) {
+      return res.status(403).json({ error: "Você só pode excluir seu próprio comentário" });
+    }
+    await db.run("DELETE FROM comments WHERE id = $1", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível excluir o comentário" });
+  }
+});
+
+// Feeds RSS
+app.get("/api/rss-feeds", (req, res) => {
+  res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=900");
+  res.json(rssFeeds);
+});
+
+app.get("/api/rss-status", async (req, res) => {
+  try {
+    const rows = await db.getAll("SELECT * FROM rss_feed_status ORDER BY checked_at DESC NULLS LAST, feed_name ASC");
+    res.set("Cache-Control", "no-store");
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+app.post("/api/rss-feeds", async (req, res) => {
+  const { name, url, logo } = req.body;
+  if (!name || !url) return res.status(400).json({ error: "Nome e URL são obrigatórios" });
+  await db.run("INSERT INTO rss_feeds (name, url, logo) VALUES ($1, $2, $3)", [name, url, logo || null]);
+  rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
+  res.json({ success: true, feeds: rssFeeds });
+});
+
+app.put("/api/rss-feeds/:index", async (req, res) => {
+  const { name, url } = req.body;
+  if (!name || !url) return res.status(400).json({ error: "Nome e URL são obrigatórios" });
+  const index = parseInt(req.params.index);
+  if (isNaN(index) || index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
+  const feed = rssFeeds[index];
+  await db.run("UPDATE rss_feeds SET name = $1, url = $2 WHERE id = $3", [name, url, feed.id]);
+  rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
+  res.json({ success: true, feeds: rssFeeds });
+});
+
+app.put("/api/rss-feeds/:index/logo", async (req, res) => {
+  const { logo } = req.body;
+  const index = parseInt(req.params.index);
+  if (isNaN(index) || index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
+  const feed = rssFeeds[index];
+  await db.run("UPDATE rss_feeds SET logo = $1 WHERE id = $2", [logo || null, feed.id]);
+  rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
+  res.json({ success: true, feeds: rssFeeds });
+});
+
+app.delete("/api/rss-feeds/:index", async (req, res) => {
+  const index = parseInt(req.params.index);
+  if (isNaN(index) || index < 0 || index >= rssFeeds.length) return res.status(404).json({ error: "Feed não encontrado" });
+  const feed = rssFeeds[index];
+  await db.run("DELETE FROM rss_feeds WHERE id = $1", [feed.id]);
+  rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
+  res.json({ success: true, feeds: rssFeeds });
+});
+
+// Import RSS
+app.post("/api/import-rss", async (req, res) => {
+  try {
+    let imported = 0;
+    const feeds = req.body.feeds || rssFeeds;
+    for (const feed of feeds) {
+      let feedImported = 0;
+      let feedItems = 0;
+      try {
+        const items = await getFeedItems(feed.url);
+        feedItems = items.length;
+        for (const itemXml of items.slice(0, 3)) {
+          const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
+          const content = decodeHtmlEntities(extractContentFromItem(itemXml));
+          const rssImage = extractImageFromItem(itemXml, content);
+          const link = extractLinkFromItem(itemXml);
+          const articleImage = await extractImageFromArticlePage(link);
+          const image = articleImage || rssImage;
+          if (!title || !image) continue;
+          if (!(await isValidImage(image))) continue;
+          if (!(await postAlreadyExists(title, link))) {
+            const newPost = await db.getOne("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5) RETURNING id", [title, content, image, link, feed.name]);
+            await createFanNotificationsForPost(newPost.id, title, content, link);
+            imported++;
+            feedImported++;
+          }
+        }
+        await saveRssFeedStatus(feed, { status: feedImported > 0 ? "updated" : "no_new", message: feedImported > 0 ? `${feedImported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported: feedImported, items: feedItems });
+      } catch (e) {
+        console.warn(`Erro no feed ${feed.name}: ${e.message}`);
+        await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: feedImported, items: feedItems });
+      }
+    }
+    // Limpar posts sem imagem após import manual
+    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
+    await cleanupRssPostsPerSource();
+    res.json({ success: true, imported });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+app.post("/api/import-rss-single", async (req, res) => {
+  let feedForStatus = null;
+  try {
+    const { feed } = req.body;
+    feedForStatus = feed;
+    if (!feed || !feed.url) return res.status(400).json({ error: "Feed inválido" });
+    let imported = 0;
+    const items = await getFeedItems(feed.url);
+    for (const itemXml of items.slice(0, 3)) {
+      const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
+      const content = decodeHtmlEntities(extractContentFromItem(itemXml));
+      const rssImage = extractImageFromItem(itemXml, content);
+      const link = extractLinkFromItem(itemXml);
+      const articleImage = await extractImageFromArticlePage(link);
+      const image = articleImage || rssImage;
+      if (!title || !image) continue;
+      if (!(await isValidImage(image))) continue;
+      if (!(await postAlreadyExists(title, link))) {
+        const newPost = await db.getOne("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5) RETURNING id", [title, content, image, link, feed.name]);
+            await createFanNotificationsForPost(newPost.id, title, content, link);
+        imported++;
+      }
+    }
+    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
+    await cleanupRssPostsPerSource();
+    await saveRssFeedStatus(feed, { status: imported > 0 ? "updated" : "no_new", message: imported > 0 ? `${imported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported, items: items.length });
+    res.json({ success: true, imported });
+  } catch (err) {
+    if (feedForStatus) await saveRssFeedStatus(feedForStatus, { status: "error", message: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+app.post("/api/reimport-rss", async (req, res) => {
+  try {
+    let updated = 0;
+    let created = 0;
+    const feeds = req.body.feeds || rssFeeds;
+    for (const feed of feeds) {
+      let feedUpdated = 0;
+      let feedCreated = 0;
+      let feedItems = 0;
+      try {
+        const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS });
+        if (!response.ok) throw new Error("HTTP " + response.status + " ao acessar o feed");
+        const xml = await response.text();
+        const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+        feedItems = items.length;
+        for (const itemXml of items.slice(0, 3)) {
+          const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
+          const content = decodeHtmlEntities(extractContentFromItem(itemXml));
+          const image = extractImageFromItem(itemXml, content);
+          const link = extractLinkFromItem(itemXml);
+          if (!title || !image) continue;
+          if (!(await isValidImage(image))) continue;
+          const existing = await db.getOne("SELECT id, image FROM posts WHERE title = $1", [title]);
+          if (existing) {
+            // Reimportação também atualiza o conteúdo para o resumo seguro
+            // gerado por extractContentFromItem(), evitando manter cópias
+            // integrais de matérias importadas anteriormente.
+            await db.run(
+              "UPDATE posts SET content = $1, link = $2, source = $3, image = $4 WHERE id = $5",
+              [content, link, feed.name, image, existing.id]
+            );
+            updated++;
+            feedUpdated++;
+          } else {
+            const newPost = await db.getOne("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5) RETURNING id", [title, content, image, link, feed.name]);
+            await createFanNotificationsForPost(newPost.id, title, content, link);
+            created++;
+            feedCreated++;
+          }
+        }
+        await saveRssFeedStatus(feed, { status: feedCreated > 0 ? "updated" : "no_new", message: feedCreated > 0 ? `${feedCreated} notícia(s) nova(s) criada(s); ${feedUpdated} atualizada(s).` : `Nenhuma notícia nova criada; ${feedUpdated} notícia(s) existente(s) atualizada(s).`, imported: feedCreated, updated: feedUpdated, items: feedItems });
+      } catch (e) {
+        console.warn(`Erro no feed ${feed.name}: ${e.message}`);
+        await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: feedCreated, updated: feedUpdated, items: feedItems });
+      }
+    }
+    await cleanupRssPostsPerSource();
+    res.json({ success: true, updated, created });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+app.post("/api/fix-html-entities", async (req, res) => {
+  try {
+    const allPosts = await db.getAll("SELECT id, title, content FROM posts");
+    let fixed = 0;
+    for (const p of allPosts) {
+      const cleanTitle = decodeHtmlEntities(p.title);
+      const cleanContent = decodeHtmlEntities(p.content);
+      if (cleanTitle !== p.title || cleanContent !== p.content) {
+        await db.run("UPDATE posts SET title = $1, content = $2 WHERE id = $3", [cleanTitle, cleanContent, p.id]);
+        fixed++;
+      }
+    }
+    res.json({ success: true, fixed, total: allPosts.length, message: `${fixed} posts corrigidos de ${allPosts.length} total` });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+app.post("/api/fix-missing-images", async (req, res) => {
+  try {
+    const postsWithoutImages = await db.getAll("SELECT * FROM posts WHERE image IS NULL OR image = ''");
+    let fixed = 0;
+    for (const post of postsWithoutImages) {
+      const imgMatch = (post.content || "").match(/<img[^>]*src=["']([^"']+)["']/i);
+      if (imgMatch) {
+        await db.run("UPDATE posts SET image = $1 WHERE id = $2", [imgMatch[1], post.id]);
+        fixed++;
+      }
+    }
+    res.json({ success: true, fixed, total: postsWithoutImages.length, message: `${fixed} imagens corrigidas de ${postsWithoutImages.length} posts sem imagem` });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+app.post("/api/test-rss-images", async (req, res) => {
+  try {
+    const { feedUrl } = req.body;
+    if (!feedUrl) return res.status(400).json({ error: "URL do feed é obrigatória" });
+    const response = await fetchFunc(feedUrl, { headers: BROWSER_HEADERS });
+    const xml = await response.text();
+    const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+    let itemsWithImages = 0;
+    let itemsWithoutImages = 0;
+    for (const itemXml of items) {
+      const content = extractContentFromItem(itemXml);
+      const image = extractImageFromItem(itemXml, content);
+      if (image) itemsWithImages++;
+      else itemsWithoutImages++;
+    }
+    res.json({ success: true, feedUrl, totalItems: items.length, itemsWithImages, itemsWithoutImages });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+
+
+// Endpoint manual de limpeza de duplicatas
+app.post("/api/cleanup-duplicates", async (req, res) => {
+  try {
+    const result = await cleanupDuplicatePosts();
+    res.json({ success: true, ...result, message: `${result.total} duplicatas removidas` });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+// --- OPEN GRAPH HELPERS ---
+function buildOgHtml(title, description, image, ogUrl, type, siteUrl) {
+  const safeImg = (image || "").replace('http://', 'https://');
+  return `<!DOCTYPE html>
+<html prefix="og: http://ogp.me/ns#">
+<head>
+<meta charset="utf-8" />
+<title>${title} - Comunidade do Rock</title>
+<meta property="og:title" content="${title}" />
+<meta property="og:description" content="${description}" />
+<meta property="og:image" content="${safeImg}" />
+<meta property="og:image:url" content="${safeImg}" />
+<meta property="og:image:secure_url" content="${safeImg}" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:url" content="${ogUrl}" />
+<meta property="og:type" content="${type}" />
+<meta property="og:site_name" content="Comunidade do Rock" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${title}" />
+<meta name="twitter:description" content="${description}" />
+<meta name="twitter:image" content="${safeImg}" />
+<link rel="canonical" href="${ogUrl}" />
+</head>
+<body>
+<h1>${title}</h1><p>${description}</p><img src="${safeImg}" alt="${title}" width="1200" height="630" />
+<script>if(!/bot|crawl|spider|facebook|twitter|whatsapp|telegram|linkedin|slack/i.test(navigator.userAgent)){window.location.replace("${siteUrl || ogUrl}")}</script>
+</body>
+</html>`;
+}
+function resolveImage(img) {
+  const fallback = "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=1200&h=630&fit=crop";
+  if (!img) return fallback;
+  if (img.includes("fbcdn.net") || img.includes("facebook.com") || img.includes("scontent")) return fallback;
+  if (img.startsWith("http")) return img;
+  const publicApiUrl = (process.env.PUBLIC_API_URL || "").replace(/\/$/, "");
+  return publicApiUrl ? publicApiUrl + img : img;
+}
+function isCrawler(ua) {
+  const l = (ua || "").toLowerCase();
+  return l.includes("facebookexternalhit") || l.includes("twitterbot") || l.includes("whatsapp") || l.includes("telegrambot") || l.includes("linkedinbot") || l.includes("slackbot") || l.includes("bot") || l.includes("crawl") || l.includes("spider");
+}
+function sendOg(res, title, description, image, ogUrl, type, siteUrl, ua) {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.status(200).send(buildOgHtml(title, description, image, ogUrl, type, siteUrl));
+}
+
+// OG - Notícias
+app.get("/og/noticias/:id", async (req, res) => {
+  try {
+    const post = await db.getOne("SELECT * FROM posts WHERE id = $1", [req.params.id]);
+    if (!post) return res.redirect("https://comunidadedorock.com.br/noticias");
+    const title = (post.title || "Comunidade do Rock").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const description = ((post.content || "").replace(/<[^>]+>/g, "").substring(0, 200) + "...").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    sendOg(res, title, description, resolveImage(post.image), `https://comunidadedorock.com.br/og/noticias/${post.id}`, "article", `https://comunidadedorock.com.br/noticias/${post.id}`, req.headers["user-agent"]);
+  } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
+});
+
+// OG - Bandas
+app.get("/og/bandas/:id", async (req, res) => {
+  try {
+    const band = await db.getOne("SELECT * FROM bands WHERE id = $1", [req.params.id]);
+    if (!band) return res.redirect("https://comunidadedorock.com.br/bandas");
+    const title = (band.name || "Banda").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const description = ((band.biography || band.genre || "Conheça essa banda no Comunidade do Rock").substring(0, 200)).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    sendOg(res, title, description, resolveImage(band.image), `https://comunidadedorock.com.br/og/bandas/${band.id}`, "profile", `https://comunidadedorock.com.br/bandas/${band.id}`, req.headers["user-agent"]);
+  } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
+});
+
+// OG - Entrevistas
+app.get("/og/entrevistas/:id", async (req, res) => {
+  try {
+    const item = await db.getOne("SELECT * FROM interviews WHERE id = $1", [req.params.id]);
+    if (!item) return res.redirect("https://comunidadedorock.com.br/entrevistas");
+    const title = (`${item.title} - ${item.artist}`).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const description = ((item.content || "Entrevista exclusiva no Comunidade do Rock").replace(/<[^>]+>/g, "").substring(0, 200)).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    sendOg(res, title, description, resolveImage(item.image), `https://comunidadedorock.com.br/og/entrevistas/${item.id}`, "article", `https://comunidadedorock.com.br/entrevistas/${item.id}`, req.headers["user-agent"]);
+  } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
+});
+
+// OG - Eventos
+app.get("/og/eventos/:id", async (req, res) => {
+  try {
+    const item = await db.getOne("SELECT * FROM events WHERE id = $1", [req.params.id]);
+    if (!item) return res.redirect("https://comunidadedorock.com.br/eventos");
+    const title = (item.title || "Evento").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const dateBR = item.date ? item.date.split("-").reverse().join("/") : "";
+    const desc = [item.artist, dateBR, item.location, item.city].filter(Boolean).join(" · ");
+    const description = (desc || "Confira este evento no Comunidade do Rock").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    sendOg(res, title, description, resolveImage(item.image), `https://comunidadedorock.com.br/og/eventos/${item.id}`, "event", `https://comunidadedorock.com.br/eventos/${item.id}`, req.headers["user-agent"]);
+  } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
+});
+
+// Deletar todas as notícias sem imagem
+app.delete("/api/posts-without-images", async (req, res) => {
+  try {
+    const result = await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' RETURNING id");
+    res.json({ success: true, deleted: result.rowCount });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+// Debug RSS feed - ver o que está vindo
+app.get("/api/debug-rss", async (req, res) => {
+  try {
+    const feedUrl = req.query.url || "https://tenhomaisdiscosqueamigos.com/feed/";
+    const response = await fetchFunc(feedUrl, { headers: BROWSER_HEADERS });
+    const xml = await response.text();
+    const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
+    const statusCode = response.status;
+    const contentType = response.headers.get("content-type");
+    const xmlPreview = xml.substring(0, 1000);
+    const hasItems = xml.includes("<item");
+    const hasEntry = xml.includes("<entry");
+    const results = items.slice(0, 3).map(itemXml => {
+      const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").trim();
+      const rawHtml = extractRawContent(itemXml);
+      const image = extractImageFromItem(itemXml, null);
+      const hasImg = rawHtml.includes("<img");
+      const imgTags = rawHtml.match(/<img[^>]*>/gi) || [];
+      return { title: title?.substring(0, 60), image, hasImg, imgTags: imgTags.map(t => t.substring(0, 200)), rawHtmlLength: rawHtml.length, rawHtmlPreview: rawHtml.substring(0, 500) };
+    });
+    res.json({ feedUrl, statusCode, contentType, hasItems, hasEntry, totalItems: items.length, xmlPreview, results });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+// Sitemap dinâmico: inclui páginas públicas e conteúdos publicados do banco.
+app.get("/sitemap.xml", async (req, res) => {
+  try {
+    await ensureInitialized();
+    const base = "https://comunidadedorock.com.br";
+    const [posts, bands, interviews, events] = await Promise.all([
+      db.getAll("SELECT id, created_at FROM posts ORDER BY created_at DESC"),
+      db.getAll("SELECT id, created_at FROM bands ORDER BY created_at DESC"),
+      db.getAll("SELECT id, created_at FROM interviews ORDER BY created_at DESC"),
+      db.getAll("SELECT id, created_at FROM events WHERE status = 'approved' ORDER BY created_at DESC")
+    ]);
+    const staticPaths = ["/", "/noticias", "/bandas", "/entrevistas", "/eventos", "/guias/divulgacao-banda-independente", "/cadastrar-banda", "/sobre", "/privacidade", "/termos", "/contato"];
+    const urls = staticPaths.map((path) => ({ loc: base + path }));
+    for (const post of posts) urls.push({ loc: base + "/noticias/" + post.id, lastmod: post.created_at });
+    for (const band of bands) urls.push({ loc: base + "/bandas/" + band.id, lastmod: band.created_at });
+    for (const interview of interviews) urls.push({ loc: base + "/entrevistas/" + interview.id, lastmod: interview.created_at });
+    for (const event of events) urls.push({ loc: base + "/eventos/" + event.id, lastmod: event.created_at });
+    const escapeXml = (value) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/\'/g, "&apos;");
+    const entries = urls.map(({ loc, lastmod }) => "  <url><loc>" + escapeXml(loc) + "</loc>" + (lastmod ? "<lastmod>" + new Date(lastmod).toISOString().slice(0, 10) + "</lastmod>" : "") + "</url>").join("\n");
+    res.set("Content-Type", "application/xml; charset=utf-8");
+    res.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
+    res.send('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + entries + "\n</urlset>");
+  } catch (err) {
+    console.error("Erro ao gerar sitemap:", err);
+    res.status(500).type("text/plain").send("Não foi possível gerar o sitemap.");
+  }
+});
+// Inicialização compatível com Vercel e desenvolvimento local.
+// Em produção serverless, o banco é inicializado sob demanda pelo middleware acima.
+app.get("/api/cron/rss", async (req, res) => {
+  try {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ error: "Não autorizado" });
+    }
+    await autoImportRss();
+    res.json({ success: true, message: "Importação RSS concluída" });
+  } catch (err) {
+    console.error("Erro no cron RSS:", err);
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
+  }
+});
+
+module.exports = app;
+
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  ensureInitialized()
+    .then(() => {
+      app.listen(PORT, () => console.log(`🚀 Server ON: http://localhost:${PORT}`));
+    })
+    .catch(err => {
+      console.error("❌ Erro ao iniciar servidor:", err);
+      process.exit(1);
+    });
+}
+
+        AND e.date::date BETWEEN CURRENT_DATE AND CURRENT_DATE + 1
+      ORDER BY e.date ASC`, [userId]);
+    for (const event of upcomingEvents) {
+      const daysUntil = Math.round((new Date(event.date + "T12:00:00Z").getTime() - new Date().setUTCHours(12, 0, 0, 0)) / 86400000);
+      const eventName = String(event.title || event.artist || "Seu show salvo").trim();
+      const timing = daysUntil <= 0 ? "acontece hoje" : "acontece amanhã";
+      await db.run(`INSERT INTO fan_notifications (user_id, type, title, message, link, source_key)
+        VALUES ($1, 'event', $2, $3, $4, $5)
+        ON CONFLICT (user_id, source_key) DO NOTHING`,
+        [userId, `Lembrete de show: ${eventName}`, `${eventName} ${timing}. Confira os detalhes do evento.`, `/eventos/${event.id}`, `event-reminder:${event.id}:${event.date}`]);
+    }
+
+    const notifications = await db.getAll("SELECT id, type, title, message, link, is_read, created_at FROM fan_notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30", [userId]);
     res.set("Cache-Control", "no-store");
     return res.json(notifications);
   } catch (err) {
