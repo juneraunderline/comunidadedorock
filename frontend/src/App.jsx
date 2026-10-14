@@ -221,7 +221,7 @@ function App() {
           <Route path="/eventos/:id" element={<EventDetail />} />
           <Route path="/guias/divulgacao-banda-independente" element={<GuiaDivulgacaoBandas />} />
           <Route path="/contato" element={<Contato />} />
-          <Route path="/cadastrar-banda" element={<CadastrarBanda />} />
+          <Route path="/cadastrar-banda" element={<CadastrarBanda user={user} />} />
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/perfil" element={<Perfil user={user} setUser={handleLogin} />} />
           <Route path="/minha-area" element={<AreaDoFa user={user} />} />
