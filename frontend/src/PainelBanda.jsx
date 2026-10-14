@@ -23,6 +23,8 @@ export default function PainelBanda({ user }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [newRelease, setNewRelease] = useState({ title: "", type: "Single", release_date: "", image: "", spotify: "", youtube: "", description: "" });
+  const [newEvent, setNewEvent] = useState({ title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", ticket_location: "", description: "", contact_email: user?.email || "" });
+  const [sendingEvent, setSendingEvent] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -86,6 +88,33 @@ export default function PainelBanda({ user }) {
               <Link to={`/bandas/${band.id}`} className="btn btn-outline">Ver perfil público</Link>
               <Link to="/cadastrar-evento" className="btn btn-outline">Enviar show / evento</Link>
             </div>
+          </form>
+        </div>
+        <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
+          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Cadastrar show / evento</h2>
+          <p style={{ color: "#999" }}>Envie o evento por aqui. Ele ficará pendente até a aprovação da administração.</p>
+          <form onSubmit={async (event) => {
+            event.preventDefault(); setError(""); setMessage(""); setSendingEvent(true);
+            try {
+              const response = await axios.post(API_URL + "/api/event-submissions", { ...newEvent, artist: newEvent.artist.trim() || band.name }, { headers });
+              setMessage(response.data.message || "Evento enviado para análise da administração.");
+              setNewEvent({ title: "", artist: band.name || "", date: "", time: "", location: "", city: band.city || "", state: band.state || "", image: "", ticket_link: "", ticket_location: "", description: "", contact_email: user?.email || "" });
+            } catch (err) { setError(err.response?.data?.error || "Não foi possível enviar o evento."); }
+            finally { setSendingEvent(false); }
+          }} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Nome do evento (opcional)<input maxLength={250} style={inputStyle} value={newEvent.title} onChange={e => setNewEvent(v => ({ ...v, title: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Bandas / artistas *<textarea required maxLength={1500} style={{ ...inputStyle, minHeight: 75 }} value={newEvent.artist || band.name || ""} onChange={e => setNewEvent(v => ({ ...v, artist: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Data *<input required type="date" style={inputStyle} value={newEvent.date} onChange={e => setNewEvent(v => ({ ...v, date: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Horário<input type="time" style={inputStyle} value={newEvent.time} onChange={e => setNewEvent(v => ({ ...v, time: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Local<input style={inputStyle} value={newEvent.location} onChange={e => setNewEvent(v => ({ ...v, location: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Cidade<input style={inputStyle} value={newEvent.city} onChange={e => setNewEvent(v => ({ ...v, city: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Estado<input style={inputStyle} value={newEvent.state} onChange={e => setNewEvent(v => ({ ...v, state: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Cartaz (URL)<input type="url" style={inputStyle} value={newEvent.image} onChange={e => setNewEvent(v => ({ ...v, image: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Link dos ingressos<input type="url" style={inputStyle} value={newEvent.ticket_link} onChange={e => setNewEvent(v => ({ ...v, ticket_link: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Ponto de venda<input style={inputStyle} value={newEvent.ticket_location} onChange={e => setNewEvent(v => ({ ...v, ticket_location: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>E-mail de contato *<input required type="email" style={inputStyle} value={newEvent.contact_email} onChange={e => setNewEvent(v => ({ ...v, contact_email: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13, gridColumn: "1 / -1" }}>Descrição<textarea maxLength={3000} style={{ ...inputStyle, minHeight: 90 }} value={newEvent.description} onChange={e => setNewEvent(v => ({ ...v, description: e.target.value }))} /></label>
+            <div style={{ gridColumn: "1 / -1" }}><button className="btn btn-primary" type="submit" disabled={sendingEvent}>{sendingEvent ? "Enviando..." : "Enviar evento para moderação"}</button></div>
           </form>
         </div>
         <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
