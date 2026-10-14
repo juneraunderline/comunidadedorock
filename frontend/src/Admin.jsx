@@ -2118,6 +2118,7 @@ export default function Admin({ user: currentUser }) {
               </select>
               <select
                 aria-label={`Vincular banda para ${u.username}`}
+                disabled={u.role === "admin"}
                 value={u.band_id || ""}
                 onChange={async (e) => {
                   const selected = e.target.value;
