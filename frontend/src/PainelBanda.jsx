@@ -44,7 +44,7 @@ export default function PainelBanda({ user }) {
 
   useEffect(() => {
     if (!user) { navigate("/login", { state: { from: "/painel-banda" } }); return; }
-    if (!user.is_band) { setError("Esta área é exclusiva para contas cadastradas como banda. Se você representa uma banda, fale com a administração para orientar a mudança do tipo de conta."); setLoading(false); return; }
+    if (!(user.is_band || user.role === "banda")) { setError("Esta área é exclusiva para contas cadastradas como banda. Se você representa uma banda, fale com a administração para orientar a mudança do tipo de conta."); setLoading(false); return; }
     load();
   }, [user?.id]);
 
@@ -74,7 +74,7 @@ export default function PainelBanda({ user }) {
       <p style={{ color: "#aaa", marginBottom: 24 }}>Solicite acesso ao perfil oficial da sua banda. A equipe revisará a solicitação antes de liberar a edição.</p>
       {message && <div role="status" style={{ background: "#153323", border: "1px solid #2f754b", color: "#a6efbf", padding: 12, borderRadius: 8, marginBottom: 16 }}>{message}</div>}
       {error && <div role="alert" style={{ background: "#3b191d", border: "1px solid #7a3038", color: "#ffb6bd", padding: 12, borderRadius: 8, marginBottom: 16 }}>{error}</div>}
-      {loading ? <p style={{ color: "#aaa" }}>Carregando painel...</p> : !user.is_band ? <Link to="/perfil" className="btn btn-outline">Voltar ao perfil</Link> : band ? <>
+      {loading ? <p style={{ color: "#aaa" }}>Carregando painel...</p> : !(user.is_band || user.role === "banda") ? <Link to="/perfil" className="btn btn-outline">Voltar ao perfil</Link> : band ? <>
         <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
           <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Perfil oficial vinculado: {band.name}</h2>
           <p style={{ color: "#999", marginBottom: 18 }}>As alterações são aplicadas somente ao perfil aprovado vinculado à sua conta.</p>
