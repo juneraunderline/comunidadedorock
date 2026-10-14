@@ -1799,7 +1799,39 @@ app.post("/api/fan/vote", authenticate, async (req, res) => {
 });
 app.get("/api/fan/notifications", authenticate, async (req, res) => {
   try {
-    const notifications = await db.getAll("SELECT id, type, title, message, link, is_read, created_at FROM fan_notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30", [req.authUser.id]);
+    const userId = req.authUser.id;
+    // Uma notificação por fã e por semana, sem serviços externos nem tarefas agendadas.
+    const currentWeek = await db.getOne("SELECT to_char(date_trunc('week', CURRENT_DATE), 'YYYY-MM-DD') AS week_start");
+    if (currentWeek?.week_start) {
+      await db.run(`INSERT INTO fan_notifications (user_id, type, title, message, link, source_key)
+        SELECT DISTINCT f.user_id, 'vote', 'Nova votação da Banda da Semana',
+          'A votação desta semana está aberta. Escolha sua banda favorita!',
+          '/votacao', 'weekly-vote:' || $1::text
+        FROM fan_favorite_bands f
+        WHERE f.user_id = $2
+        ON CONFLICT (user_id, source_key) DO NOTHING`, [currentWeek.week_start, userId]);
+    }
+
+    // Lembretes somente para shows salvos, aprovados e com data ISO válida hoje ou amanhã.
+    const upcomingEvents = await db.getAll(`SELECT e.id, e.title, e.artist, e.date, (e.date::date - CURRENT_DATE)::int AS days_until
+      FROM fan_event_watchlist w
+      JOIN events e ON e.id = w.event_id
+      WHERE w.user_id = $1
+        AND e.status = 'approved'
+        AND e.date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+        AND e.date::date BETWEEN CURRENT_DATE AND CURRENT_DATE + 1
+      ORDER BY e.date ASC`, [userId]);
+    for (const event of upcomingEvents) {
+      const daysUntil = Number(event.days_until || 0);
+      const eventName = String(event.title || event.artist || "Seu show salvo").trim();
+      const timing = daysUntil <= 0 ? "acontece hoje" : "acontece amanhã";
+      await db.run(`INSERT INTO fan_notifications (user_id, type, title, message, link, source_key)
+        VALUES ($1, 'event', $2, $3, $4, $5)
+        ON CONFLICT (user_id, source_key) DO NOTHING`,
+        [userId, `Lembrete de show: ${eventName}`, `${eventName} ${timing}. Confira os detalhes do evento.`, `/eventos/${event.id}`, `event-reminder:${event.id}:${event.date}`]);
+    }
+
+    const notifications = await db.getAll("SELECT id, type, title, message, link, is_read, created_at FROM fan_notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30", [userId]);
     res.set("Cache-Control", "no-store");
     return res.json(notifications);
   } catch (err) {
