@@ -72,7 +72,7 @@ export default function PainelBanda({ user }) {
             { id: "lancamento", emoji: "🎵", title: "Lançamentos", description: "Envie singles, EPs, álbuns, demos e clipes para divulgação.", action: "Enviar lançamento", color: "#bd83ff" },
             { id: "evento", emoji: "🎤", title: "Shows e eventos", description: "Divulgue datas de shows, locais, cartazes e links de ingressos.", action: "Cadastrar evento", color: "#ff8b67" }
           ].map(item => <button key={item.id} type="button" onClick={() => setActiveSection(item.id)} style={{ textAlign: "left", background: "#15151d", border: "1px solid #34343d", borderRadius: 14, padding: 20, color: "#fff", cursor: "pointer", display: "flex", flexDirection: "column", gap: 10, minHeight: 205 }}>
-            <span style={{ width: 48, height: 48, display: "grid", placeItems: "center", background: "#24242d", borderRadius: 12, fontSize: 27 }}>{item.emoji}</span>
+            <span style={{ width: 48, height: 48, display: "grid", placeItems: "center", background: "#24242d", borderRadius: 12, fontSize: 27, overflow: "hidden", flexShrink: 0 }}>{item.id === "perfil" && band.image ? <img src={band.image} alt={`Imagem de ${band.name}`} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.currentTarget.style.display = "none"; }} /> : item.emoji}</span>
             <strong style={{ fontSize: 18 }}>{item.title}</strong>
             <span style={{ color: "#aaa", fontSize: 13, lineHeight: 1.6, flex: 1 }}>{item.description}</span>
             <span style={{ color: item.color, fontSize: 13, fontWeight: 800 }}>{item.action} →</span>
