@@ -1352,10 +1352,45 @@ app.put("/api/user/:id", async (req, res) => {
 // Gerenciamento de usuários (admin)
 app.get("/api/users", async (req, res) => {
   try {
-    res.json(await db.getAll("SELECT id, username, display_name, avatar, role, created_at FROM users ORDER BY created_at DESC"));
+    res.json(await db.getAll("SELECT u.id, u.username, u.display_name, u.avatar, u.role, u.created_at, ba.band_id, b.name AS band_name FROM users u LEFT JOIN band_accounts ba ON ba.user_id = u.id LEFT JOIN bands b ON b.id = ba.band_id ORDER BY u.created_at DESC"));
   } catch (err) {
     res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
+});
+
+// Vínculo de uma conta a um perfil de banda: operação exclusiva da administração.
+app.put("/api/user/:id/band", async (req, res) => {
+  if (req.authUser?.role !== "admin") return res.status(403).json({ error: "Somente a administração pode vincular contas a bandas." });
+  if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido." });
+  const bandId = req.body?.band_id === null || req.body?.band_id === "" ? null : Number(req.body?.band_id);
+  if (bandId !== null && !isValidPositiveId(bandId)) return res.status(400).json({ error: "Selecione uma banda válida." });
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const userResult = await client.query("SELECT id, role FROM users WHERE id = $1 FOR UPDATE", [req.params.id]);
+    if (!userResult.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Usuário não encontrado." }); }
+    if (bandId !== null) {
+      const bandResult = await client.query("SELECT id FROM bands WHERE id = $1", [bandId]);
+      if (!bandResult.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Banda não encontrada." }); }
+      const linked = await client.query("SELECT user_id FROM band_accounts WHERE band_id = $1 FOR UPDATE", [bandId]);
+      if (linked.rows.some(row => Number(row.user_id) !== Number(req.params.id))) {
+        await client.query("ROLLBACK"); return res.status(409).json({ error: "Esta banda já está vinculada a outra conta. Revise o vínculo antes de continuar." });
+      }
+    }
+    await client.query("DELETE FROM band_accounts WHERE user_id = $1", [req.params.id]);
+    if (bandId !== null) {
+      await client.query("INSERT INTO band_accounts (user_id, band_id) VALUES ($1, $2) ON CONFLICT (user_id, band_id) DO NOTHING", [req.params.id, bandId]);
+      await client.query("UPDATE users SET role = 'banda', is_band = TRUE WHERE id = $1", [req.params.id]);
+    } else {
+      await client.query("UPDATE users SET is_band = FALSE WHERE id = $1", [req.params.id]);
+    }
+    await client.query("COMMIT");
+    return res.json({ success: true, band_id: bandId });
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("Falha ao vincular conta à banda:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível salvar o vínculo da banda." });
+  } finally { client.release(); }
 });
 
 app.put("/api/user/:id/role", async (req, res) => {
@@ -1395,20 +1430,7 @@ app.get("/api/band-claims/mine", async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Não foi possível carregar suas solicitações." }); }
 });
 app.post("/api/band-claims", async (req, res) => {
-  const bandId = req.body?.band_id;
-  const message = typeof req.body?.message === "string" ? req.body.message.trim().slice(0, 1000) : "";
-  if (!isValidPositiveId(bandId)) return res.status(400).json({ error: "Selecione uma banda válida." });
-  try {
-    const band = await db.getOne("SELECT id FROM bands WHERE id = $1", [bandId]);
-    if (!band) return res.status(404).json({ error: "Banda não encontrada." });
-    const alreadyManaged = await db.getOne("SELECT user_id FROM band_accounts WHERE band_id = $1", [bandId]);
-    if (alreadyManaged) return res.status(409).json({ error: "Esta banda já possui um representante vinculado. Entre em contato com a administração." });
-    const existing = await db.getOne("SELECT id, status FROM band_claim_requests WHERE user_id = $1 AND band_id = $2", [req.authUser.id, bandId]);
-    if (existing?.status === "pending") return res.status(409).json({ error: "Você já tem uma solicitação pendente para esta banda." });
-    if (existing?.status === "approved") return res.status(409).json({ error: "Esta solicitação já foi aprovada." });
-    const result = await db.getOne(`INSERT INTO band_claim_requests (user_id, band_id, message, status, created_at, reviewed_at) VALUES ($1, $2, $3, 'pending', NOW(), NULL) ON CONFLICT (user_id, band_id) DO UPDATE SET message = EXCLUDED.message, status = 'pending', created_at = NOW(), reviewed_at = NULL RETURNING id, band_id, message, status, created_at`, [req.authUser.id, bandId, message]);
-    res.status(201).json({ success: true, claim: result, message: "Solicitação enviada para análise da Comunidade do Rock." });
-  } catch (err) { console.error("Falha ao solicitar acesso à banda:", err.code || "DB_ERROR"); res.status(500).json({ error: "Não foi possível enviar a solicitação." }); }
+  return res.status(403).json({ error: "A vinculação de perfis é feita exclusivamente pela administração da Comunidade do Rock." });
 });
 app.get("/api/band-claims", async (req, res) => {
   try {
