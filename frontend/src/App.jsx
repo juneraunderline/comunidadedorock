@@ -19,6 +19,7 @@ import Contato from "./Contato";
 import CadastrarBanda from "./CadastrarBanda";
 import Admin from "./Admin";
 import Perfil from "./Perfil";
+import PainelBanda from "./PainelBanda";
 import AreaDoFa from "./AreaDoFa";
 import Votacao from "./Votacao";
 import Login from "./Login";
@@ -224,6 +225,7 @@ function App() {
           <Route path="/cadastrar-banda" element={<CadastrarBanda user={user} />} />
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/perfil" element={<Perfil user={user} setUser={handleLogin} />} />
+          <Route path="/painel-banda" element={<PainelBanda user={user} />} />
           <Route path="/minha-area" element={<AreaDoFa user={user} />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/privacidade" element={<PoliticaPrivacidade />} />

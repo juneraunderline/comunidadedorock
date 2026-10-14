@@ -1,0 +1,139 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import API_URL from "./config/api";
+
+const inputStyle = { width: "100%", padding: "11px 12px", background: "#10101a", border: "1px solid #34343d", borderRadius: "7px", color: "#fff", fontSize: "14px", boxSizing: "border-box" };
+const fields = [
+  ["name", "Nome da banda"], ["genre", "Gênero musical"], ["city", "Cidade"], ["state", "Estado"],
+  ["year", "Ano de formação"], ["contact", "Contato / e-mail"], ["instagram", "Instagram"],
+  ["facebook", "Facebook"], ["youtube", "YouTube"], ["spotify", "Spotify"], ["bandcamp", "Bandcamp"], ["site", "Site oficial"]
+];
+
+export default function PainelBanda({ user }) {
+  const navigate = useNavigate();
+  const token = localStorage.getItem("cdr_session_token");
+  const headers = useMemo(() => token ? { Authorization: `Bearer ${token}` } : {}, [token]);
+  const [bands, setBands] = useState([]);
+  const [band, setBand] = useState(null);
+  const [claims, setClaims] = useState([]);
+  const [selectedBand, setSelectedBand] = useState("");
+  const [claimMessage, setClaimMessage] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [newRelease, setNewRelease] = useState({ title: "", type: "Single", release_date: "", image: "", spotify: "", youtube: "", description: "" });
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setError("");
+    try {
+      const [mine, directory] = await Promise.all([
+        axios.get(`${API_URL}/api/band-claims/mine`, { headers }),
+        axios.get(`${API_URL}/api/bands`, { params: { limit: 500, sort: "recent" } })
+      ]);
+      setClaims(mine.data.claims || []);
+      setBands(Array.isArray(directory.data) ? directory.data : []);
+      if (mine.data.bands?.length) setBand((await axios.get(`${API_URL}/api/my-band`, { headers })).data);
+      else setBand(null);
+    } catch (err) { setError(err.response?.data?.error || "Não foi possível carregar o painel."); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => {
+    if (!user) { navigate("/login", { state: { from: "/painel-banda" } }); return; }
+    if (!user.is_band) { setError("Esta área é exclusiva para contas cadastradas como banda. Se você representa uma banda, fale com a administração para orientar a mudança do tipo de conta."); setLoading(false); return; }
+    load();
+  }, [user?.id]);
+
+  const submitClaim = async (event) => {
+    event.preventDefault(); setError(""); setMessage("");
+    if (!selectedBand) return setError("Escolha a banda cujo perfil você representa.");
+    try {
+      const response = await axios.post(`${API_URL}/api/band-claims`, { band_id: Number(selectedBand), message: claimMessage }, { headers });
+      setMessage(response.data.message || "Solicitação enviada para análise.");
+      setClaimMessage(""); setSelectedBand(""); await load();
+    } catch (err) { setError(err.response?.data?.error || "Não foi possível enviar a solicitação."); }
+  };
+
+  const saveBand = async (event) => {
+    event.preventDefault(); setError(""); setMessage(""); setSaving(true);
+    try {
+      const response = await axios.put(`${API_URL}/api/my-band`, band, { headers });
+      setBand(response.data.band); setMessage("Perfil atualizado com sucesso.");
+    } catch (err) { setError(err.response?.data?.error || "Não foi possível salvar o perfil."); }
+    finally { setSaving(false); }
+  };
+
+  if (!user) return null;
+  return <section className="section" style={{ marginTop: 80, minHeight: "75vh" }}>
+    <div style={{ maxWidth: 900, margin: "0 auto" }}>
+      <h1 style={{ color: "#fff", marginBottom: 8 }}>PAINEL <span className="highlight">DA BANDA</span></h1>
+      <p style={{ color: "#aaa", marginBottom: 24 }}>Solicite acesso ao perfil oficial da sua banda. A equipe revisará a solicitação antes de liberar a edição.</p>
+      {message && <div role="status" style={{ background: "#153323", border: "1px solid #2f754b", color: "#a6efbf", padding: 12, borderRadius: 8, marginBottom: 16 }}>{message}</div>}
+      {error && <div role="alert" style={{ background: "#3b191d", border: "1px solid #7a3038", color: "#ffb6bd", padding: 12, borderRadius: 8, marginBottom: 16 }}>{error}</div>}
+      {loading ? <p style={{ color: "#aaa" }}>Carregando painel...</p> : !user.is_band ? <Link to="/perfil" className="btn btn-outline">Voltar ao perfil</Link> : band ? <>
+        <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
+          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Perfil oficial vinculado: {band.name}</h2>
+          <p style={{ color: "#999", marginBottom: 18 }}>As alterações são aplicadas somente ao perfil aprovado vinculado à sua conta.</p>
+          <form onSubmit={saveBand} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14 }}>
+            {fields.map(([key, label]) => <label key={key} style={{ color: "#ccc", fontSize: 13 }}>{label}<input style={inputStyle} value={band[key] || ""} onChange={e => setBand(current => ({ ...current, [key]: e.target.value }))} maxLength={2000} /></label>)}
+            <label style={{ color: "#ccc", fontSize: 13, gridColumn: "1 / -1" }}>Integrantes (um por linha: Nome — instrumento/função — @instagram)<textarea style={{ ...inputStyle, minHeight: 110 }} value={band.members || ""} onChange={e => setBand(current => ({ ...current, members: e.target.value }))} maxLength={5000} /></label>
+            <label style={{ color: "#ccc", fontSize: 13, gridColumn: "1 / -1" }}>Biografia<textarea style={{ ...inputStyle, minHeight: 150 }} value={band.biography || ""} onChange={e => setBand(current => ({ ...current, biography: e.target.value }))} maxLength={12000} /></label>
+            <label style={{ color: "#ccc", fontSize: 13, gridColumn: "1 / -1" }}>URL segura da imagem (HTTPS)<input style={inputStyle} value={band.image || ""} onChange={e => setBand(current => ({ ...current, image: e.target.value }))} maxLength={2000} /></label>
+            <div style={{ gridColumn: "1 / -1", display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar alterações"}</button>
+              <Link to={`/bandas/${band.id}`} className="btn btn-outline">Ver perfil público</Link>
+              <Link to="/cadastrar-evento" className="btn btn-outline">Enviar show / evento</Link>
+            </div>
+          </form>
+        </div>
+        <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
+          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Enviar novo lançamento</h2>
+          <p style={{ color: "#999", marginBottom: 16 }}>Singles, EPs, álbuns, demos e clipes passam por aprovação antes de aparecer no portal.</p>
+          <form onSubmit={async (event) => {
+            event.preventDefault(); setError(""); setMessage("");
+            try {
+              const response = await axios.post(API_URL + "/api/band-release-submissions", newRelease, { headers });
+              setMessage(response.data.message || "Lançamento enviado para moderação.");
+              setNewRelease({ title: "", type: "Single", release_date: "", image: "", spotify: "", youtube: "", description: "" });
+            } catch (err) { setError(err.response?.data?.error || "Não foi possível enviar o lançamento."); }
+          }} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Título<input required maxLength={250} style={inputStyle} value={newRelease.title} onChange={e => setNewRelease(current => ({ ...current, title: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Tipo<select style={inputStyle} value={newRelease.type} onChange={e => setNewRelease(current => ({ ...current, type: e.target.value }))}>{["Single", "EP", "Álbum", "Clipe", "Demo"].map(type => <option key={type}>{type}</option>)}</select></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Data<input type="date" style={inputStyle} value={newRelease.release_date} onChange={e => setNewRelease(current => ({ ...current, release_date: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Imagem (URL)<input type="url" style={inputStyle} value={newRelease.image} onChange={e => setNewRelease(current => ({ ...current, image: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Spotify<input type="url" style={inputStyle} value={newRelease.spotify} onChange={e => setNewRelease(current => ({ ...current, spotify: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>YouTube<input type="url" style={inputStyle} value={newRelease.youtube} onChange={e => setNewRelease(current => ({ ...current, youtube: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13, gridColumn: "1 / -1" }}>Descrição<textarea maxLength={8000} style={{ ...inputStyle, minHeight: 100 }} value={newRelease.description} onChange={e => setNewRelease(current => ({ ...current, description: e.target.value }))} /></label>
+            <div style={{ gridColumn: "1 / -1" }}><button className="btn btn-primary" type="submit">Enviar para aprovação</button></div>
+          </form>
+        </div>
+      </> : <>
+        <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
+          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Solicitar acesso ao perfil existente</h2>
+          <p style={{ color: "#aaa", marginBottom: 18 }}>Selecione a banda cadastrada e explique brevemente sua relação com ela. Não solicite acesso a uma banda que você não representa.</p>
+          <form onSubmit={submitClaim} style={{ display: "grid", gap: 12 }}>
+            <label style={{ color: "#ddd", fontSize: 13 }}>Banda
+              <select value={selectedBand} onChange={e => setSelectedBand(e.target.value)} required style={inputStyle}>
+                <option value="">Selecione uma banda</option>
+                {bands.map(item => <option key={item.id} value={item.id}>{item.name}{item.city ? ` — ${item.city}` : ""}</option>)}
+              </select>
+            </label>
+            <label style={{ color: "#ddd", fontSize: 13 }}>Como você representa essa banda? (opcional)
+              <textarea value={claimMessage} onChange={e => setClaimMessage(e.target.value)} maxLength={1000} placeholder="Ex.: sou vocalista e responsável pelas redes oficiais." style={{ ...inputStyle, minHeight: 90 }} />
+            </label>
+            <button className="btn btn-primary" type="submit">Solicitar aprovação</button>
+          </form>
+        </div>
+        <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22 }}>
+          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Minhas solicitações</h2>
+          {claims.length === 0 ? <p style={{ color: "#999" }}>Você ainda não enviou solicitações.</p> : claims.map(claim => <div key={claim.id} style={{ padding: "12px 0", borderBottom: "1px solid #30303a" }}>
+            <strong>{claim.band_name}</strong><span style={{ marginLeft: 10, color: claim.status === "approved" ? "#79dfa0" : claim.status === "rejected" ? "#ff9999" : "#f0cc69" }}>{claim.status === "approved" ? "Aprovada" : claim.status === "rejected" ? "Rejeitada" : "Em análise"}</span>
+          </div>)}
+        </div>
+        <p style={{ marginTop: 18, color: "#999" }}>Sua banda ainda não aparece no diretório? <Link to="/cadastrar-banda" style={{ color: "#e9b61e" }}>Cadastre uma banda nova para aprovação</Link>.</p>
+      </>}
+    </div>
+  </section>;
+}

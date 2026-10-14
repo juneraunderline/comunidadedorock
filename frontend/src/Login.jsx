@@ -89,19 +89,18 @@ function Login({ onLogin }) {
           </div>
 
           {isRegister && (
-            <div style={{ marginBottom: "14px", textAlign: "left" }}>
-              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", color: "#ddd", fontSize: "13px", lineHeight: 1.5, cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={isBand}
-                  onChange={e => setIsBand(e.target.checked)}
-                  style={{ marginTop: "3px", accentColor: "#e9b61e" }}
-                />
-                <span>Estou me cadastrando como banda ou artista</span>
-              </label>
-              <p style={{ color: "#888", fontSize: "11px", margin: "5px 0 0 26px" }}>
-                Marque esta opção se a conta será usada para divulgar sua banda ou seus shows.
-              </p>
+            <div style={{ marginBottom: "18px", textAlign: "left" }}>
+              <p style={{ color: "#ddd", fontSize: "13px", fontWeight: 700, marginBottom: "8px" }}>Como você quer participar?</p>
+              <div style={{ display: "grid", gap: "9px" }}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: "11px", padding: "13px", border: `1px solid ${!isBand ? "#e9b61e" : "#34343d"}`, borderRadius: "9px", background: !isBand ? "rgba(233,182,30,.09)" : "#10101a", cursor: "pointer" }}>
+                  <input type="radio" name="accountType" checked={!isBand} onChange={() => setIsBand(false)} style={{ marginTop: "4px", accentColor: "#e9b61e" }} />
+                  <span><strong style={{ display: "block", color: "#fff", fontSize: "14px" }}>🎧 Sou fã de rock</strong><span style={{ display: "block", color: "#999", fontSize: "12px", marginTop: "3px" }}>Favoritar bandas, acompanhar shows e participar das votações.</span></span>
+                </label>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: "11px", padding: "13px", border: `1px solid ${isBand ? "#e9b61e" : "#34343d"}`, borderRadius: "9px", background: isBand ? "rgba(233,182,30,.09)" : "#10101a", cursor: "pointer" }}>
+                  <input type="radio" name="accountType" checked={isBand} onChange={() => setIsBand(true)} style={{ marginTop: "4px", accentColor: "#e9b61e" }} />
+                  <span><strong style={{ display: "block", color: "#fff", fontSize: "14px" }}>🎸 Sou integrante ou representante de uma banda</strong><span style={{ display: "block", color: "#999", fontSize: "12px", marginTop: "3px" }}>Solicitar acesso ao perfil oficial da banda após criar a conta.</span></span>
+                </label>
+              </div>
             </div>
           )}
 
