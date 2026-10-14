@@ -163,7 +163,7 @@ function App() {
             <NavLink to="/bandas" onClick={() => setMenuOpen(false)}>BANDAS NOVAS</NavLink>
             <NavLink to="/entrevistas" onClick={() => setMenuOpen(false)}>ENTREVISTAS</NavLink>
             <NavLink to="/eventos" onClick={() => setMenuOpen(false)}>EVENTOS</NavLink>
-            {user && <NavLink to="/minha-area" onClick={() => setMenuOpen(false)}>MINHA ÁREA</NavLink>}
+            <NavLink to="/minha-area" onClick={() => setMenuOpen(false)}>MINHA ÁREA</NavLink>
             <NavLink to="/contato" onClick={() => setMenuOpen(false)}>CONTATO</NavLink>
           </nav>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
