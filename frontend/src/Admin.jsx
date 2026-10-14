@@ -129,6 +129,7 @@ export default function Admin({ user: currentUser }) {
   const [feedLogo, setFeedLogo] = useState("");
   const [loadingFeeds, setLoadingFeeds] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
+  const [bandClaims, setBandClaims] = useState([]);
   const [editingLogoId, setEditingLogoId] = useState(null);
   const [editingLogoUrl, setEditingLogoUrl] = useState("");
   const [editingFeedId, setEditingFeedId] = useState(null);
@@ -193,6 +194,7 @@ export default function Admin({ user: currentUser }) {
     axios.get(`${API_URL}/api/rss-feeds`).then(res => setRssFeeds(res.data));
     fetchRssStatuses();
     axios.get(`${API_URL}/api/users`).then(res => setAllUsers(res.data)).catch(() => {});
+    axios.get(`${API_URL}/api/band-claims`).then(res => setBandClaims(Array.isArray(res.data) ? res.data : [])).catch(() => setBandClaims([]));
   };
 
   useEffect(() => {
@@ -854,6 +856,7 @@ export default function Admin({ user: currentUser }) {
         <button className={activeTab === "eventos" ? "active" : ""} onClick={() => setActiveTab("eventos")}>EVENTOS</button>
         {isAdmin && <button className={activeTab === "lancamentos" ? "active" : ""} onClick={() => setActiveTab("lancamentos")}>LANÇAMENTOS</button>}
         {isAdmin && <button className={activeTab === "usuarios" ? "active" : ""} onClick={() => setActiveTab("usuarios")}>USUÁRIOS</button>}
+        {isAdmin && <button className={activeTab === "solicitacoes-banda" ? "active" : ""} onClick={() => setActiveTab("solicitacoes-banda")}>ACESSO ÀS BANDAS{bandClaims.filter(item => item.status === "pending").length ? ` (${bandClaims.filter(item => item.status === "pending").length})` : ""}</button>}
       </div>
 
       {activeTab === "rss" && (
@@ -2050,6 +2053,36 @@ export default function Admin({ user: currentUser }) {
           ))}
         </div>
       </section>
+      )}
+
+      {activeTab === "solicitacoes-banda" && isAdmin && (
+        <section className="admin-card">
+          <h2>SOLICITAÇÕES DE ACESSO A PERFIS DE BANDAS</h2>
+          <p style={{ color: "#999", marginBottom: "18px" }}>A aprovação vincula uma única conta representante ao perfil oficial. A escolha de conta de banda, por si só, nunca libera edição.</p>
+          {bandClaims.length === 0 && <p style={{ color: "#888" }}>Nenhuma solicitação recebida.</p>}
+          {bandClaims.map(claim => (
+            <div key={claim.id} className="post-item" style={{ alignItems: "center", gap: "14px" }}>
+              <div className="post-info" style={{ flex: 1 }}>
+                <h4>{claim.band_name}</h4>
+                <p>Solicitante: {claim.display_name || claim.username} (@{claim.username}) · {claim.is_band ? "Conta de banda" : "Conta de fã"}</p>
+                <p style={{ color: "#777" }}>Enviada em {new Date(claim.created_at).toLocaleString("pt-BR")}</p>
+                {claim.message && <p style={{ color: "#bbb", whiteSpace: "pre-wrap" }}>Justificativa: {claim.message}</p>}
+                <p style={{ color: claim.status === "approved" ? "#70d69b" : claim.status === "rejected" ? "#ff9999" : "#f0cc69", fontWeight: 700 }}>Status: {claim.status === "approved" ? "Aprovada" : claim.status === "rejected" ? "Rejeitada" : "Pendente"}</p>
+              </div>
+              {claim.status === "pending" && <div className="post-actions">
+                <button className="btn btn-primary" onClick={async () => {
+                  if (!confirm(`Confirmar que @${claim.username} representa a banda "${claim.band_name}"?`)) return;
+                  try { await axios.patch(`${API_URL}/api/band-claims/${claim.id}`, { status: "approved" }); fetchData(); alert("Acesso ao perfil aprovado."); }
+                  catch (err) { alert(err.response?.data?.error || "Não foi possível aprovar."); }
+                }}>Aprovar</button>
+                <button className="btn btn-outline" onClick={async () => {
+                  try { await axios.patch(`${API_URL}/api/band-claims/${claim.id}`, { status: "rejected" }); fetchData(); }
+                  catch (err) { alert(err.response?.data?.error || "Não foi possível rejeitar."); }
+                }}>Rejeitar</button>
+              </div>}
+            </div>
+          ))}
+        </section>
       )}
 
       {activeTab === "usuarios" && isAdmin && (
