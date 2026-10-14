@@ -200,6 +200,10 @@ const initDb = async () => {
   await db.run(`CREATE INDEX IF NOT EXISTS idx_fan_event_watchlist_event_id ON fan_event_watchlist (event_id)`);
   await db.run(`CREATE TABLE IF NOT EXISTS fan_weekly_votes (user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, week_start DATE NOT NULL, band_id INTEGER NOT NULL REFERENCES bands(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (user_id, week_start))`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_fan_weekly_votes_band_week ON fan_weekly_votes (band_id, week_start)`);
+  await db.run("CREATE TABLE IF NOT EXISTS fan_weekly_band_suggestions (id SERIAL PRIMARY KEY, name TEXT NOT NULL, normalized_name TEXT NOT NULL UNIQUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+  await db.run("ALTER TABLE fan_weekly_votes ALTER COLUMN band_id DROP NOT NULL");
+  await db.run("ALTER TABLE fan_weekly_votes ADD COLUMN IF NOT EXISTS candidate_id INTEGER REFERENCES fan_weekly_band_suggestions(id) ON DELETE CASCADE");
+  await db.run("CREATE INDEX IF NOT EXISTS idx_fan_weekly_votes_candidate_week ON fan_weekly_votes (candidate_id, week_start)");
   await db.run(`CREATE TABLE IF NOT EXISTS fan_notifications (id BIGSERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, type TEXT NOT NULL DEFAULT 'news', title TEXT NOT NULL, message TEXT, link TEXT, source_key TEXT, is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (user_id, source_key))`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_fan_notifications_user_created ON fan_notifications (user_id, created_at DESC)`);
 };
@@ -1934,12 +1938,34 @@ app.get("/api/fan/data", authenticate, async (req, res) => {
 });
 
 
-// Resultados públicos: qualquer visitante pode conhecer as bandas e acompanhar a votação.
+// A votação reúne bandas cadastradas e sugestões dos fãs. Bandas aprovadas entram automaticamente.
+async function getWeeklyVotingCandidates() {
+  const bands = await db.getAll("SELECT b.id, b.name, b.image, COUNT(v.user_id)::int AS votes FROM bands b LEFT JOIN fan_weekly_votes v ON v.band_id = b.id AND v.week_start = date_trunc('week', CURRENT_DATE)::date GROUP BY b.id ORDER BY votes DESC, b.name ASC LIMIT 100");
+  const suggestions = await db.getAll("SELECT s.id AS candidate_id, s.name, COUNT(v.user_id)::int AS votes FROM fan_weekly_band_suggestions s LEFT JOIN fan_weekly_votes v ON v.candidate_id = s.id AND v.week_start = date_trunc('week', CURRENT_DATE)::date GROUP BY s.id ORDER BY votes DESC, s.name ASC LIMIT 100");
+  const merged = bands.map((b) => ({ ...b, candidate_type: "band" })).concat(suggestions.map((c) => ({ id: -Number(c.candidate_id), candidate_id: Number(c.candidate_id), name: c.name, image: null, votes: Number(c.votes || 0), candidate_type: "suggestion" })));
+  return merged.sort((a, b) => Number(b.votes || 0) - Number(a.votes || 0) || String(a.name).localeCompare(String(b.name), "pt-BR")).slice(0, 150);
+}
+
+app.post("/api/votacao/sugerir", async (req, res) => {
+  const name = typeof req.body?.name === "string" ? req.body.name.trim().replace(/\s+/g, " ") : "";
+  if (name.length < 2 || name.length > 80) return res.status(400).json({ error: "Informe o nome da banda (de 2 a 80 caracteres)." });
+  const normalize = (value) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const normalizedName = normalize(name);
+  try {
+    const registered = await db.getAll("SELECT name FROM bands");
+    if (registered.some((b) => b.name && normalize(b.name) === normalizedName)) return res.status(409).json({ error: "Essa banda já está cadastrada e já aparece na votação." });
+    const candidate = await db.getOne("INSERT INTO fan_weekly_band_suggestions (name, normalized_name) VALUES ($1, $2) ON CONFLICT (normalized_name) DO NOTHING RETURNING id, name", [name, normalizedName]);
+    if (!candidate) return res.status(409).json({ error: "Essa banda já foi sugerida e já está na lista de votação." });
+    return res.status(201).json({ success: true, candidate: { id: -Number(candidate.id), candidate_id: Number(candidate.id), name: candidate.name, image: null, votes: 0, candidate_type: "suggestion" }, message: "Banda adicionada à lista de votação!" });
+  } catch (err) {
+    console.error("Erro ao sugerir banda para votação:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível adicionar essa banda agora." });
+  }
+});
+
 app.get("/api/votacao", async (req, res) => {
   try {
-    const bands = await db.getAll(`SELECT b.id, b.name, b.image, COUNT(v.user_id)::int AS votes
-      FROM bands b LEFT JOIN fan_weekly_votes v ON v.band_id = b.id AND v.week_start = date_trunc('week', CURRENT_DATE)::date
-      GROUP BY b.id ORDER BY votes DESC, b.name ASC LIMIT 100`);
+    const bands = await getWeeklyVotingCandidates();
     const week = await db.getOne("SELECT date_trunc('week', CURRENT_DATE)::date AS week_start");
     res.set("Cache-Control", "no-store");
     return res.json({ week_start: week?.week_start || null, bands });
@@ -1951,27 +1977,33 @@ app.get("/api/votacao", async (req, res) => {
 
 app.get("/api/fan/vote", authenticate, async (req, res) => {
   try {
-    const currentVote = await db.getOne("SELECT band_id, week_start FROM fan_weekly_votes WHERE user_id = $1 AND week_start = date_trunc('week', CURRENT_DATE)::date", [req.authUser.id]);
-    const bands = await db.getAll(`SELECT b.id, b.name, b.image, COUNT(v.user_id)::int AS votes
-      FROM bands b LEFT JOIN fan_weekly_votes v ON v.band_id = b.id AND v.week_start = date_trunc('week', CURRENT_DATE)::date
-      GROUP BY b.id ORDER BY votes DESC, b.name ASC LIMIT 100`);
+    const currentVote = await db.getOne("SELECT band_id, candidate_id FROM fan_weekly_votes WHERE user_id = $1 AND week_start = date_trunc('week', CURRENT_DATE)::date", [req.authUser.id]);
+    const bands = await getWeeklyVotingCandidates();
     const week = await db.getOne("SELECT date_trunc('week', CURRENT_DATE)::date AS week_start");
+    const votedId = currentVote?.candidate_id ? -Number(currentVote.candidate_id) : currentVote?.band_id ? Number(currentVote.band_id) : null;
     res.set("Cache-Control", "no-store");
-    return res.json({ week_start: week?.week_start || null, voted_band_id: currentVote ? Number(currentVote.band_id) : null, bands });
+    return res.json({ week_start: week?.week_start || null, voted_band_id: votedId, bands });
   } catch (err) {
     console.error("Erro ao carregar votação da semana:", err.code || "DB_ERROR");
     return res.status(500).json({ error: "Não foi possível carregar a votação agora." });
   }
 });
 app.post("/api/fan/vote", authenticate, async (req, res) => {
-  const bandId = Number(req.body?.band_id);
-  if (!Number.isSafeInteger(bandId) || bandId <= 0) return res.status(400).json({ error: "Escolha uma banda válida." });
+  const requestedId = Number(req.body?.band_id);
+  if (!Number.isSafeInteger(requestedId) || requestedId === 0) return res.status(400).json({ error: "Escolha uma banda válida." });
+  const bandId = requestedId > 0 ? requestedId : null;
+  const candidateId = requestedId < 0 ? Math.abs(requestedId) : null;
   try {
-    const band = await db.getOne("SELECT id FROM bands WHERE id = $1", [bandId]);
-    if (!band) return res.status(404).json({ error: "Banda não encontrada." });
-    const inserted = await db.getOne("INSERT INTO fan_weekly_votes (user_id, week_start, band_id) VALUES ($1, date_trunc('week', CURRENT_DATE)::date, $2) ON CONFLICT (user_id, week_start) DO NOTHING RETURNING band_id", [req.authUser.id, bandId]);
+    if (bandId) {
+      const band = await db.getOne("SELECT id FROM bands WHERE id = $1", [bandId]);
+      if (!band) return res.status(404).json({ error: "Banda não encontrada." });
+    } else {
+      const candidate = await db.getOne("SELECT id FROM fan_weekly_band_suggestions WHERE id = $1", [candidateId]);
+      if (!candidate) return res.status(404).json({ error: "Banda sugerida não encontrada." });
+    }
+    const inserted = await db.getOne("INSERT INTO fan_weekly_votes (user_id, week_start, band_id, candidate_id) VALUES ($1, date_trunc('week', CURRENT_DATE)::date, $2, $3) ON CONFLICT (user_id, week_start) DO NOTHING RETURNING band_id, candidate_id", [req.authUser.id, bandId, candidateId]);
     if (!inserted) return res.status(409).json({ error: "Você já votou nesta semana. A votação abre novamente na próxima segunda-feira." });
-    return res.status(201).json({ success: true, band_id: Number(inserted.band_id) });
+    return res.status(201).json({ success: true, band_id: inserted.band_id == null ? null : Number(inserted.band_id), candidate_id: inserted.candidate_id == null ? null : Number(inserted.candidate_id) });
   } catch (err) {
     console.error("Erro ao registrar voto:", err.code || "DB_ERROR");
     return res.status(500).json({ error: "Não foi possível registrar seu voto agora." });
