@@ -1088,6 +1088,7 @@ app.use("/api", async (req, res, next) => {
   const isUserProfile = isPath(path, /^\/user\/\d+$/);
   const isCommentDelete = isPath(path, /^\/comments\/\d+$/) && method === "DELETE";
   const isPublicRead = method === "GET" && (
+    path === "/votacao" ||
     /^\/(posts|bands|band-genres|interviews|releases|events|rss-feeds|comments\/[^/]+\/\d+)$/.test(path) ||
     /^\/posts\/\d+$/.test(path) ||
     /^\/bands\/[^/]+$/.test(path) ||
