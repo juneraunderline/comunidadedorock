@@ -116,7 +116,7 @@ code {
 .votacao-bandas-grid {
   text-align: left;
 }
-@media (max-width: 1050px) {
+@media (max-width: 850px) {
   .votacao-layout {
     grid-template-columns: 210px minmax(0, 1fr) !important;
   }
