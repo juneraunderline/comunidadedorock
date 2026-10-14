@@ -375,6 +375,18 @@ function Home({ posts }) {
         </div>
       </section>
 
+      {/* VOTAÇÃO PÚBLICA */}
+      <section className="section" style={{ paddingTop: "12px", paddingBottom: "12px" }}>
+        <div style={{ background: "linear-gradient(135deg, #17171f, #242015)", border: "1px solid #6d5717", borderRadius: "14px", padding: "clamp(20px, 4vw, 34px)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px", flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 260px" }}>
+            <span style={{ color: "#e9b61e", fontSize: "12px", fontWeight: 800, letterSpacing: "1.5px" }}>A CENA É QUEM ESCOLHE</span>
+            <h2 style={{ color: "#fff", margin: "8px 0", fontSize: "clamp(22px, 4vw, 30px)" }}>🏆 Vote na Banda da Semana</h2>
+            <p style={{ color: "#c3c3cc", margin: 0, lineHeight: 1.6 }}>Conheça as bandas participantes, acompanhe os votos e ajude a fortalecer o rock independente. É grátis participar.</p>
+          </div>
+          <button className="btn btn-primary" onClick={() => navigate("/votacao")} style={{ flexShrink: 0 }}>VER VOTAÇÃO →</button>
+        </div>
+      </section>
+
       {/* CTA PARA BANDAS */}
       <section className="band-cta-section">
         <div className="band-cta-content">

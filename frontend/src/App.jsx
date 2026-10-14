@@ -20,6 +20,7 @@ import CadastrarBanda from "./CadastrarBanda";
 import Admin from "./Admin";
 import Perfil from "./Perfil";
 import AreaDoFa from "./AreaDoFa";
+import Votacao from "./Votacao";
 import Login from "./Login";
 import Sobre from "./Sobre";
 import PoliticaPrivacidade from "./PoliticaPrivacidade";
@@ -163,6 +164,7 @@ function App() {
             <NavLink to="/bandas" onClick={() => setMenuOpen(false)}>BANDAS NOVAS</NavLink>
             <NavLink to="/entrevistas" onClick={() => setMenuOpen(false)}>ENTREVISTAS</NavLink>
             <NavLink to="/eventos" onClick={() => setMenuOpen(false)}>EVENTOS</NavLink>
+            <NavLink to="/votacao" onClick={() => setMenuOpen(false)}>VOTAÇÃO</NavLink>
             <NavLink to="/minha-area" onClick={() => setMenuOpen(false)}>MINHA ÁREA</NavLink>
             <NavLink to="/contato" onClick={() => setMenuOpen(false)}>CONTATO</NavLink>
           </nav>
@@ -214,6 +216,7 @@ function App() {
           <Route path="/entrevistas" element={<Entrevistas />} />
           <Route path="/entrevistas/:id" element={<EntrevistaDetail />} />
           <Route path="/eventos" element={<Eventos />} />
+          <Route path="/votacao" element={<Votacao user={user} />} />
           <Route path="/cadastrar-evento" element={<CadastrarEvento user={user} />} />
           <Route path="/eventos/:id" element={<EventDetail />} />
           <Route path="/guias/divulgacao-banda-independente" element={<GuiaDivulgacaoBandas />} />

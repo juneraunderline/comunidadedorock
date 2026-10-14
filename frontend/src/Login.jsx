@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import API_URL from "./config/api";
 
 function Login({ onLogin }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +34,7 @@ function Login({ onLogin }) {
         if (res.data.success) {
           if (res.data.token) localStorage.setItem("cdr_session_token", res.data.token);
           onLogin(res.data.user);
-          navigate("/");
+          navigate(location.state?.from || "/");
         }
       } else {
         if (!username || !password) return setError("Preencha todos os campos");
@@ -45,7 +46,7 @@ function Login({ onLogin }) {
           if (res.data.token) localStorage.setItem("cdr_session_token", res.data.token);
           onLogin(res.data.user);
           const role = res.data.user.role;
-          navigate(role === "admin" || role === "editor" ? "/admin" : "/");
+          navigate(role === "admin" || role === "editor" ? "/admin" : (location.state?.from || "/"));
         }
       }
     } catch (err) {

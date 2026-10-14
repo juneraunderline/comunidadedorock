@@ -1753,6 +1753,21 @@ app.get("/api/fan/data", authenticate, async (req, res) => {
 });
 
 
+// Resultados públicos: qualquer visitante pode conhecer as bandas e acompanhar a votação.
+app.get("/api/votacao", async (req, res) => {
+  try {
+    const bands = await db.getAll(`SELECT b.id, b.name, b.image, COUNT(v.user_id)::int AS votes
+      FROM bands b LEFT JOIN fan_weekly_votes v ON v.band_id = b.id AND v.week_start = date_trunc('week', CURRENT_DATE)::date
+      GROUP BY b.id ORDER BY votes DESC, b.name ASC LIMIT 100`);
+    const week = await db.getOne("SELECT date_trunc('week', CURRENT_DATE)::date AS week_start");
+    res.set("Cache-Control", "no-store");
+    return res.json({ week_start: week?.week_start || null, bands });
+  } catch (err) {
+    console.error("Erro ao carregar votação pública:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível carregar a votação agora." });
+  }
+});
+
 app.get("/api/fan/vote", authenticate, async (req, res) => {
   try {
     const currentVote = await db.getOne("SELECT band_id, week_start FROM fan_weekly_votes WHERE user_id = $1 AND week_start = date_trunc('week', CURRENT_DATE)::date", [req.authUser.id]);
