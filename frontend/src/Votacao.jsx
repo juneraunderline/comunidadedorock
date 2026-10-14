@@ -151,7 +151,7 @@ function Votacao({ user }) {
           }} style={{ display: "grid", gap: "8px", marginBottom: "18px" }}>
             <label htmlFor="votacao-suggest-band" style={{ fontSize: "12px", color: "#ddd" }}>Nome da banda</label>
             <input id="votacao-suggest-band" value={suggestedBandName} onChange={(event) => setSuggestedBandName(event.target.value)} maxLength={80} minLength={2} required placeholder="Ex.: nome da banda" style={{ width: "100%", boxSizing: "border-box", padding: "10px", borderRadius: "7px", border: "1px solid #383846", background: "#09090e", color: "#fff" }} />
-            <button type="submit" disabled={suggesting || !suggestedBandName.trim()} style={{ ...button, opacity: suggesting || !suggestedBandName.trim() ? 0.65 : 1 }}>{suggesting ? "ADICIONANDO…" : "ADICIONAR À VOTAÇÃO"}</button>
+            <button type="submit" disabled={suggesting || !suggestedBandName.trim()} style={{ ...button, opacity: suggesting || !suggestedBandName.trim() ? 0.65 : 1 }}>{suggesting ? "ADICIONANDO…" : "ENVIAR"}</button>
           </form>
         </aside>
         <div className="votacao-bandas-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "14px", minWidth: 0 }}>
