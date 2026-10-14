@@ -39,6 +39,13 @@ function AreaDoFa({ user }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
+    // Nunca consultar nem alterar dados reais a partir de uma prévia Vercel.
+    // A prévia ainda não possui banco isolado; API_URL aponta para a API oficial.
+    if (window.location.hostname.endsWith(".vercel.app") && API_URL === "https://comunidadedorock-api.vercel.app") {
+      setError("Prévia protegida: os testes com dados reais estão bloqueados até existir um banco de teste isolado.");
+      setLoading(false);
+      return;
+    }
     try {
       const [personal, bandResponse, eventResponse] = await Promise.all([
         axios.get(`${API_URL}/api/fan/data`, { headers: headers(), timeout: 15000 }),
