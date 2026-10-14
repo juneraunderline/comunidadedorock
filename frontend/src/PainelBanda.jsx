@@ -64,7 +64,7 @@ export default function PainelBanda({ user }) {
             <h2 style={{ color: "#fff", margin: "3px 0 4px", fontSize: 23 }}>{band.name}</h2>
             <p style={{ color: "#aaa", fontSize: 13, margin: 0 }}>Gerencie suas informações e envie novidades para a Comunidade do Rock.</p>
           </div>
-          <Link to={\`/bandas/\${band.id}\`} className="btn btn-outline">👀 Ver perfil público</Link>
+          <Link to={`/bandas/${band.id}`} className="btn btn-outline">👀 Ver perfil público</Link>
         </div>
         {activeSection === "inicio" && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14, marginBottom: 22 }}>
           {[
@@ -93,7 +93,6 @@ export default function PainelBanda({ user }) {
               <Link to="/cadastrar-evento" className="btn btn-outline">Enviar show / evento</Link>
             </div>
           </form>
-        </div>
         </div>}
         {activeSection === "evento" && <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
           <h2 style={{ color: "#e9b61e", marginTop: 0 }}>🎤 Cadastrar show / evento</h2>
@@ -121,7 +120,6 @@ export default function PainelBanda({ user }) {
             <label style={{ color: "#ccc", fontSize: 13, gridColumn: "1 / -1" }}>Descrição<textarea maxLength={3000} style={{ ...inputStyle, minHeight: 90 }} value={newEvent.description} onChange={e => setNewEvent(v => ({ ...v, description: e.target.value }))} /></label>
             <div style={{ gridColumn: "1 / -1" }}><button className="btn btn-primary" type="submit" disabled={sendingEvent}>{sendingEvent ? "Enviando..." : "Enviar evento para moderação"}</button></div>
           </form>
-        </div>
         </div>}
         {activeSection === "lancamento" && <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
           <h2 style={{ color: "#e9b61e", marginTop: 0 }}>🎵 Enviar novo lançamento</h2>
