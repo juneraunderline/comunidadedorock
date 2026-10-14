@@ -435,6 +435,22 @@ async function waitForServer() {
     const sessionAfterLogout = await request("/api/session", { token: userToken });
     assert.equal(sessionAfterLogout.status, 401, "token revogado não pode reutilizar a sessão");
 
+    // Testa concorrência real contra o contador PostgreSQL compartilhado.
+    // O banco é cdr_test descartável; limpar os buckets garante uma janela limpa.
+    await client.query("DELETE FROM api_rate_limit_buckets");
+    const concurrentAttempts = await Promise.all(Array.from({ length: 24 }, () =>
+      request("/api/login", { method: "POST", body: { user: "no-such-user", pass: "invalid-password" } })
+    ));
+    const concurrent429 = concurrentAttempts.filter(result => result.status === 429).length;
+    const concurrent401 = concurrentAttempts.filter(result => result.status === 401).length;
+    assert.equal(concurrent429, 14, "24 tentativas simultâneas devem aplicar atomicamente o limite de 10 tentativas de login");
+    assert.equal(concurrent401, 10, "somente 10 tentativas concorrentes devem chegar à autenticação");
+    const concurrentBucket = await client.query(
+      "SELECT hit_count FROM api_rate_limit_buckets WHERE bucket_key LIKE 'auth:%' ORDER BY window_start DESC LIMIT 1"
+    );
+    assert.equal(Number(concurrentBucket.rows[0]?.hit_count), 24, "contador PostgreSQL deve registrar todas as requisições concorrentes");
+    console.log("PASS: rate limit PostgreSQL sob 24 tentativas concorrentes (10 permitidas, 14 bloqueadas).");
+
     let rateLimited = false;
     for (let i = 0; i < 12; i++) {
       const attempt = await request("/api/login", { method: "POST", body: { user: "no-such-user", pass: "invalid-password" } });
