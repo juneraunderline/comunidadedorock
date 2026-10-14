@@ -34,6 +34,10 @@ function AreaDoFa({ user }) {
   const [bands, setBands] = useState([]);
   const [events, setEvents] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [voteData, setVoteData] = useState({ bands: [], voted_band_id: null, week_start: null });
+  const [notifications, setNotifications] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState("");
@@ -72,6 +76,15 @@ function AreaDoFa({ user }) {
       } catch {
         setPosts([]);
       }
+      // Recursos da segunda fase são independentes: falhas não bloqueiam a Área do Fã.
+      const [voteResult, notificationResult, commentResult] = await Promise.allSettled([
+        axios.get(`${API_URL}/api/fan/vote`, { headers: headers(), timeout: 15000 }),
+        axios.get(`${API_URL}/api/fan/notifications`, { headers: headers(), timeout: 15000 }),
+        axios.get(`${API_URL}/api/comments/fan-area/1`, { timeout: 15000 })
+      ]);
+      if (voteResult.status === "fulfilled") setVoteData(voteResult.value.data || { bands: [], voted_band_id: null, week_start: null });
+      if (notificationResult.status === "fulfilled") setNotifications(Array.isArray(notificationResult.value.data) ? notificationResult.value.data : []);
+      if (commentResult.status === "fulfilled") setComments(Array.isArray(commentResult.value.data) ? commentResult.value.data : []);
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 403) {
         setError("Sua sessão expirou. Entre novamente para acessar sua área.");
@@ -150,6 +163,35 @@ function AreaDoFa({ user }) {
     }
   };
 
+
+  const castVote = async (band) => {
+    setSaving("vote"); setError(""); setMessage("");
+    try {
+      await axios.post(`${API_URL}/api/fan/vote`, { band_id: Number(band.id) }, { headers: headers() });
+      setVoteData(current => ({ ...current, voted_band_id: Number(band.id), bands: current.bands.map(item => ({ ...item, votes: Number(item.votes || 0) + (Number(item.id) === Number(band.id) ? 1 : 0) })) }));
+      setMessage(`Seu voto em ${band.name} foi registrado. Valeu por participar!`);
+    } catch (err) { setError(err.response?.data?.error || "Não foi possível registrar seu voto."); }
+    finally { setSaving(""); }
+  };
+  const markNotificationRead = async (notification) => {
+    try {
+      await axios.post(`${API_URL}/api/fan/notifications/${notification.id}/read`, {}, { headers: headers() });
+      setNotifications(current => current.map(item => Number(item.id) === Number(notification.id) ? { ...item, is_read: true } : item));
+    } catch (err) { setError(err.response?.data?.error || "Não foi possível atualizar a notificação."); }
+  };
+  const submitComment = async (event) => {
+    event.preventDefault();
+    const content = commentText.trim();
+    if (content.length < 2 || content.length > 1000) { setError("O comentário precisa ter entre 2 e 1000 caracteres."); return; }
+    setSaving("comment"); setError(""); setMessage("");
+    try {
+      const response = await axios.post(`${API_URL}/api/comments`, { page_type: "fan-area", page_id: 1, content }, { headers: headers() });
+      if (response.data?.comment) setComments(current => [response.data.comment, ...current]);
+      setCommentText(""); setMessage("Comentário publicado na comunidade.");
+    } catch (err) { setError(err.response?.data?.error || "Não foi possível publicar seu comentário."); }
+    finally { setSaving(""); }
+  };
+
   const formatDate = (value) => {
     if (!value) return "Data a confirmar";
     const date = new Date(`${value}T00:00:00`);
@@ -187,6 +229,56 @@ function AreaDoFa({ user }) {
                   {url ? <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: "#e9b61e", fontWeight: 700, fontSize: "13px", marginTop: "auto" }}>Ler no portal original ↗</a> : <span style={{ color: "#777", fontSize: "12px" }}>Link original indisponível</span>}
                 </article>;
               })}
+            </div>
+          )}
+        </section>
+
+
+        <section style={{ marginBottom: "32px" }} aria-labelledby="votacao-fas-title">
+          <h2 id="votacao-fas-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>🏆 Votação da Banda da Semana</h2>
+          <p style={{ color: "#aaa", lineHeight: 1.6, margin: "0 0 14px" }}>Escolha sua favorita. Cada conta pode votar uma vez por semana; a votação reabre na segunda-feira.</p>
+          {voteData.voted_band_id && <div style={{ ...panelStyle, marginBottom: "12px" }} role="status">Seu voto desta semana já foi registrado. Obrigado por fortalecer a cena independente!</div>}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "12px" }}>
+            {(voteData.bands || []).map(band => <article key={band.id} style={{ ...panelStyle, borderColor: Number(band.id) === Number(voteData.voted_band_id) ? "#e9b61e" : "#292936" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                {band.image ? <img src={getImageUrl(band.image)} alt="" loading="lazy" style={{ width: "54px", height: "54px", objectFit: "cover", borderRadius: "8px" }} /> : <span aria-hidden="true" style={{ fontSize: "28px" }}>🎸</span>}
+                <div style={{ minWidth: 0 }}><h3 style={{ margin: 0, fontSize: "16px" }}>{band.name}</h3><p style={{ margin: "4px 0 0", color: "#aaa", fontSize: "12px" }}>{Number(band.votes || 0)} voto(s)</p></div>
+              </div>
+              <button onClick={() => castVote(band)} disabled={saving === "vote" || Boolean(voteData.voted_band_id)} style={{ ...buttonStyle, opacity: voteData.voted_band_id ? 0.65 : 1 }}>{Number(band.id) === Number(voteData.voted_band_id) ? "Seu voto" : voteData.voted_band_id ? "Voto já registrado" : saving === "vote" ? "Registrando..." : "Votar nesta banda"}</button>
+            </article>)}
+            {(!voteData.bands || voteData.bands.length === 0) && <div style={panelStyle}>Ainda não há bandas disponíveis para votação.</div>}
+          </div>
+        </section>
+        <section style={{ marginBottom: "32px" }} aria-labelledby="notificacoes-fas-title">
+          <h2 id="notificacoes-fas-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>🔔 Suas notificações <span style={{ color: "#e9b61e" }}>({notifications.filter(item => !item.is_read).length} novas)</span></h2>
+          <p style={{ color: "#aaa", lineHeight: 1.6, margin: "0 0 14px" }}>Avisos sobre notícias que mencionam suas bandas favoritas.</p>
+          {notifications.length === 0 ? <div style={panelStyle}>Você verá aqui os avisos quando uma notícia importada mencionar uma das suas bandas favoritas.</div> : (
+            <div style={{ display: "grid", gap: "10px" }}>
+              {notifications.map(item => <article key={item.id} style={{ ...panelStyle, borderColor: item.is_read ? "#292936" : "#8d741b" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                  <div><h3 style={{ margin: "0 0 5px", fontSize: "16px" }}>{item.title}</h3><p style={{ color: "#aaa", margin: 0, lineHeight: 1.5 }}>{item.message}</p></div>
+                  {!item.is_read && <button onClick={() => markNotificationRead(item)} style={{ ...buttonStyle, flexShrink: 0, fontSize: "12px" }}>Marcar lida</button>}
+                </div>
+                {item.link && safePostUrl(item.link) && <a href={safePostUrl(item.link)} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", color: "#e9b61e", marginTop: "10px" }}>Abrir notícia ↗</a>}
+              </article>)}
+            </div>
+          )}
+        </section>
+        <section style={{ marginBottom: "32px" }} aria-labelledby="bate-papo-fas-title">
+          <h2 id="bate-papo-fas-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>💬 Conversa entre fãs</h2>
+          <p style={{ color: "#aaa", lineHeight: 1.6, margin: "0 0 14px" }}>Compartilhe uma ideia, recomende uma banda e mantenha o respeito com a comunidade.</p>
+          <form onSubmit={submitComment} style={{ ...panelStyle, marginBottom: "12px" }}>
+            <label htmlFor="fan-comment" style={{ display: "block", marginBottom: "8px", color: "#ddd" }}>Seu comentário</label>
+            <textarea id="fan-comment" value={commentText} onChange={e => setCommentText(e.target.value)} maxLength={1000} rows={3} placeholder="Qual banda você está ouvindo hoje?" style={{ boxSizing: "border-box", width: "100%", resize: "vertical", padding: "12px", borderRadius: "8px", border: "1px solid #333340", background: "#0a0a0e", color: "#fff", marginBottom: "10px" }} />
+            <button type="submit" disabled={saving === "comment" || commentText.trim().length < 2} style={buttonStyle}>{saving === "comment" ? "Publicando..." : "Publicar comentário"}</button>
+          </form>
+          {comments.length === 0 ? <div style={panelStyle}>Ainda não há comentários. Seja o primeiro a puxar assunto!</div> : (
+            <div style={{ display: "grid", gap: "10px" }}>
+              {comments.slice(0, 30).map(item => <article key={item.id} style={panelStyle}>
+                <p style={{ margin: "0 0 6px", fontWeight: 800 }}>{item.user_name || "Fã da Comunidade"}</p>
+                <p style={{ margin: 0, color: "#ccc", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{item.content}</p>
+                <p style={{ margin: "8px 0 0", color: "#777", fontSize: "12px" }}>{item.created_at ? new Date(item.created_at).toLocaleString("pt-BR") : ""}</p>
+              </article>)}
             </div>
           )}
         </section>

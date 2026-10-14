@@ -191,6 +191,10 @@ const initDb = async () => {
   await db.run(`CREATE INDEX IF NOT EXISTS idx_fan_favorite_bands_band_id ON fan_favorite_bands (band_id)`);
   await db.run(`CREATE TABLE IF NOT EXISTS fan_event_watchlist (user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (user_id, event_id))`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_fan_event_watchlist_event_id ON fan_event_watchlist (event_id)`);
+  await db.run(`CREATE TABLE IF NOT EXISTS fan_weekly_votes (user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, week_start DATE NOT NULL, band_id INTEGER NOT NULL REFERENCES bands(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (user_id, week_start))`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_fan_weekly_votes_band_week ON fan_weekly_votes (band_id, week_start)`);
+  await db.run(`CREATE TABLE IF NOT EXISTS fan_notifications (id BIGSERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, type TEXT NOT NULL DEFAULT 'news', title TEXT NOT NULL, message TEXT, link TEXT, source_key TEXT, is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (user_id, source_key))`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_fan_notifications_user_created ON fan_notifications (user_id, created_at DESC)`);
 };
 
 // Carregar Feeds
@@ -438,6 +442,27 @@ async function ensureInitialized() {
     });
   }
   return initializationPromise;
+}
+
+
+async function createFanNotificationsForPost(postId, title, content, link) {
+  try {
+    const haystack = (String(title || "") + " " + String(content || "")).toLocaleLowerCase("pt-BR");
+    if (!haystack.trim()) return;
+    const favorites = await db.getAll("SELECT f.user_id, b.name FROM fan_favorite_bands f JOIN bands b ON b.id = f.band_id WHERE LENGTH(TRIM(b.name)) >= 3");
+    const notified = new Set();
+    for (const favorite of favorites) {
+      const name = String(favorite.name || "").trim();
+      const key = name.toLocaleLowerCase("pt-BR");
+      const userId = Number(favorite.user_id);
+      if (!key || notified.has(userId) || !haystack.includes(key)) continue;
+      notified.add(userId);
+      await db.run("INSERT INTO fan_notifications (user_id, type, title, message, link, source_key) VALUES ($1, 'news', $2, $3, $4, $5) ON CONFLICT (user_id, source_key) DO NOTHING",
+        [userId, "Notícia de uma banda favorita", `Uma notícia nova menciona ${name}.`, link || null, `post:${postId}`]);
+    }
+  } catch (err) {
+    console.warn("Notificações de notícias não concluídas:", err.code || "DB_ERROR");
+  }
 }
 
 async function postAlreadyExists(title, link) {
@@ -1056,7 +1081,7 @@ app.use("/api", async (req, res, next) => {
   const method = req.method.toUpperCase();
   if (path === "/health" || path === "/login" || path === "/register" ||
       path === "/bands/submit" || path === "/cron/rss") return next();
-  if (path === "/fan/data" || /^\/fan\/(favorites|events)(?:\/\d+)?$/.test(path)) return authenticate(req, res, next);
+  if (path === "/fan/data" || /^\/fan\/(favorites|events|vote|notifications)(?:\/\d+(?:\/read)?)?$/.test(path)) return authenticate(req, res, next);
   if (path === "/logout" && method === "POST") return authenticate(req, res, next);
   if (path === "/session" && method === "GET") return authenticate(req, res, next);
 
@@ -1727,6 +1752,56 @@ app.get("/api/fan/data", authenticate, async (req, res) => {
   }
 });
 
+
+app.get("/api/fan/vote", authenticate, async (req, res) => {
+  try {
+    const currentVote = await db.getOne("SELECT band_id, week_start FROM fan_weekly_votes WHERE user_id = $1 AND week_start = date_trunc('week', CURRENT_DATE)::date", [req.authUser.id]);
+    const bands = await db.getAll(`SELECT b.id, b.name, b.image, COUNT(v.user_id)::int AS votes
+      FROM bands b LEFT JOIN fan_weekly_votes v ON v.band_id = b.id AND v.week_start = date_trunc('week', CURRENT_DATE)::date
+      GROUP BY b.id ORDER BY votes DESC, b.name ASC LIMIT 100`);
+    const week = await db.getOne("SELECT date_trunc('week', CURRENT_DATE)::date AS week_start");
+    res.set("Cache-Control", "no-store");
+    return res.json({ week_start: week?.week_start || null, voted_band_id: currentVote ? Number(currentVote.band_id) : null, bands });
+  } catch (err) {
+    console.error("Erro ao carregar votação da semana:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível carregar a votação agora." });
+  }
+});
+app.post("/api/fan/vote", authenticate, async (req, res) => {
+  const bandId = Number(req.body?.band_id);
+  if (!Number.isSafeInteger(bandId) || bandId <= 0) return res.status(400).json({ error: "Escolha uma banda válida." });
+  try {
+    const band = await db.getOne("SELECT id FROM bands WHERE id = $1", [bandId]);
+    if (!band) return res.status(404).json({ error: "Banda não encontrada." });
+    const inserted = await db.getOne("INSERT INTO fan_weekly_votes (user_id, week_start, band_id) VALUES ($1, date_trunc('week', CURRENT_DATE)::date, $2) ON CONFLICT (user_id, week_start) DO NOTHING RETURNING band_id", [req.authUser.id, bandId]);
+    if (!inserted) return res.status(409).json({ error: "Você já votou nesta semana. A votação abre novamente na próxima segunda-feira." });
+    return res.status(201).json({ success: true, band_id: Number(inserted.band_id) });
+  } catch (err) {
+    console.error("Erro ao registrar voto:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível registrar seu voto agora." });
+  }
+});
+app.get("/api/fan/notifications", authenticate, async (req, res) => {
+  try {
+    const notifications = await db.getAll("SELECT id, type, title, message, link, is_read, created_at FROM fan_notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30", [req.authUser.id]);
+    res.set("Cache-Control", "no-store");
+    return res.json(notifications);
+  } catch (err) {
+    console.error("Erro ao carregar notificações do fã:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível carregar suas notificações." });
+  }
+});
+app.post("/api/fan/notifications/:id/read", authenticate, async (req, res) => {
+  if (!/^[1-9]\d*$/.test(String(req.params.id))) return res.status(400).json({ error: "Notificação inválida." });
+  try {
+    await db.run("UPDATE fan_notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2", [req.params.id, req.authUser.id]);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Erro ao marcar notificação:", err.code || "DB_ERROR");
+    return res.status(500).json({ error: "Não foi possível atualizar a notificação." });
+  }
+});
+
 app.post("/api/fan/favorites", authenticate, async (req, res) => {
   const bandId = Number(req.body?.band_id);
   if (!Number.isSafeInteger(bandId) || bandId <= 0) return res.status(400).json({ error: "Banda inválida." });
@@ -1991,7 +2066,8 @@ app.post("/api/import-rss", async (req, res) => {
           if (!title || !image) continue;
           if (!(await isValidImage(image))) continue;
           if (!(await postAlreadyExists(title, link))) {
-            await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
+            const newPost = await db.getOne("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5) RETURNING id", [title, content, image, link, feed.name]);
+            await createFanNotificationsForPost(newPost.id, title, content, link);
             imported++;
             feedImported++;
           }
@@ -2029,7 +2105,8 @@ app.post("/api/import-rss-single", async (req, res) => {
       if (!title || !image) continue;
       if (!(await isValidImage(image))) continue;
       if (!(await postAlreadyExists(title, link))) {
-        await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
+        const newPost = await db.getOne("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5) RETURNING id", [title, content, image, link, feed.name]);
+            await createFanNotificationsForPost(newPost.id, title, content, link);
         imported++;
       }
     }
@@ -2077,7 +2154,8 @@ app.post("/api/reimport-rss", async (req, res) => {
             updated++;
             feedUpdated++;
           } else {
-            await db.run("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5)", [title, content, image, link, feed.name]);
+            const newPost = await db.getOne("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5) RETURNING id", [title, content, image, link, feed.name]);
+            await createFanNotificationsForPost(newPost.id, title, content, link);
             created++;
             feedCreated++;
           }

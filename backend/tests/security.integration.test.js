@@ -186,6 +186,38 @@ async function waitForServer() {
     assert.equal(bandUpdate.status, 200, "admin deve editar banda");
     const featureBand = await request("/api/bands/" + bandId + "/weekly-featured", { method: "POST", token: adminToken, body: { featured: true } });
     assert.equal(featureBand.status, 200, "admin deve definir Banda da Semana");
+
+    // Área do Fã: voto único semanal, notificações privadas e conversa autenticada.
+    const unauthVote = await request("/api/fan/vote");
+    assert.equal(unauthVote.status, 401, "votação deve exigir autenticação");
+    const voteOptions = await request("/api/fan/vote", { token: userToken });
+    assert.equal(voteOptions.status, 200, "usuário deve carregar as opções de votação");
+    assert.ok(voteOptions.data.bands.some(band => Number(band.id) === Number(bandId)), "banda criada deve aparecer na votação");
+    const firstVote = await request("/api/fan/vote", { method: "POST", token: userToken, body: { band_id: bandId } });
+    assert.equal(firstVote.status, 201, "primeiro voto semanal deve ser registrado");
+    const duplicateVote = await request("/api/fan/vote", { method: "POST", token: userToken, body: { band_id: bandId } });
+    assert.equal(duplicateVote.status, 409, "a mesma conta não pode votar duas vezes na mesma semana");
+    const voteState = await request("/api/fan/vote", { token: userToken });
+    assert.equal(Number(voteState.data.voted_band_id), Number(bandId), "API deve devolver o voto registrado");
+
+    await client.query(
+      "INSERT INTO fan_notifications (user_id, type, title, message, link, source_key) VALUES ($1, 'news', $2, $3, $4, $5) ON CONFLICT (user_id, source_key) DO NOTHING",
+      [userId, "Security test notification", "Notificação de teste", "https://example.com/news", "security-test-notification"]
+    );
+    const notificationList = await request("/api/fan/notifications", { token: userToken });
+    assert.equal(notificationList.status, 200, "usuário deve consultar suas notificações");
+    const testNotification = notificationList.data.find(item => item.title === "Security test notification");
+    assert.ok(testNotification, "notificação de teste deve aparecer para seu destinatário");
+    assert.equal((await request("/api/fan/notifications/" + testNotification.id + "/read", { method: "POST", token: userToken, body: {} })).status, 200, "usuário deve marcar sua notificação como lida");
+    const notificationAfterRead = await request("/api/fan/notifications", { token: userToken });
+    assert.equal(notificationAfterRead.data.find(item => Number(item.id) === Number(testNotification.id)).is_read, true, "notificação deve ficar marcada como lida");
+    assert.equal((await request("/api/fan/notifications")).status, 401, "notificações devem exigir autenticação");
+
+    const fanComment = await request("/api/comments", { method: "POST", token: userToken, body: { page_type: "fan-area", page_id: 1, content: "Comentário de teste da Área do Fã" } });
+    assert.equal(fanComment.status, 200, "usuário autenticado deve publicar comentário na conversa entre fãs");
+    const fanComments = await request("/api/comments/fan-area/1");
+    assert.ok(fanComments.data.some(comment => comment.content === "Comentário de teste da Área do Fã"), "comentário publicado deve aparecer na conversa");
+
     const bandDelete = await request("/api/bands/" + bandId, { method: "DELETE", token: adminToken });
     assert.equal(bandDelete.status, 200, "admin deve excluir banda");
     assert.equal((await client.query("SELECT id FROM bands WHERE id = $1", [bandId])).rowCount, 0, "banda excluída não deve permanecer no banco");
