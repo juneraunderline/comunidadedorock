@@ -1780,7 +1780,7 @@ app.post("/api/bands/submit", async (req, res) => {
     });
     // Nenhum upload externo na inscrição pública: a imagem validada fica compactada
     // na fila pendente e só é enviada ao Cloudinary quando um administrador aprova.
-    res.json({ success: true, id: inserted.id, message: "Banda cadastrada com sucesso! Aguarde a aprovação." });
+    res.json({ success: true, id: inserted.id, message: "Cadastro recebido! Sua banda já está associada à sua conta e aparecerá publicamente após a aprovação da administração." });
   } catch (err) {
     console.error("Erro ao enviar banda para aprovação:", err.message);
     res.status(500).json({ error: "Não foi possível cadastrar a banda" });
