@@ -2098,8 +2098,11 @@ export default function Admin({ user: currentUser }) {
                 <p>@{u.username} · {u.role} · Desde {new Date(u.created_at).toLocaleDateString("pt-BR")}</p>
               </div>
             </div>
-            <div className="post-actions" style={{ alignItems: "center" }}>
-              <select
+            <div className="post-actions" style={{ alignItems: "center", flexWrap: "wrap", width: "100%", justifyContent: "flex-start", gap: "8px" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: "4px", color: "#aaa", fontSize: "12px" }}>
+                Tipo de conta
+                <select
+                aria-label={`Tipo de conta para ${u.username}`}
                 value={u.role}
                 onChange={async (e) => {
                   try {
@@ -2115,8 +2118,11 @@ export default function Admin({ user: currentUser }) {
                 <option value="banda">banda</option>
                 <option value="editor">editor</option>
                 <option value="admin">admin</option>
-              </select>
-              <select
+                </select>
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: "4px", color: "#e9b61e", fontSize: "12px", minWidth: "190px" }}>
+                Vincular banda existente
+                <select
                 aria-label={`Vincular banda para ${u.username}`}
                 disabled={u.role === "admin"}
                 value={u.band_id || ""}
@@ -2140,7 +2146,8 @@ export default function Admin({ user: currentUser }) {
               >
                 <option value="">Sem banda vinculada</option>
                 {bands.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
+                </select>
+              </label>
               {u.role !== "admin" && (
                 <button
                   className="btn btn-outline"
