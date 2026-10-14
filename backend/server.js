@@ -1086,6 +1086,8 @@ app.use("/api", async (req, res, next) => {
   const method = req.method.toUpperCase();
   if (path === "/health" || path === "/login" || path === "/register" ||
       path === "/cron/rss") return next();
+  // Inscrições de bandas entram na fila de moderação; o endpoint valida e limita o envio.
+  if (path === "/bands/submit" && method === "POST") return next();
   if (path === "/fan/data" || /^\/fan\/(favorites|events|vote|notifications)(?:\/\d+(?:\/read)?)?$/.test(path)) return authenticate(req, res, next);
   if (path === "/logout" && method === "POST") return authenticate(req, res, next);
   if (path === "/session" && method === "GET") return authenticate(req, res, next);
