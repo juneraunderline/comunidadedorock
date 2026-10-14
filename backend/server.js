@@ -1151,7 +1151,7 @@ app.use("/api", async (req, res, next) => {
   return authenticate(req, res, () => {
     // Ações de administração e manutenção são exclusivas de admin.
     const adminOnly =
-      /^\/(user\/\d+\/role|users?|pending-bands|band-claims\\/\\d+|approve-band\/\d+|rss-feeds|import-rss(?:-single)?|reimport-rss|fix-html-entities|fix-missing-images|test-rss-images|cleanup-duplicates|posts-without-images|debug-rss|rss-status)(?:\/|$)/.test(path) ||
+      /^\/(user\/\d+\/role|users?|pending-bands|band-claims\/\d+|approve-band\/\d+|rss-feeds|import-rss(?:-single)?|reimport-rss|fix-html-entities|fix-missing-images|test-rss-images|cleanup-duplicates|posts-without-images|debug-rss|rss-status)(?:\/|$)/.test(path) ||
       /^\/events\/\d+\/status$/.test(path) ||
       /^\/bands\/\d+\/weekly-featured$/.test(path) ||
       (method !== "GET" && /^\/(bands|events)(?:\/|$)/.test(path));
