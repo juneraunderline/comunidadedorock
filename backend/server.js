@@ -1,6 +1,6 @@
 ﻿const express = require("express");
 const cors = require("cors");
-const rateLimit = require("express-rate-limit");
+const { rateLimit } = require("express-rate-limit");
 const { Pool } = require("pg");
 
 let fetchFunc;
@@ -38,45 +38,46 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
   maxAge: 600
 }));
-// Rate limit compartilhado entre instâncias serverless via PostgreSQL.
-// Falha fechada: se o contador compartilhado estiver indisponível, não aceitar
-// a requisição sem limite. A tabela é criada pela inicialização normal do schema.
-function sharedRateLimit(name, windowMs, limit, message) {
-  return async (req, res, next) => {
-    try {
-      await ensureInitialized();
-      const ip = String(req.ip || req.socket?.remoteAddress || "unknown").slice(0, 128);
-      const ipHash = crypto.createHash("sha256").update(ip).digest("hex");
-      const now = Date.now();
-      const windowStart = new Date(Math.floor(now / windowMs) * windowMs);
-      const key = name + ":" + ipHash;
-      const result = await pool.query(
-        "INSERT INTO api_rate_limit_buckets (bucket_key, window_start, hit_count, expires_at) VALUES ($1, $2, 1, $3) ON CONFLICT (bucket_key, window_start) DO UPDATE SET hit_count = api_rate_limit_buckets.hit_count + 1 RETURNING hit_count",
-        [key, windowStart, new Date(now + Math.max(windowMs * 2, 86400000))]
-      );
-      const count = Number(result.rows[0]?.hit_count || 0);
-      res.setHeader("RateLimit-Limit", String(limit));
-      res.setHeader("RateLimit-Remaining", String(Math.max(0, limit - count)));
-      if (count > limit) {
-        res.setHeader("Retry-After", String(Math.max(1, Math.ceil((windowStart.getTime() + windowMs - now) / 1000))));
-        return res.status(429).json({ error: message });
-      }
-      // Limpeza probabilística sem cron ou serviço adicional.
-      if (Math.random() < 0.01) {
-        pool.query("DELETE FROM api_rate_limit_buckets WHERE expires_at < NOW()").catch(() => {});
-      }
-      return next();
-    } catch (err) {
-      console.error("Rate limit compartilhado indisponível:", err.code || "DB_ERROR");
-      return res.status(503).json({ error: "Proteção temporariamente indisponível. Tente novamente." });
-    }
-  };
-}
-const apiLimiter = sharedRateLimit("api", 60 * 1000, 180, "Muitas solicitações. Tente novamente em instantes.");
-const authLimiter = sharedRateLimit("auth", 15 * 60 * 1000, 10, "Muitas tentativas de acesso. Aguarde 15 minutos e tente novamente.");
-const uploadLimiter = sharedRateLimit("upload", 15 * 60 * 1000, 15, "Limite de envios de imagem atingido. Tente novamente mais tarde.");
-const interactionLimiter = sharedRateLimit("interaction", 15 * 60 * 1000, 20, "Muitas solicitações. Aguarde e tente novamente.");
-const bandSubmissionLimiter = sharedRateLimit("band-submission", 15 * 60 * 1000, 5, "Limite de inscrições de bandas atingido. Aguarde 15 minutos e tente novamente.");
+// Limites de requisições em memória por instância.
+// Importante: não consultar o PostgreSQL para contar cada requisição, pois isso
+// amplifica a concorrência no Layerbase e pode esgotar max_client_conn em serverless.
+// Os limites continuam ativos por IP em cada instância; operações sensíveis seguem
+// protegidas pelos middlewares de autenticação/autorização e validações das rotas.
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 180,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Muitas solicitações. Tente novamente em instantes." }
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Muitas tentativas de acesso. Aguarde 15 minutos e tente novamente." }
+});
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Limite de envios de imagem atingido. Tente novamente mais tarde." }
+});
+const interactionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Muitas solicitações. Aguarde e tente novamente." }
+});
+const bandSubmissionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Limite de inscrições de bandas atingido. Aguarde 15 minutos e tente novamente." }
+});
 app.use("/api", apiLimiter);
 app.use("/api/login", authLimiter);
 app.use("/api/register", authLimiter);
