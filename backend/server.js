@@ -186,6 +186,8 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS band_claim_requests (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, band_id INTEGER NOT NULL REFERENCES bands(id) ON DELETE CASCADE, message TEXT, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')), created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), reviewed_at TIMESTAMPTZ, UNIQUE (user_id, band_id))`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_band_claim_requests_status ON band_claim_requests (status, created_at DESC)`);
   await db.run(`CREATE TABLE IF NOT EXISTS band_accounts (user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, band_id INTEGER NOT NULL REFERENCES bands(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (user_id, band_id), UNIQUE (band_id))`);
+  await db.run(`CREATE TABLE IF NOT EXISTS pending_band_releases (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, band_id INTEGER NOT NULL REFERENCES bands(id) ON DELETE CASCADE, title TEXT NOT NULL, type TEXT DEFAULT 'Single', release_date TEXT, image TEXT, spotify TEXT, youtube TEXT, description TEXT, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')), created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), reviewed_at TIMESTAMPTZ)`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_pending_band_releases_status ON pending_band_releases (status, created_at DESC)`);
   await db.run(`CREATE TABLE IF NOT EXISTS auth_sessions (id BIGSERIAL PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions (user_id)`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions (expires_at)`);
@@ -1115,13 +1117,15 @@ app.use("/api", async (req, res, next) => {
   if (method === "GET" && path === "/debug-rss") {
     return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
   }
+  if (path === "/band-release-submissions/mine" && method === "GET") return authenticate(req, res, next);
+  if (path === "/band-release-submissions" && method === "POST") return authenticate(req, res, next);
   if (path === "/band-claims/mine" && method === "GET") return authenticate(req, res, next);
   if (path === "/my-band" && (method === "GET" || method === "PUT")) return authenticate(req, res, next);
   if (path === "/band-claims" && method === "POST") return authenticate(req, res, (req, res, next) => {
     if (!req.authUser.is_band) return res.status(403).json({ error: "Esta função está disponível apenas para contas de banda." });
     return next();
   });
-  if (method === "GET" && ["/users", "/pending-bands", "/band-claims"].includes(path)) {
+  if (method === "GET" && ["/users", "/pending-bands", "/band-claims", "/band-release-submissions"].includes(path)) {
     return authenticate(req, res, () => requireRoles("admin")(req, res, next));
   }
   if (method === "GET" && path === "/rss-status") {
@@ -1151,7 +1155,7 @@ app.use("/api", async (req, res, next) => {
   return authenticate(req, res, () => {
     // Ações de administração e manutenção são exclusivas de admin.
     const adminOnly =
-      /^\/(user\/\d+\/role|users?|pending-bands|band-claims\/\d+|approve-band\/\d+|rss-feeds|import-rss(?:-single)?|reimport-rss|fix-html-entities|fix-missing-images|test-rss-images|cleanup-duplicates|posts-without-images|debug-rss|rss-status)(?:\/|$)/.test(path) ||
+      /^\/(user\/\d+\/role|users?|pending-bands|band-claims\/\d+|band-release-submissions\/\d+|approve-band\/\d+|rss-feeds|import-rss(?:-single)?|reimport-rss|fix-html-entities|fix-missing-images|test-rss-images|cleanup-duplicates|posts-without-images|debug-rss|rss-status)(?:\/|$)/.test(path) ||
       /^\/events\/\d+\/status$/.test(path) ||
       /^\/bands\/\d+\/weekly-featured$/.test(path) ||
       (method !== "GET" && /^\/(bands|events)(?:\/|$)/.test(path));
@@ -1456,6 +1460,57 @@ app.put("/api/my-band", async (req, res) => {
     const result = await db.getOne(`UPDATE bands SET name = $1, genre = $2, city = $3, state = $4, year = $5, members = $6, biography = $7, contact = $8, image = $9, instagram = $10, facebook = $11, youtube = $12, spotify = $13, bandcamp = $14, site = $15 WHERE id = $16 RETURNING *`, [...merged, association.band_id]);
     res.json({ success: true, band: result });
   } catch (err) { console.error("Falha ao atualizar perfil próprio de banda:", err.code || "DB_ERROR"); res.status(500).json({ error: "Não foi possível salvar o perfil da banda." }); }
+});
+
+// Lançamentos enviados por representantes de bandas: sempre passam por moderação.
+app.get("/api/band-release-submissions/mine", async (req, res) => {
+  try {
+    const rows = await db.getAll(`SELECT s.id, s.title, s.type, s.release_date, s.status, s.created_at, b.name AS band_name FROM pending_band_releases s JOIN bands b ON b.id = s.band_id WHERE s.user_id = $1 ORDER BY s.created_at DESC`, [req.authUser.id]);
+    res.set("Cache-Control", "no-store");
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: "Não foi possível carregar seus lançamentos enviados." }); }
+});
+app.post("/api/band-release-submissions", async (req, res) => {
+  const title = typeof req.body?.title === "string" ? req.body.title.trim().slice(0, 250) : "";
+  if (!title) return res.status(400).json({ error: "Informe o título do lançamento." });
+  const type = ["Single", "EP", "Álbum", "Clipe", "Demo"].includes(req.body?.type) ? req.body.type : "Single";
+  const clean = key => typeof req.body?.[key] === "string" ? req.body[key].trim().slice(0, key === "description" ? 8000 : 2000) : "";
+  try {
+    const association = await db.getOne("SELECT a.band_id, b.name FROM band_accounts a JOIN bands b ON b.id = a.band_id WHERE a.user_id = $1 ORDER BY a.created_at DESC LIMIT 1", [req.authUser.id]);
+    if (!association) return res.status(403).json({ error: "O acesso ao perfil da banda precisa ser aprovado antes de enviar lançamentos." });
+    const row = await db.getOne(`INSERT INTO pending_band_releases (user_id, band_id, title, type, release_date, image, spotify, youtube, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, title, type, release_date, status, created_at`,
+      [req.authUser.id, association.band_id, title, type, clean("release_date"), clean("image"), clean("spotify"), clean("youtube"), clean("description")]);
+    res.status(201).json({ success: true, release: row, message: "Lançamento enviado para moderação." });
+  } catch (err) { console.error("Falha ao enviar lançamento de banda:", err.code || "DB_ERROR"); res.status(500).json({ error: "Não foi possível enviar o lançamento." }); }
+});
+app.get("/api/band-release-submissions", async (req, res) => {
+  try {
+    const rows = await db.getAll(`SELECT s.*, u.username, u.display_name, b.name AS band_name FROM pending_band_releases s JOIN users u ON u.id = s.user_id JOIN bands b ON b.id = s.band_id ORDER BY CASE WHEN s.status = 'pending' THEN 0 ELSE 1 END, s.created_at DESC`);
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: "Não foi possível carregar os lançamentos pendentes." }); }
+});
+app.patch("/api/band-release-submissions/:id", async (req, res) => {
+  if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "Lançamento inválido." });
+  const status = req.body?.status;
+  if (!["approved", "rejected"].includes(status)) return res.status(400).json({ error: "Decisão inválida." });
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const found = await client.query("SELECT s.*, b.name AS band_name FROM pending_band_releases s JOIN bands b ON b.id = s.band_id WHERE s.id = $1 FOR UPDATE OF s", [req.params.id]);
+    const item = found.rows[0];
+    if (!item) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Lançamento não encontrado." }); }
+    if (status === "approved") {
+      await client.query("INSERT INTO releases (title, artist, type, release_date, image, spotify, youtube, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+        [item.title, item.band_name, item.type, item.release_date, item.image, item.spotify, item.youtube, item.description]);
+    }
+    await client.query("UPDATE pending_band_releases SET status = $1, reviewed_at = NOW() WHERE id = $2", [status, item.id]);
+    await client.query("COMMIT");
+    res.json({ success: true, status });
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("Falha ao revisar lançamento:", err.code || "DB_ERROR");
+    res.status(500).json({ error: "Não foi possível revisar o lançamento." });
+  } finally { client.release(); }
 });
 
 // Posts
