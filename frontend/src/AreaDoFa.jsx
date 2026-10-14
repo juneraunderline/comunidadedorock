@@ -237,18 +237,17 @@ function AreaDoFa({ user }) {
         <section style={{ marginBottom: "32px" }} aria-labelledby="votacao-fas-title">
           <h2 id="votacao-fas-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>🏆 Votação da Banda da Semana</h2>
           <p style={{ color: "#aaa", lineHeight: 1.6, margin: "0 0 14px" }}>Escolha sua favorita. Cada conta pode votar uma vez por semana; a votação reabre na segunda-feira.</p>
-          {voteData.voted_band_id ? <div style={panelStyle} role="status">Seu voto desta semana já foi registrado. Obrigado por fortalecer a cena independente!</div> : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "12px" }}>
-              {(voteData.bands || []).map(band => <article key={band.id} style={panelStyle}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  {band.image ? <img src={getImageUrl(band.image)} alt="" loading="lazy" style={{ width: "54px", height: "54px", objectFit: "cover", borderRadius: "8px" }} /> : <span aria-hidden="true" style={{ fontSize: "28px" }}>🎸</span>}
-                  <div style={{ minWidth: 0 }}><h3 style={{ margin: 0, fontSize: "16px" }}>{band.name}</h3><p style={{ margin: "4px 0 0", color: "#aaa", fontSize: "12px" }}>{Number(band.votes || 0)} voto(s)</p></div>
-                </div>
-                <button onClick={() => castVote(band)} disabled={saving === "vote"} style={buttonStyle}>{saving === "vote" ? "Registrando..." : "Votar nesta banda"}</button>
-              </article>)}
-              {(!voteData.bands || voteData.bands.length === 0) && <div style={panelStyle}>Ainda não há bandas disponíveis para votação.</div>}
-            </div>
-          )}
+          {voteData.voted_band_id && <div style={{ ...panelStyle, marginBottom: "12px" }} role="status">Seu voto desta semana já foi registrado. Obrigado por fortalecer a cena independente!</div>}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "12px" }}>
+            {(voteData.bands || []).map(band => <article key={band.id} style={{ ...panelStyle, borderColor: Number(band.id) === Number(voteData.voted_band_id) ? "#e9b61e" : "#292936" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                {band.image ? <img src={getImageUrl(band.image)} alt="" loading="lazy" style={{ width: "54px", height: "54px", objectFit: "cover", borderRadius: "8px" }} /> : <span aria-hidden="true" style={{ fontSize: "28px" }}>🎸</span>}
+                <div style={{ minWidth: 0 }}><h3 style={{ margin: 0, fontSize: "16px" }}>{band.name}</h3><p style={{ margin: "4px 0 0", color: "#aaa", fontSize: "12px" }}>{Number(band.votes || 0)} voto(s)</p></div>
+              </div>
+              <button onClick={() => castVote(band)} disabled={saving === "vote" || Boolean(voteData.voted_band_id)} style={{ ...buttonStyle, opacity: voteData.voted_band_id ? 0.65 : 1 }}>{Number(band.id) === Number(voteData.voted_band_id) ? "Seu voto" : voteData.voted_band_id ? "Voto já registrado" : saving === "vote" ? "Registrando..." : "Votar nesta banda"}</button>
+            </article>)}
+            {(!voteData.bands || voteData.bands.length === 0) && <div style={panelStyle}>Ainda não há bandas disponíveis para votação.</div>}
+          </div>
         </section>
         <section style={{ marginBottom: "32px" }} aria-labelledby="notificacoes-fas-title">
           <h2 id="notificacoes-fas-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>🔔 Suas notificações <span style={{ color: "#e9b61e" }}>({notifications.filter(item => !item.is_read).length} novas)</span></h2>
