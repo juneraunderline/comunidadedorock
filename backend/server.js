@@ -38,41 +38,45 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
   maxAge: 600
 }));
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 180,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: { error: "Muitas solicitações. Tente novamente em instantes." }
-});
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: { error: "Muitas tentativas de acesso. Aguarde 15 minutos e tente novamente." }
-});
-const uploadLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 15,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: { error: "Limite de envios de imagem atingido. Tente novamente mais tarde." }
-});
-const interactionLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 20,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: { error: "Muitas solicitações. Aguarde e tente novamente." }
-});
-const bandSubmissionLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 5,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: { error: "Limite de inscrições de bandas atingido. Aguarde 15 minutos e tente novamente." }
-});
+// Rate limit compartilhado entre instâncias serverless via PostgreSQL.
+// Falha fechada: se o contador compartilhado estiver indisponível, não aceitar
+// a requisição sem limite. A tabela é criada pela inicialização normal do schema.
+function sharedRateLimit(name, windowMs, limit, message) {
+  return async (req, res, next) => {
+    try {
+      await ensureInitialized();
+      const ip = String(req.ip || req.socket?.remoteAddress || "unknown").slice(0, 128);
+      const ipHash = crypto.createHash("sha256").update(ip).digest("hex");
+      const now = Date.now();
+      const windowStart = new Date(Math.floor(now / windowMs) * windowMs);
+      const key = name + ":" + ipHash;
+      const result = await pool.query(
+        "INSERT INTO api_rate_limit_buckets (bucket_key, window_start, hit_count, expires_at) VALUES ($1, $2, 1, $3) ON CONFLICT (bucket_key, window_start) DO UPDATE SET hit_count = api_rate_limit_buckets.hit_count + 1 RETURNING hit_count",
+        [key, windowStart, new Date(now + Math.max(windowMs * 2, 86400000))]
+      );
+      const count = Number(result.rows[0]?.hit_count || 0);
+      res.setHeader("RateLimit-Limit", String(limit));
+      res.setHeader("RateLimit-Remaining", String(Math.max(0, limit - count)));
+      if (count > limit) {
+        res.setHeader("Retry-After", String(Math.max(1, Math.ceil((windowStart.getTime() + windowMs - now) / 1000))));
+        return res.status(429).json({ error: message });
+      }
+      // Limpeza probabilística sem cron ou serviço adicional.
+      if (Math.random() < 0.01) {
+        pool.query("DELETE FROM api_rate_limit_buckets WHERE expires_at < NOW()").catch(() => {});
+      }
+      return next();
+    } catch (err) {
+      console.error("Rate limit compartilhado indisponível:", err.code || "DB_ERROR");
+      return res.status(503).json({ error: "Proteção temporariamente indisponível. Tente novamente." });
+    }
+  };
+}
+const apiLimiter = sharedRateLimit("api", 60 * 1000, 180, "Muitas solicitações. Tente novamente em instantes.");
+const authLimiter = sharedRateLimit("auth", 15 * 60 * 1000, 10, "Muitas tentativas de acesso. Aguarde 15 minutos e tente novamente.");
+const uploadLimiter = sharedRateLimit("upload", 15 * 60 * 1000, 15, "Limite de envios de imagem atingido. Tente novamente mais tarde.");
+const interactionLimiter = sharedRateLimit("interaction", 15 * 60 * 1000, 20, "Muitas solicitações. Aguarde e tente novamente.");
+const bandSubmissionLimiter = sharedRateLimit("band-submission", 15 * 60 * 1000, 5, "Limite de inscrições de bandas atingido. Aguarde 15 minutos e tente novamente.");
 app.use("/api", apiLimiter);
 app.use("/api/login", authLimiter);
 app.use("/api/register", authLimiter);
@@ -159,6 +163,8 @@ const db = {
 
 // Inicialização de Tabelas
 const initDb = async () => {
+  await db.run(`CREATE TABLE IF NOT EXISTS api_rate_limit_buckets (bucket_key VARCHAR(160) NOT NULL, window_start TIMESTAMPTZ NOT NULL, hit_count INTEGER NOT NULL DEFAULT 0, expires_at TIMESTAMPTZ NOT NULL, PRIMARY KEY (bucket_key, window_start))`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_api_rate_limit_expiry ON api_rate_limit_buckets (expires_at)`);
   await db.run(`CREATE TABLE IF NOT EXISTS posts (id SERIAL PRIMARY KEY, title TEXT, content TEXT, image TEXT, link TEXT, source TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, is_weekly_featured BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW())`);
   // Garante que bancos antigos recebam as colunas adicionadas depois da criação.
