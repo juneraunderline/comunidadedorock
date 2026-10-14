@@ -16,6 +16,12 @@ function safePostUrl(value) {
     return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
   } catch { return ""; }
 }
+function safeNotificationLink(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  const link = value.trim();
+  if (link.startsWith("/") && !link.startsWith("//") && !link.includes("\\\\")) return link;
+  return safePostUrl(link);
+}
 
 const buttonStyle = {
   border: "1px solid #e9b61e",
@@ -251,16 +257,20 @@ function AreaDoFa({ user }) {
         </section>
         <section style={{ marginBottom: "32px" }} aria-labelledby="notificacoes-fas-title">
           <h2 id="notificacoes-fas-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>🔔 Suas notificações <span style={{ color: "#e9b61e" }}>({notifications.filter(item => !item.is_read).length} novas)</span></h2>
-          <p style={{ color: "#aaa", lineHeight: 1.6, margin: "0 0 14px" }}>Avisos sobre notícias que mencionam suas bandas favoritas.</p>
-          {notifications.length === 0 ? <div style={panelStyle}>Você verá aqui os avisos quando uma notícia importada mencionar uma das suas bandas favoritas.</div> : (
+          <p style={{ color: "#aaa", lineHeight: 1.6, margin: "0 0 14px" }}>Avisos sobre suas bandas favoritas, shows salvos e a votação semanal.</p>
+          {notifications.length === 0 ? <div style={panelStyle}>Quando uma notícia mencionar uma banda favorita, um show salvo estiver próximo ou uma nova votação começar, o aviso aparecerá aqui.</div> : (
             <div style={{ display: "grid", gap: "10px" }}>
-              {notifications.map(item => <article key={item.id} style={{ ...panelStyle, borderColor: item.is_read ? "#292936" : "#8d741b" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                  <div><h3 style={{ margin: "0 0 5px", fontSize: "16px" }}>{item.title}</h3><p style={{ color: "#aaa", margin: 0, lineHeight: 1.5 }}>{item.message}</p></div>
-                  {!item.is_read && <button onClick={() => markNotificationRead(item)} style={{ ...buttonStyle, flexShrink: 0, fontSize: "12px" }}>Marcar lida</button>}
-                </div>
-                {item.link && safePostUrl(item.link) && <a href={safePostUrl(item.link)} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", color: "#e9b61e", marginTop: "10px" }}>Abrir notícia ↗</a>}
-              </article>)}
+              {notifications.map(item => {
+                const link = safeNotificationLink(item.link);
+                const linkLabel = item.type === "news" ? "Abrir notícia ↗" : item.type === "event" ? "Ver evento ↗" : "Participar ↗";
+                return <article key={item.id} style={{ ...panelStyle, borderColor: item.is_read ? "#292936" : "#8d741b" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                    <div><h3 style={{ margin: "0 0 5px", fontSize: "16px" }}>{item.title}</h3><p style={{ color: "#aaa", margin: 0, lineHeight: 1.5 }}>{item.message}</p></div>
+                    {!item.is_read && <button onClick={() => markNotificationRead(item)} style={{ ...buttonStyle, flexShrink: 0, fontSize: "12px" }}>Marcar lida</button>}
+                  </div>
+                  {link && (link.startsWith("/") ? <Link to={link} style={{ display: "inline-block", color: "#e9b61e", marginTop: "10px" }}>{linkLabel}</Link> : <a href={link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", color: "#e9b61e", marginTop: "10px" }}>{linkLabel}</a>)}
+                </article>;
+              })}
             </div>
           )}
         </section>
