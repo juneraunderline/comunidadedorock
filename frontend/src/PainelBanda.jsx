@@ -22,6 +22,7 @@ export default function PainelBanda({ user }) {
   const [newEvent, setNewEvent] = useState({ title: "", artist: "", date: "", time: "", location: "", city: "", state: "", image: "", ticket_link: "", ticket_location: "", description: "", contact_email: user?.email || "" });
   const [sendingEvent, setSendingEvent] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState("inicio");
 
   const load = async () => {
     setError("");
@@ -52,11 +53,33 @@ export default function PainelBanda({ user }) {
   return <section className="section" style={{ marginTop: 80, minHeight: "75vh" }}>
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
       <h1 style={{ color: "#fff", marginBottom: 8 }}>PAINEL <span className="highlight">DA BANDA</span></h1>
-      <p style={{ color: "#aaa", marginBottom: 24 }}>A administração vincula cada conta ao perfil correto da banda. O acesso de edição só é liberado após a vinculação manual.</p>
+      <p style={{ color: "#aaa", marginBottom: 24, maxWidth: 680 }}>Tudo da sua banda em um só lugar. Escolha uma área abaixo para editar seu perfil, enviar um lançamento ou divulgar um show. O que você enviar passará pela análise da administração antes de ser publicado.</p>
       {message && <div role="status" style={{ background: "#153323", border: "1px solid #2f754b", color: "#a6efbf", padding: 12, borderRadius: 8, marginBottom: 16 }}>{message}</div>}
       {error && <div role="alert" style={{ background: "#3b191d", border: "1px solid #7a3038", color: "#ffb6bd", padding: 12, borderRadius: 8, marginBottom: 16 }}>{error}</div>}
-      {loading ? <p style={{ color: "#aaa" }}>Carregando painel...</p> : !(user.is_band || user.role === "banda") ? <Link to="/perfil" className="btn btn-outline">Voltar ao perfil</Link> : band ? <>
-        <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
+      {loading ? <p style={{ color: "#aaa" }}>Carregando seu espaço...</p> : !(user.is_band || user.role === "banda") ? <Link to="/perfil" className="btn btn-outline">Voltar ao perfil</Link> : band ? <>
+        <div style={{ background: "linear-gradient(135deg,#191920,#111116)", border: "1px solid #34343d", borderRadius: 14, padding: 20, marginBottom: 20, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ width: 64, height: 64, borderRadius: 12, background: "#29251a", border: "1px solid #6c5718", display: "grid", placeItems: "center", fontSize: 32 }}>🎸</div>
+          <div style={{ flex: "1 1 220px" }}>
+            <div style={{ color: "#e9b61e", fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>Área da banda</div>
+            <h2 style={{ color: "#fff", margin: "3px 0 4px", fontSize: 23 }}>{band.name}</h2>
+            <p style={{ color: "#aaa", fontSize: 13, margin: 0 }}>Gerencie suas informações e envie novidades para a Comunidade do Rock.</p>
+          </div>
+          <Link to={\`/bandas/\${band.id}\`} className="btn btn-outline">👀 Ver perfil público</Link>
+        </div>
+        {activeSection === "inicio" && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14, marginBottom: 22 }}>
+          {[
+            { id: "perfil", emoji: "📝", title: "Meu perfil", description: "Atualize nome, estilo, integrantes, biografia e redes sociais.", action: "Editar perfil", color: "#e9b61e" },
+            { id: "lancamento", emoji: "🎵", title: "Lançamentos", description: "Envie singles, EPs, álbuns, demos e clipes para divulgação.", action: "Enviar lançamento", color: "#bd83ff" },
+            { id: "evento", emoji: "🎤", title: "Shows e eventos", description: "Divulgue datas de shows, locais, cartazes e links de ingressos.", action: "Cadastrar evento", color: "#ff8b67" }
+          ].map(item => <button key={item.id} type="button" onClick={() => setActiveSection(item.id)} style={{ textAlign: "left", background: "#15151d", border: "1px solid #34343d", borderRadius: 14, padding: 20, color: "#fff", cursor: "pointer", display: "flex", flexDirection: "column", gap: 10, minHeight: 205 }}>
+            <span style={{ width: 48, height: 48, display: "grid", placeItems: "center", background: "#24242d", borderRadius: 12, fontSize: 27 }}>{item.emoji}</span>
+            <strong style={{ fontSize: 18 }}>{item.title}</strong>
+            <span style={{ color: "#aaa", fontSize: 13, lineHeight: 1.6, flex: 1 }}>{item.description}</span>
+            <span style={{ color: item.color, fontSize: 13, fontWeight: 800 }}>{item.action} →</span>
+          </button>)}
+        </div>}
+        {activeSection !== "inicio" && <button type="button" onClick={() => setActiveSection("inicio")} style={{ background: "transparent", color: "#e9b61e", border: "1px solid #49402a", borderRadius: 8, padding: "9px 13px", marginBottom: 16, cursor: "pointer", fontWeight: 700 }}>← Voltar às opções do painel</button>}
+        {activeSection === "perfil" && <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
           <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Perfil oficial vinculado: {band.name}</h2>
           <p style={{ color: "#999", marginBottom: 18 }}>As alterações são aplicadas somente ao perfil aprovado vinculado à sua conta.</p>
           <form onSubmit={saveBand} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14 }}>
@@ -71,8 +94,9 @@ export default function PainelBanda({ user }) {
             </div>
           </form>
         </div>
-        <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
-          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Cadastrar show / evento</h2>
+        </div>}
+        {activeSection === "evento" && <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
+          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>🎤 Cadastrar show / evento</h2>
           <p style={{ color: "#999" }}>Envie o evento por aqui. Ele ficará pendente até a aprovação da administração.</p>
           <form onSubmit={async (event) => {
             event.preventDefault(); setError(""); setMessage(""); setSendingEvent(true);
@@ -98,8 +122,9 @@ export default function PainelBanda({ user }) {
             <div style={{ gridColumn: "1 / -1" }}><button className="btn btn-primary" type="submit" disabled={sendingEvent}>{sendingEvent ? "Enviando..." : "Enviar evento para moderação"}</button></div>
           </form>
         </div>
-        <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
-          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Enviar novo lançamento</h2>
+        </div>}
+        {activeSection === "lancamento" && <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
+          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>🎵 Enviar novo lançamento</h2>
           <p style={{ color: "#999", marginBottom: 16 }}>Singles, EPs, álbuns, demos e clipes passam por aprovação antes de aparecer no portal.</p>
           <form onSubmit={async (event) => {
             event.preventDefault(); setError(""); setMessage("");
@@ -118,16 +143,16 @@ export default function PainelBanda({ user }) {
             <label style={{ color: "#ccc", fontSize: 13, gridColumn: "1 / -1" }}>Descrição<textarea maxLength={8000} style={{ ...inputStyle, minHeight: 100 }} value={newRelease.description} onChange={e => setNewRelease(current => ({ ...current, description: e.target.value }))} /></label>
             <div style={{ gridColumn: "1 / -1" }}><button className="btn btn-primary" type="submit">Enviar para aprovação</button></div>
           </form>
-        </div>
+        </div>}
       </> : <>
         <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
           <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Vinculação do perfil da banda</h2>
-          <p style={{ color: "#ccc", lineHeight: 1.7 }}>Por segurança, não é possível escolher uma banda cadastrada nem solicitar acesso diretamente por esta tela. A administração da Comunidade do Rock fará a vinculação manualmente após confirmar qual banda você representa.</p>
-          <p style={{ color: "#999", marginBottom: 0 }}>Assim que a administração vincular sua conta ao perfil correto, os dados da banda, lançamentos e eventos ficarão disponíveis neste painel.</p>
+          <p style={{ color: "#ccc", lineHeight: 1.7 }}>Quando você cadastra uma banda estando conectado à sua conta, ela fica associada ao seu cadastro automaticamente. A banda ainda precisa ser aprovada pela administração antes de aparecer publicamente e liberar as ferramentas deste painel.</p>
+          <p style={{ color: "#999", marginBottom: 0 }}>Se você já enviou uma banda, aguarde a análise. Não é necessário solicitar acesso a um perfil existente.</p>
         </div>
         <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22 }}>
           <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Sua banda ainda não está cadastrada?</h2>
-          <p style={{ color: "#aaa" }}>Você pode enviar uma nova banda para análise. A vinculação da conta ao perfil será feita separadamente pela administração.</p>
+          <p style={{ color: "#aaa" }}>Cadastre a banda usando esta conta. Assim que ela for aprovada, o vínculo com seu cadastro será automático.</p>
           <Link to="/cadastrar-banda" className="btn btn-primary">Cadastrar banda nova</Link>
         </div>
 
