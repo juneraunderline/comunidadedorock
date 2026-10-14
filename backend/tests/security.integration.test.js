@@ -248,8 +248,9 @@ async function waitForServer() {
     assert.equal((await request("/api/releases/" + releaseId, { method: "DELETE", token: adminToken })).status, 200, "admin deve excluir lançamento");
     assert.equal((await client.query("SELECT id FROM releases WHERE id = $1", [releaseId])).rowCount, 0, "lançamento excluído não deve permanecer no banco");
 
-    // Inscrições públicas não podem fazer o servidor buscar URLs arbitrárias nem
-    // disparar uploads ao Cloudinary antes da aprovação administrativa.
+    // O envio exige sessão autenticada; imagens externas e SVG continuam bloqueados antes da aprovação.
+    const anonymousBandSubmission = await request("/api/bands/submit", { method: "POST", body: { name: "Security Test Anonymous Band" } });
+    assert.equal(anonymousBandSubmission.status, 401, "cadastro de banda deve exigir login");
     const rejectedRemoteBandName = "Security Test Remote Image Rejected";
     const remoteImageSubmission = await request("/api/bands/submit", {
       method: "POST", token: userToken,
@@ -287,11 +288,17 @@ async function waitForServer() {
     const pendingBandName = "Security Test Pending Band";
     await client.query("DELETE FROM pending_bands WHERE name = $1", [pendingBandName]);
     const pendingBand = await client.query(
-      "INSERT INTO pending_bands (name, genre, city, state) VALUES ($1, $2, $3, $4) RETURNING id",
-      [pendingBandName, "Rock", "São Paulo", "SP"]
+      "INSERT INTO pending_bands (name, genre, city, state, created_by_user_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+      [pendingBandName, "Rock", "São Paulo", "SP", userId]
     );
     const approveBand = await request("/api/approve-band/" + pendingBand.rows[0].id, { method: "POST", token: adminToken });
     assert.equal(approveBand.status, 200, "admin deve aprovar banda pendente");
+    const approvedBand = await client.query("SELECT id FROM bands WHERE name = $1", [pendingBandName]);
+    assert.equal(approvedBand.rowCount, 1, "banda deve ser publicada após aprovação");
+    const automaticLink = await client.query("SELECT user_id FROM band_accounts WHERE band_id = $1", [approvedBand.rows[0].id]);
+    assert.equal(Number(automaticLink.rows[0]?.user_id), Number(userId), "banda aprovada deve ficar vinculada à conta que a cadastrou");
+    const updatedBandAccount = await client.query("SELECT is_band FROM users WHERE id = $1", [userId]);
+    assert.equal(updatedBandAccount.rows[0].is_band, true, "conta responsável deve receber o tipo banda após aprovação");
     assert.equal((await client.query("SELECT id FROM bands WHERE name = $1", [pendingBandName])).rowCount, 1, "aprovação deve criar banda publicada");
     assert.equal((await client.query("SELECT id FROM pending_bands WHERE id = $1", [pendingBand.rows[0].id])).rowCount, 0, "banda aprovada deve sair da fila pendente");
 
