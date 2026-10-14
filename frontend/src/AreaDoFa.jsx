@@ -80,7 +80,7 @@ function AreaDoFa({ user }) {
       const [voteResult, notificationResult, commentResult] = await Promise.allSettled([
         axios.get(`${API_URL}/api/fan/vote`, { headers: headers(), timeout: 15000 }),
         axios.get(`${API_URL}/api/fan/notifications`, { headers: headers(), timeout: 15000 }),
-        axios.get(`${API_URL}/api/comments/fan-area/0`, { timeout: 15000 })
+        axios.get(`${API_URL}/api/comments/fan-area/1`, { timeout: 15000 })
       ]);
       if (voteResult.status === "fulfilled") setVoteData(voteResult.value.data || { bands: [], voted_band_id: null, week_start: null });
       if (notificationResult.status === "fulfilled") setNotifications(Array.isArray(notificationResult.value.data) ? notificationResult.value.data : []);
@@ -185,7 +185,7 @@ function AreaDoFa({ user }) {
     if (content.length < 2 || content.length > 1000) { setError("O comentário precisa ter entre 2 e 1000 caracteres."); return; }
     setSaving("comment"); setError(""); setMessage("");
     try {
-      const response = await axios.post(`${API_URL}/api/comments`, { page_type: "fan-area", page_id: 0, content }, { headers: headers() });
+      const response = await axios.post(`${API_URL}/api/comments`, { page_type: "fan-area", page_id: 1, content }, { headers: headers() });
       if (response.data?.comment) setComments(current => [response.data.comment, ...current]);
       setCommentText(""); setMessage("Comentário publicado na comunidade.");
     } catch (err) { setError(err.response?.data?.error || "Não foi possível publicar seu comentário."); }
