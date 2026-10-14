@@ -252,7 +252,7 @@ async function waitForServer() {
     // disparar uploads ao Cloudinary antes da aprovação administrativa.
     const rejectedRemoteBandName = "Security Test Remote Image Rejected";
     const remoteImageSubmission = await request("/api/bands/submit", {
-      method: "POST",
+      method: "POST", token: userToken,
       body: { name: rejectedRemoteBandName, image: "https://example.com/external-image.jpg" }
     });
     assert.equal(remoteImageSubmission.status, 400, "inscrição pública deve rejeitar URLs de imagem externas");
@@ -261,7 +261,7 @@ async function waitForServer() {
 
     const rejectedSvgBandName = "Security Test SVG Image Rejected";
     const svgImageSubmission = await request("/api/bands/submit", {
-      method: "POST",
+      method: "POST", token: userToken,
       body: { name: rejectedSvgBandName, image: "data:image/svg+xml;base64,PHN2Zy8+" }
     });
     assert.equal(svgImageSubmission.status, 400, "inscrição pública deve rejeitar SVG como imagem");
