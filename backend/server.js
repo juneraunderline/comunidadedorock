@@ -1370,6 +1370,7 @@ app.put("/api/user/:id/band", async (req, res) => {
     await client.query("BEGIN");
     const userResult = await client.query("SELECT id, role FROM users WHERE id = $1 FOR UPDATE", [req.params.id]);
     if (!userResult.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Usuário não encontrado." }); }
+    if (userResult.rows[0].role === "admin" && bandId !== null) { await client.query("ROLLBACK"); return res.status(409).json({ error: "Contas de administração não podem ser vinculadas como contas de banda." }); }
     if (bandId !== null) {
       const bandResult = await client.query("SELECT id FROM bands WHERE id = $1", [bandId]);
       if (!bandResult.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Banda não encontrada." }); }
