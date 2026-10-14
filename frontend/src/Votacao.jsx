@@ -168,7 +168,7 @@ function Votacao({ user }) {
           <button onClick={() => vote(band)} disabled={saving || Boolean(myVote)} style={{ ...button, opacity: saving || myVote ? 0.65 : 1, marginTop: "auto" }}>{Number(myVote) === Number(band.id) ? "SEU VOTO" : myVote ? "VOTO JÁ REGISTRADO" : saving ? "REGISTRANDO…" : user ? "VOTAR NESTA BANDA" : "ENTRAR PARA VOTAR"}</button>
         </article>)}
         </div>
-      </div> : <div style={{ ...panel, marginTop: "24px" }}>Ainda não há bandas disponíveis para votação. Volte em breve!</div>}
+       </div>}
       <p style={{ color: "#888", fontSize: "12px", lineHeight: 1.6, marginTop: "24px" }}>A votação é limitada no servidor a um voto por conta por semana. A contagem exibida representa os votos registrados na semana atual.</p>
     </div>
   </main>;
