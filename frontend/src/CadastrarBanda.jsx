@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import API_URL from "./config/api";
 
@@ -22,7 +23,7 @@ function instrumentIcon(role) {
   return "🎵";
 }
 
-function CadastrarBanda() {
+function CadastrarBanda({ user }) {
   const [form, setForm] = useState({
     name: "",
     genre: "",
@@ -61,7 +62,12 @@ function CadastrarBanda() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${API_URL}/api/bands/submit`, { ...form, members: serializeBandMembers(members) });
+      const token = localStorage.getItem("cdr_session_token");
+      if (!token) {
+        setMessage("Sua sessão expirou. Entre novamente para cadastrar a banda.");
+        return;
+      }
+      const res = await axios.post(`${API_URL}/api/bands/submit`, { ...form, members: serializeBandMembers(members) }, { headers: { Authorization: `Bearer ${token}` } });
       // A notificação é enviada pelo navegador: o FormSubmit bloqueia chamadas server-to-server da Vercel com HTTP 403.
       try {
         const emailResponse = await fetch("https://formsubmit.co/ajax/comunidadedorock@hotmail.com", {
@@ -99,6 +105,21 @@ function CadastrarBanda() {
       setMessage("Erro ao cadastrar banda: " + (err.response?.data?.error || err.message));
     }
   };
+
+  if (!user) {
+    return (
+      <section className="section">
+        <div className="section-header"><h2>CADASTRAR <span className="highlight">BANDA</span></h2></div>
+        <div style={{ maxWidth: 640, margin: "0 auto", padding: "30px 20px 60px", textAlign: "center" }}>
+          <div style={{ background: "#151515", border: "1px solid #333", borderRadius: 12, padding: "30px 24px" }}>
+            <h3 style={{ color: "#fff", marginTop: 0 }}>Entre na sua conta para cadastrar sua banda</h3>
+            <p style={{ color: "#bbb", lineHeight: 1.7 }}>Faça login ou crie uma conta grátis para enviar os dados da sua banda para aprovação.</p>
+            <Link to="/login" style={{ display: "inline-block", marginTop: 12, padding: "12px 24px", borderRadius: 6, background: "#e31b23", color: "#fff", textDecoration: "none", fontWeight: 800 }}>ENTRAR OU CRIAR CONTA</Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <div>
