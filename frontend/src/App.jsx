@@ -166,7 +166,11 @@ function App() {
             <NavLink to="/entrevistas" onClick={() => setMenuOpen(false)}>ENTREVISTAS</NavLink>
             <NavLink to="/eventos" onClick={() => setMenuOpen(false)}>EVENTOS</NavLink>
             <NavLink to="/votacao" onClick={() => setMenuOpen(false)}>VOTAÇÃO</NavLink>
-            <NavLink to="/minha-area" onClick={() => setMenuOpen(false)}>MINHA ÁREA</NavLink>
+            {user?.is_band || user?.role === "banda" ? (
+              <NavLink to="/painel-banda" onClick={() => setMenuOpen(false)}>PAINEL DA BANDA</NavLink>
+            ) : (
+              <NavLink to="/minha-area" onClick={() => setMenuOpen(false)}>MINHA ÁREA</NavLink>
+            )}
             <NavLink to="/contato" onClick={() => setMenuOpen(false)}>CONTATO</NavLink>
           </nav>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
