@@ -187,6 +187,11 @@ async function waitForServer() {
     const featureBand = await request("/api/bands/" + bandId + "/weekly-featured", { method: "POST", token: adminToken, body: { featured: true } });
     assert.equal(featureBand.status, 200, "admin deve definir Banda da Semana");
 
+    // Resultados da votação são públicos; a gravação do voto continua autenticada.
+    const publicVote = await request("/api/votacao");
+    assert.equal(publicVote.status, 200, "qualquer visitante deve consultar a votação pública");
+    assert.ok(publicVote.data.bands.some(band => Number(band.id) === Number(bandId)), "banda deve aparecer na votação pública");
+
     // Área do Fã: voto único semanal, notificações privadas e conversa autenticada.
     const unauthVote = await request("/api/fan/vote");
     assert.equal(unauthVote.status, 401, "votação deve exigir autenticação");
