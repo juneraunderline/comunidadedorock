@@ -137,6 +137,11 @@ function Perfil({ user, setUser }) {
             />
           </label>
           <p style={{ color: "#666", fontSize: "12px" }}>Membro desde {new Date(user.created_at).toLocaleDateString("pt-BR")}</p>
+          {user.is_band && (
+            <a href="/painel-banda" style={{ display: "inline-block", marginTop: "12px", background: "#e9b61e", color: "#fff", textDecoration: "none", padding: "9px 20px", borderRadius: "6px", fontSize: "13px", fontWeight: "800" }}>
+              🎸 Painel da Banda
+            </a>
+          )}
           {(user.role === "admin" || user.role === "editor") && (
             <a
               href="/admin"
