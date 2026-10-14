@@ -1813,7 +1813,7 @@ app.get("/api/fan/notifications", authenticate, async (req, res) => {
     }
 
     // Lembretes somente para shows salvos, aprovados e com data ISO válida hoje ou amanhã.
-    const upcomingEvents = await db.getAll(`SELECT e.id, e.title, e.artist, e.date
+    const upcomingEvents = await db.getAll(`SELECT e.id, e.title, e.artist, e.date, (e.date::date - CURRENT_DATE)::int AS days_until
       FROM fan_event_watchlist w
       JOIN events e ON e.id = w.event_id
       WHERE w.user_id = $1
@@ -2459,7 +2459,7 @@ if (require.main === module) {
         AND e.date::date BETWEEN CURRENT_DATE AND CURRENT_DATE + 1
       ORDER BY e.date ASC`, [userId]);
     for (const event of upcomingEvents) {
-      const daysUntil = Math.round((new Date(event.date + "T12:00:00Z").getTime() - new Date().setUTCHours(12, 0, 0, 0)) / 86400000);
+      const daysUntil = Number(event.days_until || 0);
       const eventName = String(event.title || event.artist || "Seu show salvo").trim();
       const timing = daysUntil <= 0 ? "acontece hoje" : "acontece amanhã";
       await db.run(`INSERT INTO fan_notifications (user_id, type, title, message, link, source_key)
