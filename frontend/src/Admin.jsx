@@ -2143,6 +2143,7 @@ export default function Admin({ user: currentUser }) {
                 style={{ background: "#1a1a2e", color: "#fff", border: "1px solid #444", borderRadius: "4px", padding: "6px 8px", fontSize: "12px" }}
               >
                 <option value="user">user</option>
+                <option value="banda">banda</option>
                 <option value="editor">editor</option>
                 <option value="admin">admin</option>
               </select>

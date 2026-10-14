@@ -1362,8 +1362,9 @@ app.put("/api/user/:id/role", async (req, res) => {
   if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido" });
   try {
     const { role } = req.body;
-    if (!["admin", "editor", "user"].includes(role)) return res.status(400).json({ error: "Role inválida" });
-    await db.run("UPDATE users SET role = $1 WHERE id = $2", [role, req.params.id]);
+    if (!["admin", "editor", "user", "banda"].includes(role)) return res.status(400).json({ error: "Role inválida" });
+    // O papel banda também habilita o tipo de conta usado pelo Painel da Banda.
+    await db.run("UPDATE users SET role = $1, is_band = CASE WHEN $1 = 'banda' THEN TRUE ELSE is_band END WHERE id = $2", [role, req.params.id]);
     const updated = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
     res.json({ success: true, user: updated });
   } catch (err) {

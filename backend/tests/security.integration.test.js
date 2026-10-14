@@ -458,6 +458,13 @@ async function waitForServer() {
     });
     assert.equal(roleChange.status, 200, "admin deve alterar papel de usuário");
     assert.equal(roleChange.data.user.role, "editor", "papel atualizado deve ser refletido na resposta");
+    const bandRoleChange = await request("/api/user/" + otherUser.data.user.id + "/role", {
+      method: "PUT", token: adminToken, body: { role: "banda" }
+    });
+    assert.equal(bandRoleChange.status, 200, "admin deve poder atribuir o papel banda");
+    assert.equal(bandRoleChange.data.user.role, "banda", "papel banda deve ser refletido na resposta");
+    const bandFlag = await client.query("SELECT is_band FROM users WHERE id = $1", [otherUser.data.user.id]);
+    assert.equal(bandFlag.rows[0].is_band, true, "atribuir papel banda deve habilitar o tipo de conta banda");
     const roleRestore = await request("/api/user/" + otherUser.data.user.id + "/role", {
       method: "PUT", token: adminToken, body: { role: "user" }
     });
