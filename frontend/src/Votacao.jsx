@@ -115,8 +115,19 @@ function Votacao({ user }) {
       {weekLabel && <p style={{ color: "#888", fontSize: "13px" }}>Semana iniciada em {weekLabel}</p>}
       {error && <div role="alert" style={{ ...panel, borderColor: "#8d3434", color: "#ffb7b7", margin: "16px 0" }}>{error}</div>}
       {(message || myVote) && <div role="status" style={{ ...panel, borderColor: "#6d5717", color: "#f5d978", margin: "16px 0" }}>{message || "Seu voto desta semana já foi registrado. Valeu por participar e apoiar a cena independente!"}</div>}
-      {loading ? <div style={panel}>Carregando bandas e resultados…</div> : data.bands?.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 245px), 1fr))", gap: "14px", marginTop: "24px" }}>
-        {data.bands.map((band, index) => <article key={band.id} style={{ ...panel, borderColor: myVote && Number(myVote) === Number(band.id) ? "#e9b61e" : "#292936", display: "flex", flexDirection: "column", gap: "12px" }}>
+      {loading ? <div style={panel}>Carregando bandas e resultados…</div> : data.bands?.length ? <div className="votacao-layout" style={{ display: "grid", gridTemplateColumns: "250px minmax(0, 1fr)", gap: "18px", alignItems: "start", marginTop: "24px" }}>
+        <aside style={{ ...panel, padding: "14px", textAlign: "left" }} aria-label="As 10 bandas mais votadas">
+          <h2 style={{ margin: "0 0 12px", fontSize: "17px", color: "#fff" }}>🏆 TOP 10 MAIS VOTADAS</h2>
+          <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "7px" }}>
+            {[...data.bands].sort((a, b) => Number(b.votes || 0) - Number(a.votes || 0) || String(a.name || "").localeCompare(String(b.name || ""), "pt-BR")).slice(0, 10).map((band, rank) => <li key={band.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 8px", borderRadius: "7px", background: rank === 0 && Number(band.votes || 0) > 0 ? "rgba(233,182,30,.13)" : "#17171f", border: rank === 0 && Number(band.votes || 0) > 0 ? "1px solid #e9b61e" : "1px solid #292936", color: rank === 0 && Number(band.votes || 0) > 0 ? "#f2c94c" : "#f5f5f7" }}>
+              <span style={{ minWidth: "20px", fontSize: "12px", color: rank === 0 && Number(band.votes || 0) > 0 ? "#e9b61e" : "#9696a4", fontWeight: 800 }}>{String(rank + 1).padStart(2, "0")}</span>
+              <span style={{ flex: 1, minWidth: 0, fontSize: "13px", fontWeight: rank === 0 && Number(band.votes || 0) > 0 ? 900 : 650, overflowWrap: "anywhere" }}>{rank === 0 && Number(band.votes || 0) > 0 ? "🏆 " : ""}{band.name}</span>
+              <span style={{ fontSize: "12px", whiteSpace: "nowrap", color: rank === 0 && Number(band.votes || 0) > 0 ? "#e9b61e" : "#aaa" }}>{Number(band.votes || 0)}</span>
+            </li>)}
+          </ol>
+        </aside>
+        <div className="votacao-bandas-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "14px", minWidth: 0 }}>
+        {data.bands.map((band, index) => <article key={band.id} style={{ ...panel, padding: "14px", minWidth: 0, boxSizing: "border-box", borderColor: myVote && Number(myVote) === Number(band.id) ? "#e9b61e" : "#292936", display: "flex", flexDirection: "column", gap: "12px" }}>
           {band.image ? <img src={getImageUrl(band.image)} alt={`Imagem da banda ${band.name}`} loading="lazy" style={{ width: "100%", height: "180px", objectFit: "cover", borderRadius: "8px", background: "#08080c" }} /> : <div aria-hidden="true" style={{ height: "180px", borderRadius: "8px", background: "#1b1b24", display: "grid", placeItems: "center", fontSize: "52px" }}>🎸</div>}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "10px" }}>
             <h2 style={{ margin: 0, fontSize: "19px" }}>{band.name}</h2>
@@ -126,6 +137,7 @@ function Votacao({ user }) {
           <div style={{ height: "6px", borderRadius: "99px", background: "#292936", overflow: "hidden" }}><div style={{ width: `${Math.max(0, Math.min(100, data.bands.reduce((max, item) => Math.max(max, Number(item.votes || 0)), 0) ? Number(band.votes || 0) / Math.max(...data.bands.map(item => Number(item.votes || 0))) * 100 : 0))}%`, height: "100%", background: "#e9b61e" }} /></div>
           <button onClick={() => vote(band)} disabled={saving || Boolean(myVote)} style={{ ...button, opacity: saving || myVote ? 0.65 : 1, marginTop: "auto" }}>{Number(myVote) === Number(band.id) ? "SEU VOTO" : myVote ? "VOTO JÁ REGISTRADO" : saving ? "REGISTRANDO…" : user ? "VOTAR NESTA BANDA" : "ENTRAR PARA VOTAR"}</button>
         </article>)}
+        </div>
       </div> : <div style={{ ...panel, marginTop: "24px" }}>Ainda não há bandas disponíveis para votação. Volte em breve!</div>}
       <p style={{ color: "#888", fontSize: "12px", lineHeight: 1.6, marginTop: "24px" }}>A votação é limitada no servidor a um voto por conta por semana. A contagem exibida representa os votos registrados na semana atual.</p>
     </div>
