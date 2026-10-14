@@ -140,28 +140,16 @@ export default function PainelBanda({ user }) {
         </div>
       </> : <>
         <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
-          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Solicitar acesso ao perfil existente</h2>
-          <p style={{ color: "#aaa", marginBottom: 18 }}>Selecione a banda cadastrada e explique brevemente sua relação com ela. Não solicite acesso a uma banda que você não representa.</p>
-          <form onSubmit={submitClaim} style={{ display: "grid", gap: 12 }}>
-            <label style={{ color: "#ddd", fontSize: 13 }}>Banda
-              <select value={selectedBand} onChange={e => setSelectedBand(e.target.value)} required style={inputStyle}>
-                <option value="">Selecione uma banda</option>
-                {bands.map(item => <option key={item.id} value={item.id}>{item.name}{item.city ? ` — ${item.city}` : ""}</option>)}
-              </select>
-            </label>
-            <label style={{ color: "#ddd", fontSize: 13 }}>Como você representa essa banda? (opcional)
-              <textarea value={claimMessage} onChange={e => setClaimMessage(e.target.value)} maxLength={1000} placeholder="Ex.: sou vocalista e responsável pelas redes oficiais." style={{ ...inputStyle, minHeight: 90 }} />
-            </label>
-            <button className="btn btn-primary" type="submit">Solicitar aprovação</button>
-          </form>
+          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Vinculação do perfil da banda</h2>
+          <p style={{ color: "#ccc", lineHeight: 1.7 }}>Por segurança, não é possível escolher uma banda cadastrada nem solicitar acesso diretamente por esta tela. A administração da Comunidade do Rock fará a vinculação manualmente após confirmar qual banda você representa.</p>
+          <p style={{ color: "#999", marginBottom: 0 }}>Assim que a administração vincular sua conta ao perfil correto, os dados da banda, lançamentos e eventos ficarão disponíveis neste painel.</p>
         </div>
         <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22 }}>
-          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Minhas solicitações</h2>
-          {claims.length === 0 ? <p style={{ color: "#999" }}>Você ainda não enviou solicitações.</p> : claims.map(claim => <div key={claim.id} style={{ padding: "12px 0", borderBottom: "1px solid #30303a" }}>
-            <strong>{claim.band_name}</strong><span style={{ marginLeft: 10, color: claim.status === "approved" ? "#79dfa0" : claim.status === "rejected" ? "#ff9999" : "#f0cc69" }}>{claim.status === "approved" ? "Aprovada" : claim.status === "rejected" ? "Rejeitada" : "Em análise"}</span>
-          </div>)}
+          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Sua banda ainda não está cadastrada?</h2>
+          <p style={{ color: "#aaa" }}>Você pode enviar uma nova banda para análise. A vinculação da conta ao perfil será feita separadamente pela administração.</p>
+          <Link to="/cadastrar-banda" className="btn btn-primary">Cadastrar banda nova</Link>
         </div>
-        <p style={{ marginTop: 18, color: "#999" }}>Sua banda ainda não aparece no diretório? <Link to="/cadastrar-banda" style={{ color: "#e9b61e" }}>Cadastre uma banda nova para aprovação</Link>.</p>
+
       </>}
     </div>
   </section>;
