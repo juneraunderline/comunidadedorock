@@ -121,10 +121,20 @@ function Votacao({ user }) {
       {weekLabel && <p style={{ color: "#888", fontSize: "13px" }}>Semana iniciada em {weekLabel}</p>}
       {error && <div role="alert" style={{ ...panel, borderColor: "#8d3434", color: "#ffb7b7", margin: "16px 0" }}>{error}</div>}
       {(message || myVote) && <div role="status" style={{ ...panel, borderColor: "#6d5717", color: "#f5d978", margin: "16px 0" }}>{message || "Seu voto desta semana já foi registrado. Valeu por participar e apoiar a cena independente!"}</div>}
-      {loading ? <div style={panel}>Carregando bandas e resultados…</div> : data.bands?.length ? <div className="votacao-layout" style={{ display: "grid", gridTemplateColumns: "250px minmax(0, 1fr)", gap: "18px", alignItems: "start", marginTop: "24px" }}>
+      {loading ? <div style={panel}>Carregando bandas e resultados…</div> : <div className="votacao-layout" style={{ display: "grid", gridTemplateColumns: "250px minmax(0, 1fr)", gap: "18px", alignItems: "start", marginTop: "24px" }}>
         <aside style={{ ...panel, padding: "14px", textAlign: "left" }} aria-label="Sugira uma banda para votação">
           <h2 style={{ margin: "0 0 8px", fontSize: "17px", color: "#fff" }}>🎸 SUGIRA UMA BANDA</h2>
           <p style={{ color: "#b7b7c3", fontSize: "12px", lineHeight: 1.6, margin: "0 0 12px" }}>Digite o nome da sua favorita. Envie uma banda por vez; ela entra na lista de candidatas à Banda da Semana.</p>
+
+          <h3 style={{ margin: "0 0 10px", fontSize: "14px", color: "#e9b61e" }}>BANDAS SUGERIDAS PELOS FÃS</h3>
+          <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "7px" }}>
+            {[...data.bands].filter((band) => band.candidate_type === "suggestion").sort((x, y) => Number(y.votes || 0) - Number(x.votes || 0) || String(x.name || "").localeCompare(String(y.name || ""), "pt-BR")).map((band, rank) => <li key={band.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 8px", borderRadius: "7px", background: "#17171f", border: "1px solid #292936", color: "#f5f5f7" }}>
+              <span style={{ minWidth: "20px", fontSize: "12px", color: "#9696a4", fontWeight: 800 }}>{String(rank + 1).padStart(2, "0")}</span>
+              <span style={{ flex: 1, minWidth: 0, fontSize: "13px", fontWeight: 650, overflowWrap: "anywhere" }}>{band.name}</span>
+              <span style={{ fontSize: "12px", whiteSpace: "nowrap", color: "#aaa" }}>{Number(band.votes || 0)} voto(s)</span>
+            </li>)}
+          </ol>
+          {!data.bands.some((band) => band.candidate_type === "suggestion") && <p style={{ color: "#9292a0", fontSize: "12px", marginBottom: 0 }}>Ainda não há sugestões. Seja o primeiro!</p>}
           <form onSubmit={async (event) => {
             event.preventDefault();
             const name = suggestedBandName.trim();
@@ -143,17 +153,9 @@ function Votacao({ user }) {
             <input id="votacao-suggest-band" value={suggestedBandName} onChange={(event) => setSuggestedBandName(event.target.value)} maxLength={80} minLength={2} required placeholder="Ex.: nome da banda" style={{ width: "100%", boxSizing: "border-box", padding: "10px", borderRadius: "7px", border: "1px solid #383846", background: "#09090e", color: "#fff" }} />
             <button type="submit" disabled={suggesting || !suggestedBandName.trim()} style={{ ...button, opacity: suggesting || !suggestedBandName.trim() ? 0.65 : 1 }}>{suggesting ? "ADICIONANDO…" : "ADICIONAR À VOTAÇÃO"}</button>
           </form>
-          <h3 style={{ margin: "0 0 10px", fontSize: "14px", color: "#e9b61e" }}>BANDAS SUGERIDAS PELOS FÃS</h3>
-          <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "7px" }}>
-            {[...data.bands].filter((band) => band.candidate_type === "suggestion").sort((x, y) => Number(y.votes || 0) - Number(x.votes || 0) || String(x.name || "").localeCompare(String(y.name || ""), "pt-BR")).map((band, rank) => <li key={band.id} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 8px", borderRadius: "7px", background: "#17171f", border: "1px solid #292936", color: "#f5f5f7" }}>
-              <span style={{ minWidth: "20px", fontSize: "12px", color: "#9696a4", fontWeight: 800 }}>{String(rank + 1).padStart(2, "0")}</span>
-              <span style={{ flex: 1, minWidth: 0, fontSize: "13px", fontWeight: 650, overflowWrap: "anywhere" }}>{band.name}</span>
-              <span style={{ fontSize: "12px", whiteSpace: "nowrap", color: "#aaa" }}>{Number(band.votes || 0)} voto(s)</span>
-            </li>)}
-          </ol>
-          {!data.bands.some((band) => band.candidate_type === "suggestion") && <p style={{ color: "#9292a0", fontSize: "12px", marginBottom: 0 }}>Ainda não há sugestões. Seja o primeiro!</p>}
         </aside>
         <div className="votacao-bandas-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "14px", minWidth: 0 }}>
+        {!data.bands.length && <p style={{ ...panel, gridColumn: "1 / -1", color: "#b7b7c3" }}>Ainda não há candidatas. Sugira a primeira banda no formulário ao lado.</p>}
         {data.bands.map((band, index) => <article key={band.candidate_type === "suggestion" ? "suggestion-" + Math.abs(Number(band.id)) : "band-" + band.id} style={{ ...panel, padding: "14px", minWidth: 0, boxSizing: "border-box", borderColor: myVote && Number(myVote) === Number(band.id) ? "#e9b61e" : "#292936", display: "flex", flexDirection: "column", gap: "12px" }}>
           {band.image ? <img src={getImageUrl(band.image)} alt={`Imagem da banda ${band.name}`} loading="lazy" style={{ width: "100%", height: "180px", objectFit: "cover", borderRadius: "8px", background: "#08080c" }} /> : <div aria-hidden="true" style={{ height: "180px", borderRadius: "8px", background: "#1b1b24", display: "grid", placeItems: "center", fontSize: "52px" }}>🎸</div>}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "10px" }}>
