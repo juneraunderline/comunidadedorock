@@ -130,6 +130,7 @@ export default function Admin({ user: currentUser }) {
   const [loadingFeeds, setLoadingFeeds] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [bandClaims, setBandClaims] = useState([]);
+  const [bandReleaseSubmissions, setBandReleaseSubmissions] = useState([]);
   const [editingLogoId, setEditingLogoId] = useState(null);
   const [editingLogoUrl, setEditingLogoUrl] = useState("");
   const [editingFeedId, setEditingFeedId] = useState(null);
@@ -195,6 +196,7 @@ export default function Admin({ user: currentUser }) {
     fetchRssStatuses();
     axios.get(`${API_URL}/api/users`).then(res => setAllUsers(res.data)).catch(() => {});
     axios.get(`${API_URL}/api/band-claims`).then(res => setBandClaims(Array.isArray(res.data) ? res.data : [])).catch(() => setBandClaims([]));
+    axios.get(`${API_URL}/api/band-release-submissions`).then(res => setBandReleaseSubmissions(Array.isArray(res.data) ? res.data : [])).catch(() => setBandReleaseSubmissions([]));
   };
 
   useEffect(() => {
@@ -857,6 +859,7 @@ export default function Admin({ user: currentUser }) {
         {isAdmin && <button className={activeTab === "lancamentos" ? "active" : ""} onClick={() => setActiveTab("lancamentos")}>LANÇAMENTOS</button>}
         {isAdmin && <button className={activeTab === "usuarios" ? "active" : ""} onClick={() => setActiveTab("usuarios")}>USUÁRIOS</button>}
         {isAdmin && <button className={activeTab === "solicitacoes-banda" ? "active" : ""} onClick={() => setActiveTab("solicitacoes-banda")}>ACESSO ÀS BANDAS{bandClaims.filter(item => item.status === "pending").length ? ` (${bandClaims.filter(item => item.status === "pending").length})` : ""}</button>}
+        {isAdmin && <button className={activeTab === "lancamentos-banda" ? "active" : ""} onClick={() => setActiveTab("lancamentos-banda")}>LANÇAMENTOS PENDENTES{bandReleaseSubmissions.filter(item => item.status === "pending").length ? ` (${bandReleaseSubmissions.filter(item => item.status === "pending").length})` : ""}</button>}
       </div>
 
       {activeTab === "rss" && (
@@ -2055,6 +2058,26 @@ export default function Admin({ user: currentUser }) {
       </section>
       )}
 
+      {activeTab === "lancamentos-banda" && isAdmin && (
+        <section className="admin-card">
+          <h2>LANÇAMENTOS ENVIADOS PELAS BANDAS</h2>
+          <p style={{ color: "#999", marginBottom: 18 }}>Os lançamentos só aparecem publicamente depois da aprovação.</p>
+          {bandReleaseSubmissions.length === 0 && <p style={{ color: "#888" }}>Nenhum lançamento enviado.</p>}
+          {bandReleaseSubmissions.map(item => <div key={item.id} className="post-item" style={{ alignItems: "center", gap: 14 }}>
+            <div className="post-info" style={{ flex: 1 }}>
+              <h4>{item.title} <span style={{ color: "#e9b61e" }}>— {item.band_name}</span></h4>
+              <p>{item.type}{item.release_date ? " · " + item.release_date : ""} · Enviado por {item.display_name || item.username}</p>
+              {item.description && <p style={{ color: "#aaa" }}>{item.description}</p>}
+              {item.spotify && <p>Spotify: {item.spotify}</p>}{item.youtube && <p>YouTube: {item.youtube}</p>}
+              <p style={{ color: item.status === "approved" ? "#70d69b" : item.status === "rejected" ? "#ff9999" : "#f0cc69", fontWeight: 700 }}>Status: {item.status === "approved" ? "Publicado" : item.status === "rejected" ? "Rejeitado" : "Pendente"}</p>
+            </div>
+            {item.status === "pending" && <div className="post-actions">
+              <button className="btn btn-primary" onClick={async () => { try { await axios.patch(API_URL + "/api/band-release-submissions/" + item.id, { status: "approved" }); fetchData(); alert("Lançamento aprovado e publicado."); } catch (err) { alert(err.response?.data?.error || "Não foi possível aprovar."); } }}>Aprovar e publicar</button>
+              <button className="btn btn-outline" onClick={async () => { try { await axios.patch(API_URL + "/api/band-release-submissions/" + item.id, { status: "rejected" }); fetchData(); } catch (err) { alert(err.response?.data?.error || "Não foi possível rejeitar."); } }}>Rejeitar</button>
+            </div>}
+          </div>)}
+        </section>
+      )}
       {activeTab === "solicitacoes-banda" && isAdmin && (
         <section className="admin-card">
           <h2>SOLICITAÇÕES DE ACESSO A PERFIS DE BANDAS</h2>
