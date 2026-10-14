@@ -2147,6 +2147,30 @@ export default function Admin({ user: currentUser }) {
                 <option value="editor">editor</option>
                 <option value="admin">admin</option>
               </select>
+              <select
+                aria-label={`Vincular banda para ${u.username}`}
+                value={u.band_id || ""}
+                onChange={async (e) => {
+                  const selected = e.target.value;
+                  const bandName = bands.find(item => String(item.id) === String(selected))?.name;
+                  if (selected && !confirm(`Vincular a conta @${u.username} à banda "${bandName}"? Só faça isso após confirmar que a pessoa representa a banda.`)) {
+                    fetchData();
+                    return;
+                  }
+                  try {
+                    await axios.put(`${API_URL}/api/user/${u.id}/band`, { band_id: selected ? Number(selected) : null });
+                    fetchData();
+                    alert(selected ? `Conta vinculada à banda "${bandName}".` : "Vínculo com banda removido.");
+                  } catch (err) {
+                    alert(err.response?.data?.error || "Não foi possível vincular a banda.");
+                    fetchData();
+                  }
+                }}
+                style={{ background: "#1a1a2e", color: "#fff", border: "1px solid #444", borderRadius: "4px", padding: "6px 8px", fontSize: "12px", maxWidth: 190 }}
+              >
+                <option value="">Sem banda vinculada</option>
+                {bands.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
               {u.role !== "admin" && (
                 <button
                   className="btn btn-outline"
