@@ -184,6 +184,7 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS releases (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, type TEXT DEFAULT 'Single', release_date TEXT, image TEXT, spotify TEXT, youtube TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, display_name TEXT, avatar TEXT, role TEXT DEFAULT 'user', created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_band BOOLEAN NOT NULL DEFAULT FALSE`);
+  await db.run(`ALTER TABLE pending_bands ADD COLUMN IF NOT EXISTS created_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
   await db.run(`CREATE TABLE IF NOT EXISTS band_claim_requests (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, band_id INTEGER NOT NULL REFERENCES bands(id) ON DELETE CASCADE, message TEXT, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')), created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), reviewed_at TIMESTAMPTZ, UNIQUE (user_id, band_id))`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_band_claim_requests_status ON band_claim_requests (status, created_at DESC)`);
   await db.run(`CREATE TABLE IF NOT EXISTS band_accounts (user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, band_id INTEGER NOT NULL REFERENCES bands(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (user_id, band_id), UNIQUE (band_id))`);
@@ -1087,8 +1088,8 @@ app.use("/api", async (req, res, next) => {
   const method = req.method.toUpperCase();
   if (path === "/health" || path === "/login" || path === "/register" ||
       path === "/cron/rss") return next();
-  // Inscrições de bandas entram na fila de moderação; o endpoint valida e limita o envio.
-  if (path === "/bands/submit" && method === "POST") return next();
+  // Cadastro de banda exige sessão autenticada; a aprovação pública continua administrativa.
+  if (path === "/bands/submit" && method === "POST") return authenticate(req, res, next);
   if (path === "/fan/data" || /^\/fan\/(favorites|events|vote|notifications)(?:\/\d+(?:\/read)?)?$/.test(path)) return authenticate(req, res, next);
   if (path === "/logout" && method === "POST") return authenticate(req, res, next);
   if (path === "/session" && method === "GET") return authenticate(req, res, next);
@@ -1768,8 +1769,8 @@ app.post("/api/bands/submit", async (req, res) => {
       }
       throw imageError;
     }
-    const inserted = await db.getOne(`INSERT INTO pending_bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
-      [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, pendingImage, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site]);
+    const inserted = await db.getOne(`INSERT INTO pending_bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site, created_by_user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`,
+      [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, pendingImage, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site, req.authUser.id]);
     // Dispara o aviso assim que a inscrição é gravada, antes de processar a imagem.
     await notifyAdminByEmail("Nova banda aguardando aprovação", {
       "Banda": b.name, "Estilo": b.genre, "Cidade": [b.city, b.state].filter(Boolean).join(" / "),
@@ -1811,6 +1812,12 @@ app.post("/api/approve-band/:id", async (req, res) => {
     const inserted = await db.getOne(`INSERT INTO bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, NOW()) RETURNING id`,
       [band.name, band.genre, band.city, band.state, band.year, band.members, band.biography, band.contact, approvedImage, band.instagram, band.facebook, band.youtube, band.spotify, band.bandcamp, band.site]);
     await migrateLegacyBandImage({ id: inserted.id, image: approvedImage }, "bands");
+    // A conta que enviou a inscrição passa a administrar a banda após a aprovação.
+    // A restrição UNIQUE (band_id) impede que uma banda seja vinculada a duas contas.
+    if (band.created_by_user_id) {
+      await db.run("INSERT INTO band_accounts (user_id, band_id) VALUES ($1, $2) ON CONFLICT (band_id) DO NOTHING", [band.created_by_user_id, inserted.id]);
+      await db.run("UPDATE users SET is_band = TRUE WHERE id = $1", [band.created_by_user_id]);
+    }
     await db.run("DELETE FROM pending_bands WHERE id = $1", [req.params.id]);
     res.json({ success: true });
   } catch (err) {
