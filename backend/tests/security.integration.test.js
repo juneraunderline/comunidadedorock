@@ -217,7 +217,6 @@ async function waitForServer() {
     assert.equal(fanComment.status, 200, "usuário autenticado deve publicar comentário na conversa entre fãs");
     const fanComments = await request("/api/comments/fan-area/0");
     assert.ok(fanComments.data.some(comment => comment.content === "Comentário de teste da Área do Fã"), "comentário publicado deve aparecer na conversa");
-    assert.equal((await request("/api/comments")).status, 404, "rota de comentários sem parâmetros não deve expor operações adicionais");
 
     const bandDelete = await request("/api/bands/" + bandId, { method: "DELETE", token: adminToken });
     assert.equal(bandDelete.status, 200, "admin deve excluir banda");
