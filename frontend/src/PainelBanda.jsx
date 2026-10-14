@@ -22,6 +22,7 @@ export default function PainelBanda({ user }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [newRelease, setNewRelease] = useState({ title: "", type: "Single", release_date: "", image: "", spotify: "", youtube: "", description: "" });
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -85,6 +86,27 @@ export default function PainelBanda({ user }) {
               <Link to={`/bandas/${band.id}`} className="btn btn-outline">Ver perfil público</Link>
               <Link to="/cadastrar-evento" className="btn btn-outline">Enviar show / evento</Link>
             </div>
+          </form>
+        </div>
+        <div style={{ background: "#15151d", border: "1px solid #34343d", borderRadius: 12, padding: 22, marginBottom: 20 }}>
+          <h2 style={{ color: "#e9b61e", marginTop: 0 }}>Enviar novo lançamento</h2>
+          <p style={{ color: "#999", marginBottom: 16 }}>Singles, EPs, álbuns, demos e clipes passam por aprovação antes de aparecer no portal.</p>
+          <form onSubmit={async (event) => {
+            event.preventDefault(); setError(""); setMessage("");
+            try {
+              const response = await axios.post(API_URL + "/api/band-release-submissions", newRelease, { headers });
+              setMessage(response.data.message || "Lançamento enviado para moderação.");
+              setNewRelease({ title: "", type: "Single", release_date: "", image: "", spotify: "", youtube: "", description: "" });
+            } catch (err) { setError(err.response?.data?.error || "Não foi possível enviar o lançamento."); }
+          }} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Título<input required maxLength={250} style={inputStyle} value={newRelease.title} onChange={e => setNewRelease(current => ({ ...current, title: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Tipo<select style={inputStyle} value={newRelease.type} onChange={e => setNewRelease(current => ({ ...current, type: e.target.value }))}>{["Single", "EP", "Álbum", "Clipe", "Demo"].map(type => <option key={type}>{type}</option>)}</select></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Data<input type="date" style={inputStyle} value={newRelease.release_date} onChange={e => setNewRelease(current => ({ ...current, release_date: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Imagem (URL)<input type="url" style={inputStyle} value={newRelease.image} onChange={e => setNewRelease(current => ({ ...current, image: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>Spotify<input type="url" style={inputStyle} value={newRelease.spotify} onChange={e => setNewRelease(current => ({ ...current, spotify: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13 }}>YouTube<input type="url" style={inputStyle} value={newRelease.youtube} onChange={e => setNewRelease(current => ({ ...current, youtube: e.target.value }))} /></label>
+            <label style={{ color: "#ccc", fontSize: 13, gridColumn: "1 / -1" }}>Descrição<textarea maxLength={8000} style={{ ...inputStyle, minHeight: 100 }} value={newRelease.description} onChange={e => setNewRelease(current => ({ ...current, description: e.target.value }))} /></label>
+            <div style={{ gridColumn: "1 / -1" }}><button className="btn btn-primary" type="submit">Enviar para aprovação</button></div>
           </form>
         </div>
       </> : <>
