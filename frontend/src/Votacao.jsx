@@ -5,6 +5,7 @@ import API_URL, { getImageUrl } from "./config/api";
 
 const panel = { background: "#111118", border: "1px solid #292936", borderRadius: "12px", padding: "18px" };
 const button = { border: "1px solid #e9b61e", borderRadius: "7px", background: "#e9b61e", color: "#101014", padding: "10px 14px", fontWeight: 800, cursor: "pointer" };
+const PENDING_VOTE_KEY = "cdr_pending_vote_band_id";
 
 function Votacao({ user }) {
   const navigate = useNavigate();
@@ -39,8 +40,54 @@ function Votacao({ user }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Se a pessoa escolheu uma banda antes de entrar, registra o voto após o login.
+  useEffect(() => {
+    if (loading || !user || !localStorage.getItem("cdr_session_token")) return;
+    const pendingId = Number(localStorage.getItem(PENDING_VOTE_KEY));
+    if (!pendingId || !data.bands?.some((band) => Number(band.id) === pendingId)) return;
+
+    // O servidor é a fonte da verdade: não tenta votar de novo se já existe voto semanal.
+    if (myVote) {
+      localStorage.removeItem(PENDING_VOTE_KEY);
+      setMessage("Seu voto desta semana já estava registrado. Obrigado por apoiar a cena independente!");
+      return;
+    }
+
+    // Remove antes da chamada para evitar envios duplicados em re-renderizações.
+    localStorage.removeItem(PENDING_VOTE_KEY);
+    const selectedBand = data.bands.find((band) => Number(band.id) === pendingId);
+    let active = true;
+    setSaving(true);
+    setError("");
+    axios.post(`${API_URL}/api/fan/vote`, { band_id: pendingId }, { headers: headers(), timeout: 15000 })
+      .then(() => {
+        if (!active) return;
+        setMyVote(pendingId);
+        setData((current) => ({
+          ...current,
+          bands: current.bands.map((band) => ({
+            ...band,
+            votes: Number(band.votes || 0) + (Number(band.id) === pendingId ? 1 : 0)
+          }))
+        }));
+        setMessage(`Seu voto em ${selectedBand.name} foi registrado. Obrigado por fortalecer o rock independente!`);
+      })
+      .catch((err) => {
+        if (!active) return;
+        if (err.response?.status === 409) {
+          setError("Seu voto desta semana já foi registrado. A votação reabre na segunda-feira.");
+          load();
+        } else {
+          setError(err.response?.data?.error || "Não foi possível registrar seu voto. Escolha a banda novamente para tentar.");
+        }
+      })
+      .finally(() => { if (active) setSaving(false); });
+    return () => { active = false; };
+  }, [data.bands, headers, load, loading, myVote, user]);
+
   const vote = async (band) => {
     if (!user || !localStorage.getItem("cdr_session_token")) {
+      localStorage.setItem(PENDING_VOTE_KEY, String(band.id));
       navigate("/login", { state: { from: location.pathname } });
       return;
     }
@@ -64,7 +111,7 @@ function Votacao({ user }) {
     <div style={{ maxWidth: "1120px", margin: "0 auto" }}>
       <p style={{ color: "#e9b61e", fontWeight: 800, letterSpacing: "2px", fontSize: "12px" }}>A CENA É QUEM ESCOLHE</p>
       <h1 style={{ margin: "8px 0", color: "#fff", fontSize: "clamp(28px, 5vw, 42px)" }}>🏆 VOTAÇÃO DA <span style={{ color: "#e9b61e" }}>BANDA DA SEMANA</span></h1>
-      <p style={{ color: "#b5b5c1", lineHeight: 1.7, maxWidth: "760px" }}>Esta página é pública: todo mundo pode conhecer as bandas concorrentes e acompanhar os resultados. Para votar, entre ou crie uma conta grátis. Cada conta pode votar uma vez por semana; a votação reabre na segunda-feira.</p>
+      <p style={{ color: "#b5b5c1", lineHeight: 1.7, maxWidth: "760px" }}>Esta página é pública: todo mundo pode conhecer as bandas concorrentes e acompanhar os resultados. Para votar, escolha uma banda e entre ou crie uma conta grátis; seu voto será enviado depois do login. Cada conta pode votar uma vez por semana; a votação reabre na segunda-feira.</p>
       {weekLabel && <p style={{ color: "#888", fontSize: "13px" }}>Semana iniciada em {weekLabel}</p>}
       {error && <div role="alert" style={{ ...panel, borderColor: "#8d3434", color: "#ffb7b7", margin: "16px 0" }}>{error}</div>}
       {message && <div role="status" style={{ ...panel, borderColor: "#6d5717", color: "#f5d978", margin: "16px 0" }}>{message}</div>}
