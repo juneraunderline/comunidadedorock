@@ -105,7 +105,11 @@ function Votacao({ user }) {
     } finally { setSaving(false); }
   };
 
-  const weekLabel = data.week_start ? new Date(`${data.week_start}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }) : null;
+  const weekStartValue = data.week_start == null ? "" : String(data.week_start).slice(0, 10);
+  const weekStartDate = /^\d{4}-\d{2}-\d{2}$/.test(weekStartValue) ? new Date(`${weekStartValue}T00:00:00`) : null;
+  const weekLabel = weekStartDate && !Number.isNaN(weekStartDate.getTime())
+    ? weekStartDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+    : null;
 
   return <main style={{ minHeight: "70vh", background: "#0a0a0e", color: "#f5f5f7", padding: "36px 18px 60px" }}>
     <div style={{ maxWidth: "1120px", margin: "0 auto" }}>
