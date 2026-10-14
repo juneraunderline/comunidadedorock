@@ -183,6 +183,9 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS releases (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, type TEXT DEFAULT 'Single', release_date TEXT, image TEXT, spotify TEXT, youtube TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, display_name TEXT, avatar TEXT, role TEXT DEFAULT 'user', created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_band BOOLEAN NOT NULL DEFAULT FALSE`);
+  await db.run(`CREATE TABLE IF NOT EXISTS band_claim_requests (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, band_id INTEGER NOT NULL REFERENCES bands(id) ON DELETE CASCADE, message TEXT, status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')), created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), reviewed_at TIMESTAMPTZ, UNIQUE (user_id, band_id))`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_band_claim_requests_status ON band_claim_requests (status, created_at DESC)`);
+  await db.run(`CREATE TABLE IF NOT EXISTS band_accounts (user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, band_id INTEGER NOT NULL REFERENCES bands(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (user_id, band_id), UNIQUE (band_id))`);
   await db.run(`CREATE TABLE IF NOT EXISTS auth_sessions (id BIGSERIAL PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions (user_id)`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions (expires_at)`);
@@ -1112,7 +1115,13 @@ app.use("/api", async (req, res, next) => {
   if (method === "GET" && path === "/debug-rss") {
     return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
   }
-  if (method === "GET" && ["/users", "/pending-bands"].includes(path)) {
+  if (path === "/band-claims/mine" && method === "GET") return authenticate(req, res, next);
+  if (path === "/my-band" && (method === "GET" || method === "PUT")) return authenticate(req, res, next);
+  if (path === "/band-claims" && method === "POST") return authenticate(req, res, (req, res, next) => {
+    if (!req.authUser.is_band) return res.status(403).json({ error: "Esta função está disponível apenas para contas de banda." });
+    return next();
+  });
+  if (method === "GET" && ["/users", "/pending-bands", "/band-claims"].includes(path)) {
     return authenticate(req, res, () => requireRoles("admin")(req, res, next));
   }
   if (method === "GET" && path === "/rss-status") {
@@ -1142,7 +1151,7 @@ app.use("/api", async (req, res, next) => {
   return authenticate(req, res, () => {
     // Ações de administração e manutenção são exclusivas de admin.
     const adminOnly =
-      /^\/(user\/\d+\/role|users?|pending-bands|approve-band\/\d+|rss-feeds|import-rss(?:-single)?|reimport-rss|fix-html-entities|fix-missing-images|test-rss-images|cleanup-duplicates|posts-without-images|debug-rss|rss-status)(?:\/|$)/.test(path) ||
+      /^\/(user\/\d+\/role|users?|pending-bands|band-claims\\/\\d+|approve-band\/\d+|rss-feeds|import-rss(?:-single)?|reimport-rss|fix-html-entities|fix-missing-images|test-rss-images|cleanup-duplicates|posts-without-images|debug-rss|rss-status)(?:\/|$)/.test(path) ||
       /^\/events\/\d+\/status$/.test(path) ||
       /^\/bands\/\d+\/weekly-featured$/.test(path) ||
       (method !== "GET" && /^\/(bands|events)(?:\/|$)/.test(path));
@@ -1367,6 +1376,86 @@ app.delete("/api/user/:id", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
+});
+
+// Solicitações seguras de acesso ao perfil de uma banda.
+app.get("/api/band-claims/mine", async (req, res) => {
+  try {
+    const claims = await db.getAll(`SELECT r.id, r.band_id, b.name AS band_name, r.message, r.status, r.created_at, r.reviewed_at FROM band_claim_requests r JOIN bands b ON b.id = r.band_id WHERE r.user_id = $1 ORDER BY r.created_at DESC`, [req.authUser.id]);
+    const managedBands = await db.getAll(`SELECT b.id, b.name, b.genre, b.city, b.state FROM band_accounts a JOIN bands b ON b.id = a.band_id WHERE a.user_id = $1 ORDER BY b.name`, [req.authUser.id]);
+    res.set("Cache-Control", "no-store");
+    res.json({ claims, bands: managedBands });
+  } catch (err) { res.status(500).json({ error: "Não foi possível carregar suas solicitações." }); }
+});
+app.post("/api/band-claims", async (req, res) => {
+  const bandId = req.body?.band_id;
+  const message = typeof req.body?.message === "string" ? req.body.message.trim().slice(0, 1000) : "";
+  if (!isValidPositiveId(bandId)) return res.status(400).json({ error: "Selecione uma banda válida." });
+  try {
+    const band = await db.getOne("SELECT id FROM bands WHERE id = $1", [bandId]);
+    if (!band) return res.status(404).json({ error: "Banda não encontrada." });
+    const alreadyManaged = await db.getOne("SELECT user_id FROM band_accounts WHERE band_id = $1", [bandId]);
+    if (alreadyManaged) return res.status(409).json({ error: "Esta banda já possui um representante vinculado. Entre em contato com a administração." });
+    const existing = await db.getOne("SELECT id, status FROM band_claim_requests WHERE user_id = $1 AND band_id = $2", [req.authUser.id, bandId]);
+    if (existing?.status === "pending") return res.status(409).json({ error: "Você já tem uma solicitação pendente para esta banda." });
+    if (existing?.status === "approved") return res.status(409).json({ error: "Esta solicitação já foi aprovada." });
+    const result = await db.getOne(`INSERT INTO band_claim_requests (user_id, band_id, message, status, created_at, reviewed_at) VALUES ($1, $2, $3, 'pending', NOW(), NULL) ON CONFLICT (user_id, band_id) DO UPDATE SET message = EXCLUDED.message, status = 'pending', created_at = NOW(), reviewed_at = NULL RETURNING id, band_id, message, status, created_at`, [req.authUser.id, bandId, message]);
+    res.status(201).json({ success: true, claim: result, message: "Solicitação enviada para análise da Comunidade do Rock." });
+  } catch (err) { console.error("Falha ao solicitar acesso à banda:", err.code || "DB_ERROR"); res.status(500).json({ error: "Não foi possível enviar a solicitação." }); }
+});
+app.get("/api/band-claims", async (req, res) => {
+  try {
+    const claims = await db.getAll(`SELECT r.id, r.user_id, r.band_id, r.message, r.status, r.created_at, u.username, u.display_name, u.is_band, b.name AS band_name FROM band_claim_requests r JOIN users u ON u.id = r.user_id JOIN bands b ON b.id = r.band_id ORDER BY CASE WHEN r.status = 'pending' THEN 0 ELSE 1 END, r.created_at DESC`);
+    res.json(claims);
+  } catch (err) { res.status(500).json({ error: "Não foi possível carregar as solicitações." }); }
+});
+app.patch("/api/band-claims/:id", async (req, res) => {
+  if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "Solicitação inválida." });
+  const status = req.body?.status;
+  if (!["approved", "rejected"].includes(status)) return res.status(400).json({ error: "Decisão inválida." });
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await client.query("SELECT * FROM band_claim_requests WHERE id = $1 FOR UPDATE", [req.params.id]);
+    const claim = result.rows[0];
+    if (!claim) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Solicitação não encontrada." }); }
+    if (status === "approved") {
+      const existing = await client.query("SELECT user_id FROM band_accounts WHERE band_id = $1 FOR UPDATE", [claim.band_id]);
+      if (existing.rows.length && Number(existing.rows[0].user_id) !== Number(claim.user_id)) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: "Esta banda já está vinculada a outra conta." });
+      }
+      await client.query("INSERT INTO band_accounts (user_id, band_id) VALUES ($1, $2) ON CONFLICT (user_id, band_id) DO NOTHING", [claim.user_id, claim.band_id]);
+    }
+    await client.query("UPDATE band_claim_requests SET status = $1, reviewed_at = NOW() WHERE id = $2", [status, claim.id]);
+    await client.query("COMMIT");
+    res.json({ success: true, status });
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("Falha ao revisar solicitação de banda:", err.code || "DB_ERROR");
+    res.status(500).json({ error: "Não foi possível revisar a solicitação." });
+  } finally { client.release(); }
+});
+app.get("/api/my-band", async (req, res) => {
+  try {
+    const band = await db.getOne(`SELECT b.* FROM band_accounts a JOIN bands b ON b.id = a.band_id WHERE a.user_id = $1 ORDER BY a.created_at DESC LIMIT 1`, [req.authUser.id]);
+    if (!band) return res.status(404).json({ error: "Sua conta ainda não tem uma banda aprovada vinculada." });
+    res.set("Cache-Control", "no-store");
+    res.json(band);
+  } catch (err) { res.status(500).json({ error: "Não foi possível carregar o perfil da banda." }); }
+});
+app.put("/api/my-band", async (req, res) => {
+  const fields = ["name", "genre", "city", "state", "year", "members", "biography", "contact", "image", "instagram", "facebook", "youtube", "spotify", "bandcamp", "site"];
+  const values = fields.map(field => typeof req.body?.[field] === "string" ? req.body[field].trim().slice(0, field === "biography" ? 12000 : field === "members" ? 5000 : 2000) : "");
+  try {
+    const association = await db.getOne("SELECT band_id FROM band_accounts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1", [req.authUser.id]);
+    if (!association) return res.status(403).json({ error: "O acesso ao perfil da banda precisa ser aprovado pela administração." });
+    const current = await db.getOne("SELECT * FROM bands WHERE id = $1", [association.band_id]);
+    if (!current) return res.status(404).json({ error: "Banda não encontrada." });
+    const merged = fields.map((field, index) => req.body?.[field] === undefined ? current[field] : values[index]);
+    const result = await db.getOne(`UPDATE bands SET name = $1, genre = $2, city = $3, state = $4, year = $5, members = $6, biography = $7, contact = $8, image = $9, instagram = $10, facebook = $11, youtube = $12, spotify = $13, bandcamp = $14, site = $15 WHERE id = $16 RETURNING *`, [...merged, association.band_id]);
+    res.json({ success: true, band: result });
+  } catch (err) { console.error("Falha ao atualizar perfil próprio de banda:", err.code || "DB_ERROR"); res.status(500).json({ error: "Não foi possível salvar o perfil da banda." }); }
 });
 
 // Posts
