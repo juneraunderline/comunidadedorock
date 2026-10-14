@@ -1224,7 +1224,7 @@ app.post("/api/register", async (req, res) => {
     if (exists) return res.status(409).json({ error: "Usuário já existe" });
     const result = await pool.query(
       "INSERT INTO users (username, password, display_name, role, is_band) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, display_name, avatar, role, is_band, created_at",
-      [username.toLowerCase(), await hashPassword(password), display_name || username, "user", Boolean(is_band)]
+      [username.trim().toLowerCase(), await hashPassword(password), display_name || username.trim(), "user", is_band === true]
     );
     const token = await createSession(result.rows[0].id);
     res.json({ success: true, token, user: result.rows[0] });
@@ -1281,7 +1281,7 @@ function isValidPositiveId(value) {
 app.get("/api/user/:id", async (req, res) => {
   if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido" });
   try {
-    const user = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
+    const user = await db.getOne("SELECT id, username, display_name, avatar, role, is_band, created_at FROM users WHERE id = $1", [req.params.id]);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
     res.json(user);
   } catch (err) {
