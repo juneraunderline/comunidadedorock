@@ -19,7 +19,7 @@ function safePostUrl(value) {
 function safeNotificationLink(value) {
   if (typeof value !== "string" || !value.trim()) return "";
   const link = value.trim();
-  if (link.startsWith("/") && !link.startsWith("//") && !link.includes("\\\\")) return link;
+  if (link.startsWith("/") && !link.startsWith("//") && !link.includes(String.fromCharCode(92))) return link;
   return safePostUrl(link);
 }
 
