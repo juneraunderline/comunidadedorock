@@ -1,5 +1,6 @@
 ﻿const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const { Pool } = require("pg");
 
 let fetchFunc;
@@ -14,13 +15,106 @@ if (typeof fetch !== "undefined") {
 }
 
 const app = express();
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// A Vercel edge proxy fica à frente da função; um salto confiável para obter o IP do cliente.
+app.set("trust proxy", 1);
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+});
+const allowedOrigins = new Set(
+  (process.env.FRONTEND_ORIGINS || "https://comunidadedorock.com.br,https://www.comunidadedorock.com.br,http://localhost:5173")
+    .split(",").map(origin => origin.trim()).filter(Boolean)
+);
+app.use(cors({
+  origin(origin, callback) {
+    // Chamadas sem Origin incluem cron/health e clientes de servidor para servidor.
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  maxAge: 600
+}));
+// Rate limit compartilhado entre instâncias serverless via PostgreSQL.
+// Falha fechada: se o contador compartilhado estiver indisponível, não aceitar
+// a requisição sem limite. A tabela é criada pela inicialização normal do schema.
+function sharedRateLimit(name, windowMs, limit, message) {
+  return async (req, res, next) => {
+    try {
+      await ensureInitialized();
+      const ip = String(req.ip || req.socket?.remoteAddress || "unknown").slice(0, 128);
+      const ipHash = crypto.createHash("sha256").update(ip).digest("hex");
+      const now = Date.now();
+      const windowStart = new Date(Math.floor(now / windowMs) * windowMs);
+      const key = name + ":" + ipHash;
+      const result = await pool.query(
+        "INSERT INTO api_rate_limit_buckets (bucket_key, window_start, hit_count, expires_at) VALUES ($1, $2, 1, $3) ON CONFLICT (bucket_key, window_start) DO UPDATE SET hit_count = api_rate_limit_buckets.hit_count + 1 RETURNING hit_count",
+        [key, windowStart, new Date(now + Math.max(windowMs * 2, 86400000))]
+      );
+      const count = Number(result.rows[0]?.hit_count || 0);
+      res.setHeader("RateLimit-Limit", String(limit));
+      res.setHeader("RateLimit-Remaining", String(Math.max(0, limit - count)));
+      if (count > limit) {
+        res.setHeader("Retry-After", String(Math.max(1, Math.ceil((windowStart.getTime() + windowMs - now) / 1000))));
+        return res.status(429).json({ error: message });
+      }
+      // Limpeza probabilística sem cron ou serviço adicional.
+      if (Math.random() < 0.01) {
+        pool.query("DELETE FROM api_rate_limit_buckets WHERE expires_at < NOW()").catch(() => {});
+      }
+      return next();
+    } catch (err) {
+      console.error("Rate limit compartilhado indisponível:", err.code || "DB_ERROR");
+      return res.status(503).json({ error: "Proteção temporariamente indisponível. Tente novamente." });
+    }
+  };
+}
+const apiLimiter = sharedRateLimit("api", 60 * 1000, 180, "Muitas solicitações. Tente novamente em instantes.");
+const authLimiter = sharedRateLimit("auth", 15 * 60 * 1000, 10, "Muitas tentativas de acesso. Aguarde 15 minutos e tente novamente.");
+const uploadLimiter = sharedRateLimit("upload", 15 * 60 * 1000, 15, "Limite de envios de imagem atingido. Tente novamente mais tarde.");
+const interactionLimiter = sharedRateLimit("interaction", 15 * 60 * 1000, 20, "Muitas solicitações. Aguarde e tente novamente.");
+const bandSubmissionLimiter = sharedRateLimit("band-submission", 15 * 60 * 1000, 5, "Limite de inscrições de bandas atingido. Aguarde 15 minutos e tente novamente.");
+app.use("/api", apiLimiter);
+app.use("/api/login", authLimiter);
+app.use("/api/register", authLimiter);
+app.use("/api/upload-image", uploadLimiter);
+app.use("/api/comments", interactionLimiter);
+app.use("/api/event-submissions", interactionLimiter);
+app.use("/api/bands/submit", bandSubmissionLimiter);
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "1mb", extended: true }));
 // Upload de imagem via base64
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
+// Senhas novas usam scrypt com salt individual. Senhas legadas são migradas
+// somente depois de um login válido, sem resetar contas existentes.
+const scryptAsync = (password, salt, keylen = 64) => new Promise((resolve, reject) => {
+  crypto.scrypt(String(password), salt, keylen, { N: 16384, r: 8, p: 1 }, (err, key) => {
+    if (err) return reject(err);
+    resolve(key);
+  });
+});
+async function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const key = await scryptAsync(password, salt);
+  return "scrypt$" + salt + "$" + key.toString("hex");
+}
+async function verifyPassword(password, storedPassword) {
+  const stored = String(storedPassword || "");
+  if (stored.startsWith("scrypt$")) {
+    const parts = stored.split("$");
+    if (parts.length !== 3 || !/^[a-f0-9]{32}$/i.test(parts[1]) || !/^[a-f0-9]{128}$/i.test(parts[2])) return false;
+    const candidate = await scryptAsync(password, parts[1]);
+    const expected = Buffer.from(parts[2], "hex");
+    return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
+  }
+  return stored.length > 0 && String(password) === stored;
+}
+
 const sharp = require("sharp");
 const imagesDir = process.env.VERCEL ? path.join("/tmp", "comunidadedorock-images") : path.join(__dirname, "public", "images");
 if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir, { recursive: true });
@@ -31,21 +125,10 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
-app.post("/api/upload-image", async (req, res) => {
-  try {
-    const { image } = req.body;
-    if (!image) return res.status(400).json({ error: "Imagem obrigatoria" });
-    const result = await cloudinary.uploader.upload(image, { folder: "comunidadedorock" });
-    res.json({ success: true, path: result.secure_url });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // BANCO POSTGRESQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+  ssl: process.env.PGSSLMODE === "disable" ? false : (process.env.DATABASE_URL ? { rejectUnauthorized: false } : false),
   // O Layerbase tem limite restrito de conexões simultâneas.
   // Em Vercel serverless, manter apenas uma conexão por instância e liberá-la
   // rapidamente reduz o risco de esgotar max_client_conn.
@@ -80,6 +163,8 @@ const db = {
 
 // Inicialização de Tabelas
 const initDb = async () => {
+  await db.run(`CREATE TABLE IF NOT EXISTS api_rate_limit_buckets (bucket_key VARCHAR(160) NOT NULL, window_start TIMESTAMPTZ NOT NULL, hit_count INTEGER NOT NULL DEFAULT 0, expires_at TIMESTAMPTZ NOT NULL, PRIMARY KEY (bucket_key, window_start))`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_api_rate_limit_expiry ON api_rate_limit_buckets (expires_at)`);
   await db.run(`CREATE TABLE IF NOT EXISTS posts (id SERIAL PRIMARY KEY, title TEXT, content TEXT, image TEXT, link TEXT, source TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, is_weekly_featured BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW())`);
   // Garante que bancos antigos recebam as colunas adicionadas depois da criação.
@@ -98,6 +183,9 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS releases (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, type TEXT DEFAULT 'Single', release_date TEXT, image TEXT, spotify TEXT, youtube TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, display_name TEXT, avatar TEXT, role TEXT DEFAULT 'user', created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_band BOOLEAN NOT NULL DEFAULT FALSE`);
+  await db.run(`CREATE TABLE IF NOT EXISTS auth_sessions (id BIGSERIAL PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions (user_id)`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions (expires_at)`);
   await db.run(`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, page_type TEXT NOT NULL, page_id INTEGER NOT NULL, user_id INTEGER, user_name TEXT NOT NULL, user_avatar TEXT, content TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW())`);
 };
 
@@ -174,14 +262,14 @@ async function migrateLegacyBandImage(band, table = "bands") {
   const original = band?.image;
   if (!original || typeof original !== "string") return original || null;
   if (!["bands", "pending_bands"].includes(table)) throw new Error("Tabela de imagens não permitida");
-  if (/^https?:\/\/res\.cloudinary\.com\//i.test(original)) return original;
+  // Nunca buscar nem importar URLs externas no servidor. Links remotos legados
+  // continuam sendo exibidos como estão; apenas imagens Base64 enviadas em fluxos
+  // autenticados/moderados podem ser processadas e enviadas ao Cloudinary.
+  if (/^https?:\/\//i.test(original)) return original;
 
   try {
     let uploadSource = original;
-    const isRemoteUrl = /^https?:\/\//i.test(original);
-
-    if (!isRemoteUrl) {
-      let imageBuffer;
+    let imageBuffer;
       if (/^data:image\//i.test(original)) {
         const comma = original.indexOf(",");
         if (comma < 0) return original;
@@ -230,7 +318,6 @@ async function migrateLegacyBandImage(band, table = "bands") {
         throw new Error("Não foi possível reduzir a imagem para menos de 7 MB");
       }
       uploadSource = "data:image/jpeg;base64," + optimized.toString("base64");
-    }
 
     const result = await cloudinary.uploader.upload(uploadSource, {
       folder: "comunidadedorock/bandas",
@@ -244,6 +331,80 @@ async function migrateLegacyBandImage(band, table = "bands") {
   } catch (err) {
     console.warn("Não foi possível padronizar a imagem da banda " + band.id + ":", err.message);
     return original;
+  }
+}
+
+// Prepara a imagem de uma inscrição pública sem chamar serviços externos.
+// O envio ao Cloudinary fica para a aprovação administrativa.
+async function preparePendingBandImage(image) {
+  if (image == null || image === "") return null;
+  if (typeof image !== "string") {
+    const error = new Error("Imagem inválida. Envie uma imagem JPEG, PNG, WebP ou GIF.");
+    error.code = "INVALID_BAND_IMAGE";
+    throw error;
+  }
+
+  if (image.length > 7 * 1024 * 1024) {
+    const error = new Error("A imagem enviada é muito grande. Escolha uma imagem menor que 5 MB.");
+    error.code = "INVALID_BAND_IMAGE";
+    throw error;
+  }
+
+  // Só aceitamos imagens já hospedadas no Cloudinary em URLs HTTPS confiáveis.
+  if (/^https:\/\/res\.cloudinary\.com\/[a-z0-9_-]+\/image\/upload\//i.test(image)) return image;
+
+  const match = image.match(/^data:image\/(jpeg|png|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/i);
+  if (!match) {
+    const error = new Error("Imagem inválida. Envie JPEG, PNG, WebP ou GIF; links externos não são aceitos.");
+    error.code = "INVALID_BAND_IMAGE";
+    throw error;
+  }
+
+  const imageBuffer = Buffer.from(match[2], "base64");
+  if (!imageBuffer.length || imageBuffer.length > 5 * 1024 * 1024) {
+    const error = new Error("A imagem deve ter no máximo 5 MB.");
+    error.code = "INVALID_BAND_IMAGE";
+    throw error;
+  }
+
+  try {
+    const metadata = await sharp(imageBuffer, { limitInputPixels: 25000000 }).metadata();
+    const expectedFormat = match[1].toLowerCase() === "jpg" ? "jpeg" : match[1].toLowerCase();
+    if (!["jpeg", "png", "webp", "gif"].includes(metadata.format) ||
+        metadata.format !== expectedFormat ||
+        !metadata.width || !metadata.height ||
+        metadata.width * metadata.height > 25000000) {
+      throw new Error("Formato ou dimensões da imagem inválidos.");
+    }
+
+    let optimized = null;
+    for (const attempt of [
+      { width: 1200, quality: 72 },
+      { width: 1000, quality: 62 },
+      { width: 800, quality: 52 },
+      { width: 640, quality: 42 }
+    ]) {
+      const candidate = await sharp(imageBuffer, { limitInputPixels: 25000000 })
+        .rotate()
+        .resize({ width: attempt.width, height: attempt.width, fit: "inside", withoutEnlargement: true })
+        .flatten({ background: "#ffffff" })
+        .jpeg({ quality: attempt.quality, mozjpeg: true })
+        .toBuffer();
+      if (!optimized || candidate.length < optimized.length) optimized = candidate;
+      if (candidate.length <= 1024 * 1024) {
+        optimized = candidate;
+        break;
+      }
+    }
+
+    if (!optimized || optimized.length > 1024 * 1024) {
+      throw new Error("Não foi possível reduzir a imagem. Escolha outra imagem menor.");
+    }
+    return "data:image/jpeg;base64," + optimized.toString("base64");
+  } catch (cause) {
+    const error = new Error(cause.message || "Não foi possível validar a imagem enviada.");
+    error.code = "INVALID_BAND_IMAGE";
+    throw error;
   }
 }
 
@@ -554,10 +715,7 @@ app.get("/api/health", async (req, res) => {
     });
     return res.status(503).json({
       status: "error",
-      database: "unavailable",
-      stage: "connection",
-      code: typeof err.code === "string" ? err.code : "UNKNOWN",
-      detail: String(err.message || "Erro sem mensagem").slice(0, 300)
+      database: "unavailable"
     });
   }
 
@@ -568,9 +726,7 @@ app.get("/api/health", async (req, res) => {
     console.error("Health check - inicialização:", initializationStage, err.code || err.message);
     return res.status(503).json({
       status: "error",
-      database: "connected",
-      initialization: initializationStage,
-      code: initializationErrorCode || "UNKNOWN"
+      database: "unavailable"
     });
   }
 });
@@ -583,17 +739,14 @@ app.use(async (req, res, next) => {
   } catch (err) {
     const code = typeof err.code === "string" ? err.code : "UNKNOWN";
     const detail = String(err.message || "Erro sem mensagem").slice(0, 300);
-    console.error("❌ Falha ao inicializar backend:", {
+    console.error("Falha ao inicializar backend:", {
       stage: initializationStage,
       code,
       detail
     });
-    // Retorna diagnóstico sem expor DATABASE_URL ou credenciais.
+    // Detalhes técnicos ficam apenas nos logs; a resposta pública é genérica.
     res.status(503).json({
-      error: "Banco de dados indisponível",
-      stage: initializationStage,
-      code,
-      detail
+      error: "Serviço temporariamente indisponível"
     });
   }
 });
@@ -847,79 +1000,295 @@ async function cleanupRssPostsPerSource() {
   `);
 }
 
+// --- SEGURANÇA DE SESSÃO E AUTORIZAÇÃO ---
+// Token aleatório de curta duração; somente o hash é persistido no banco.
+// O frontend envia o token no cabeçalho Authorization (nunca confiar no objeto user do localStorage).
+const SESSION_TTL_HOURS = 8;
+function hashSessionToken(token) {
+  return crypto.createHash("sha256").update(String(token)).digest("hex");
+}
+async function createSession(userId) {
+  const token = crypto.randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000);
+  await db.run("DELETE FROM auth_sessions WHERE expires_at <= NOW()");
+  await db.run("INSERT INTO auth_sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)", [hashSessionToken(token), userId, expiresAt]);
+  return token;
+}
+function bearerToken(req) {
+  const header = req.get("authorization") || "";
+  const match = header.match(/^Bearer ([A-Za-z0-9_-]{40,})$/);
+  return match ? match[1] : null;
+}
+async function authenticate(req, res, next) {
+  const token = bearerToken(req);
+  if (!token) return res.status(401).json({ error: "Autenticação necessária" });
+  try {
+    const user = await db.getOne(
+      "SELECT u.id, u.username, u.display_name, u.avatar, u.role, u.is_band, u.created_at FROM auth_sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > NOW()",
+      [hashSessionToken(token)]
+    );
+    if (!user) return res.status(401).json({ error: "Sessão inválida ou expirada" });
+    req.authUser = user;
+    req.authTokenHash = hashSessionToken(token);
+    return next();
+  } catch (err) {
+    console.error("Falha ao validar sessão:", err.code || "UNKNOWN");
+    return res.status(503).json({ error: "Não foi possível validar a sessão" });
+  }
+}
+function requireRoles(...roles) {
+  return (req, res, next) => {
+    if (!req.authUser) return res.status(401).json({ error: "Autenticação necessária" });
+    if (!roles.includes(req.authUser.role)) return res.status(403).json({ error: "Acesso não autorizado" });
+    return next();
+  };
+}
+function isPath(path, pattern) { return pattern.test(path); }
+
+// Política central: nenhuma rota de escrita fica pública por omissão.
+// Exceções públicas são explícitas; /api/cron/rss conserva sua validação CRON_SECRET.
+app.use("/api", async (req, res, next) => {
+  const path = req.path;
+  const method = req.method.toUpperCase();
+  if (path === "/health" || path === "/login" || path === "/register" ||
+      path === "/bands/submit" || path === "/cron/rss") return next();
+  if (path === "/logout" && method === "POST") return authenticate(req, res, next);
+  if (path === "/session" && method === "GET") return authenticate(req, res, next);
+
+  const isUserProfile = isPath(path, /^\/user\/\d+$/);
+  const isCommentDelete = isPath(path, /^\/comments\/\d+$/) && method === "DELETE";
+  const isPublicRead = method === "GET" && (
+    /^\/(posts|bands|band-genres|interviews|releases|events|rss-feeds|comments\/[^/]+\/\d+)$/.test(path) ||
+    /^\/posts\/\d+$/.test(path) ||
+    /^\/bands\/[^/]+$/.test(path) ||
+    /^\/interviews\/\d+$/.test(path) ||
+    /^\/releases\/\d+$/.test(path) ||
+    /^\/events\/\d+$/.test(path)
+  );
+  if (isPublicRead) {
+    if ((path === "/events" && req.query.full === "1") ||
+        (path === "/bands" && req.query.full === "1")) {
+      return authenticate(req, res, () => requireRoles("admin")(req, res, next));
+    }
+    if ((path === "/posts" && req.query.full === "1") ||
+        (path === "/interviews" && req.query.full === "1") ||
+        (path === "/releases" && req.query.full === "1")) {
+      return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
+    }
+    return next();
+  }
+
+  if (method === "GET" && path === "/debug-rss") {
+    return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
+  }
+  if (method === "GET" && ["/users", "/pending-bands"].includes(path)) {
+    return authenticate(req, res, () => requireRoles("admin")(req, res, next));
+  }
+  if (method === "GET" && path === "/rss-status") {
+    return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
+  }
+  if (isUserProfile && (method === "GET" || method === "PUT")) {
+    return authenticate(req, res, () => {
+      if (String(req.authUser.id) !== req.params?.id && String(req.authUser.id) !== path.split("/")[2] && req.authUser.role !== "admin") {
+        return res.status(403).json({ error: "Você só pode acessar seu próprio perfil" });
+      }
+      return next();
+    });
+  }
+  if (isCommentDelete) {
+    return authenticate(req, res, next);
+  }
+  if (method === "POST" && path === "/event-submissions") {
+    return authenticate(req, res, next);
+  }
+  if (method === "POST" && path === "/comments") {
+    return authenticate(req, res, next);
+  }
+  if (method === "POST" && path === "/upload-image") {
+    return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
+  }
+
+  return authenticate(req, res, () => {
+    // Ações de administração e manutenção são exclusivas de admin.
+    const adminOnly =
+      /^\/(user\/\d+\/role|users?|pending-bands|approve-band\/\d+|rss-feeds|import-rss(?:-single)?|reimport-rss|fix-html-entities|fix-missing-images|test-rss-images|cleanup-duplicates|posts-without-images|debug-rss|rss-status)(?:\/|$)/.test(path) ||
+      /^\/events\/\d+\/status$/.test(path) ||
+      /^\/bands\/\d+\/weekly-featured$/.test(path) ||
+      (method !== "GET" && /^\/(bands|events)(?:\/|$)/.test(path));
+    if (adminOnly) return requireRoles("admin")(req, res, next);
+    const editorAllowed = ["admin", "editor"];
+    if (method !== "GET" && /^\/(posts|interviews|releases)(?:\/|$)/.test(path)) {
+      return requireRoles(...editorAllowed)(req, res, next);
+    }
+    if (path === "/comments" && method === "POST") return next();
+    if (isCommentDelete) return next();
+    return requireRoles("admin")(req, res, next);
+  });
+});
+
+// Upload fica registrado depois do middleware central de autenticação/autorização.
+app.post("/api/upload-image", async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (typeof image !== "string") {
+      return res.status(400).json({ error: "Envie uma imagem válida" });
+    }
+    if (image.length > 8 * 1024 * 1024) {
+      return res.status(413).json({ error: "A imagem excede o limite permitido" });
+    }
+    const match = /^data:image\/(png|jpe?g|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/i.exec(image);
+    if (!match) {
+      return res.status(400).json({ error: "Formato de imagem não permitido" });
+    }
+    const imageBuffer = Buffer.from(match[2], "base64");
+    if (!imageBuffer.length || imageBuffer.toString("base64").replace(/=+$/, "") !== match[2].replace(/=+$/, "")) {
+      return res.status(400).json({ error: "Conteúdo de imagem inválido" });
+    }
+    let metadata;
+    try {
+      metadata = await sharp(imageBuffer, { limitInputPixels: 40000000 }).metadata();
+    } catch {
+      return res.status(400).json({ error: "Arquivo de imagem inválido" });
+    }
+    const declaredFormat = match[1].toLowerCase().replace("jpg", "jpeg");
+    if (!["jpeg", "png", "webp", "gif"].includes(metadata.format) || metadata.format !== declaredFormat) {
+      return res.status(400).json({ error: "O conteúdo não corresponde ao formato declarado" });
+    }
+    const result = await cloudinary.uploader.upload(image, {
+      folder: "comunidadedorock",
+      resource_type: "image"
+    });
+    return res.json({ success: true, path: result.secure_url });
+  } catch (err) {
+    console.error("Erro no upload de imagem:", err.message);
+    return res.status(500).json({ error: "Não foi possível enviar a imagem" });
+  }
+});
+
 // --- ROTAS DA API ---
 
 // Autenticação
 app.post("/api/register", async (req, res) => {
   try {
     const { username, password, display_name, is_band } = req.body;
-    if (!username || !password) return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
-    if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
-    if (password.length < 4) return res.status(400).json({ error: "Senha deve ter pelo menos 4 caracteres" });
+    if (typeof username !== "string" || !username.trim() || typeof password !== "string" || !password) {
+      return res.status(400).json({ error: "Usuário e senha são obrigatórios" });
+    }
+    if (username.trim().length < 3 || username.length > 100) {
+      return res.status(400).json({ error: "Usuário deve ter entre 3 e 100 caracteres" });
+    }
+    if (password.length < 8 || password.length > 128) {
+      return res.status(400).json({ error: "Senha deve ter entre 8 e 128 caracteres" });
+    }
     const exists = await db.getOne("SELECT id FROM users WHERE username = $1", [username.toLowerCase()]);
     if (exists) return res.status(409).json({ error: "Usuário já existe" });
     const result = await pool.query(
       "INSERT INTO users (username, password, display_name, role, is_band) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, display_name, avatar, role, is_band, created_at",
-      [username.toLowerCase(), password, display_name || username, "user", Boolean(is_band)]
+      [username.toLowerCase(), await hashPassword(password), display_name || username, "user", Boolean(is_band)]
     );
-    res.json({ success: true, user: result.rows[0] });
+    const token = await createSession(result.rows[0].id);
+    res.json({ success: true, token, user: result.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Erro no cadastro:", err.code || "UNKNOWN");
+    res.status(500).json({ error: "Não foi possível concluir o cadastro" });
   }
 });
 
 app.post("/api/login", async (req, res) => {
   try {
-    const { user, pass } = req.body;
-    // Garantir que admin existe no banco (apenas 1)
-    const admins = await db.getAll("SELECT * FROM users WHERE username = 'admin' ORDER BY id ASC");
-    if (admins.length === 0) {
-      await pool.query(
-        "INSERT INTO users (username, password, display_name, role) VALUES ($1, $2, $3, $4)",
-        ["admin", "1234", "Administrador", "admin"]
-      );
-    } else if (admins.length > 1) {
-      // Remover duplicados, manter só o primeiro
-      for (let i = 1; i < admins.length; i++) {
-        await db.run("DELETE FROM users WHERE id = $1", [admins[i].id]);
-      }
+    const { user, pass } = req.body || {};
+    // Limitar os valores antes de consultar o banco ou executar scrypt.
+    if (typeof user !== "string" || user.length > 100 || typeof pass !== "string" || pass.length > 128) {
+      return res.status(400).json({ success: false, error: "Usuário ou senha inválidos" });
     }
-    // Login — sempre verifica senha do banco
-    const found = await db.getOne("SELECT * FROM users WHERE username = $1 AND password = $2", [user?.toLowerCase(), pass]);
-    if (!found) return res.status(401).json({ success: false, error: "Usuário ou senha incorretos" });
-    res.json({ success: true, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role, is_band: Boolean(found.is_band), created_at: found.created_at } });
+    // Nunca criar conta administrativa com senha padrão durante um login.
+    const found = await db.getOne("SELECT * FROM users WHERE username = $1", [user.toLowerCase()]);
+    if (!found || !(await verifyPassword(pass, found.password))) {
+      return res.status(401).json({ success: false, error: "Usuário ou senha incorretos" });
+    }
+    // Migrar senha legada somente após autenticação válida, sem resetar a conta.
+    if (!String(found.password || "").startsWith("scrypt$")) {
+      const migratedPassword = await hashPassword(pass);
+      await db.run("UPDATE users SET password = $1 WHERE id = $2", [migratedPassword, found.id]);
+      found.password = migratedPassword;
+    }
+    const token = await createSession(found.id);
+    res.json({ success: true, token, user: { id: found.id, username: found.username, display_name: found.display_name, avatar: found.avatar, role: found.role, is_band: Boolean(found.is_band), created_at: found.created_at } });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Erro no login:", err.code || "UNKNOWN");
+    res.status(500).json({ error: "Não foi possível concluir o login" });
   }
 });
 
+app.post("/api/logout", authenticate, async (req, res) => {
+  try {
+    await db.run("DELETE FROM auth_sessions WHERE token_hash = $1", [req.authTokenHash]);
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: "Não foi possível encerrar a sessão" });
+  }
+});
+
+app.get("/api/session", authenticate, (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.json({ user: req.authUser });
+});
+
+function isValidPositiveId(value) {
+  return /^\d+$/.test(String(value)) && Number.isSafeInteger(Number(value)) && Number(value) > 0;
+}
+
 app.get("/api/user/:id", async (req, res) => {
+  if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido" });
   try {
     const user = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
 app.put("/api/user/:id", async (req, res) => {
+  if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido" });
+  if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+    return res.status(400).json({ error: "Dados de perfil inválidos" });
+  }
   try {
     const { display_name, username, avatar, new_password, current_password } = req.body;
+    if (username !== undefined && (typeof username !== "string" || username.trim().length < 3 || username.trim().length > 100)) {
+      return res.status(400).json({ error: "Nome de usuário deve ter entre 3 e 100 caracteres" });
+    }
+    if (display_name !== undefined && (typeof display_name !== "string" || display_name.length > 100)) {
+      return res.status(400).json({ error: "Nome de exibição inválido" });
+    }
+    if (avatar !== undefined && (typeof avatar !== "string" || avatar.length > 2048)) {
+      return res.status(400).json({ error: "Avatar inválido" });
+    }
+    if (new_password && (typeof new_password !== "string" || new_password.length < 8 || new_password.length > 128)) {
+      return res.status(400).json({ error: "Nova senha deve ter entre 8 e 128 caracteres" });
+    }
+    if (new_password && (typeof current_password !== "string" || current_password.length > 128)) {
+      return res.status(400).json({ error: "Senha atual inválida" });
+    }
     const user = await db.getOne("SELECT * FROM users WHERE id = $1", [req.params.id]);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
     if (new_password) {
-      if (!current_password || current_password !== user.password) {
+      if (!current_password || !(await verifyPassword(current_password, user.password))) {
         return res.status(403).json({ error: "Senha atual incorreta" });
       }
-      if (new_password.length < 4) return res.status(400).json({ error: "Nova senha deve ter pelo menos 4 caracteres" });
-      await db.run("UPDATE users SET password = $1 WHERE id = $2", [new_password, req.params.id]);
+      if (new_password.length < 8) return res.status(400).json({ error: "Nova senha deve ter pelo menos 8 caracteres" });
+      await db.run("UPDATE users SET password = $1 WHERE id = $2", [await hashPassword(new_password), req.params.id]);
+      // Invalidar outras sessões da conta após a troca de senha, preservando esta requisição.
+      if (req.authTokenHash) {
+        await db.run("DELETE FROM auth_sessions WHERE user_id = $1 AND token_hash <> $2", [req.params.id, req.authTokenHash]);
+      }
     }
-    if (username !== undefined && username !== user.username) {
-      if (username.length < 3) return res.status(400).json({ error: "Usuário deve ter pelo menos 3 caracteres" });
-      const exists = await db.getOne("SELECT id FROM users WHERE username = $1 AND id != $2", [username.toLowerCase(), req.params.id]);
+    if (username !== undefined && username.trim().toLowerCase() !== user.username) {
+      const normalizedUsername = username.trim().toLowerCase();
+      const exists = await db.getOne("SELECT id FROM users WHERE username = $1 AND id != $2", [normalizedUsername, req.params.id]);
       if (exists) return res.status(409).json({ error: "Este nome de usuário já está em uso" });
-      await db.run("UPDATE users SET username = $1 WHERE id = $2", [username.toLowerCase(), req.params.id]);
+      await db.run("UPDATE users SET username = $1 WHERE id = $2", [normalizedUsername, req.params.id]);
     }
     if (display_name !== undefined) {
       await db.run("UPDATE users SET display_name = $1 WHERE id = $2", [display_name, req.params.id]);
@@ -930,7 +1299,7 @@ app.put("/api/user/:id", async (req, res) => {
     const updated = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
     res.json({ success: true, user: updated });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -939,11 +1308,12 @@ app.get("/api/users", async (req, res) => {
   try {
     res.json(await db.getAll("SELECT id, username, display_name, avatar, role, created_at FROM users ORDER BY created_at DESC"));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
 app.put("/api/user/:id/role", async (req, res) => {
+  if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido" });
   try {
     const { role } = req.body;
     if (!["admin", "editor", "user"].includes(role)) return res.status(400).json({ error: "Role inválida" });
@@ -951,11 +1321,12 @@ app.put("/api/user/:id/role", async (req, res) => {
     const updated = await db.getOne("SELECT id, username, display_name, avatar, role, created_at FROM users WHERE id = $1", [req.params.id]);
     res.json({ success: true, user: updated });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
 app.delete("/api/user/:id", async (req, res) => {
+  if (!isValidPositiveId(req.params.id)) return res.status(400).json({ error: "ID de usuário inválido" });
   try {
     const user = await db.getOne("SELECT role FROM users WHERE id = $1", [req.params.id]);
     if (!user) return res.status(404).json({ error: "Usuário não encontrado" });
@@ -963,7 +1334,7 @@ app.delete("/api/user/:id", async (req, res) => {
     await db.run("DELETE FROM users WHERE id = $1", [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1011,7 +1382,7 @@ app.get("/api/posts", async (req, res) => {
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.json(posts.map(p => ({ ...p, slug: mkSlug(p.title) })));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1058,7 +1429,8 @@ app.get("/api/bands/:id", async (req, res) => {
       band = await db.getOne(`SELECT * FROM bands WHERE ${slugExpression} = $1 LIMIT 1`, [key]);
     }
     if (!band) return res.status(404).json({ error: "Banda não encontrada" });
-    band.image = await migrateLegacyBandImage(band);
+    // Leitura pública não deve disparar migração/upload de imagem.
+    // Imagens legadas permanecem exibidas pela URL original até uma edição autorizada.
     const slug = band.name ? band.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.json({ ...band, slug });
@@ -1106,11 +1478,12 @@ app.get("/api/bands", async (req, res) => {
     }
     const bands = await db.getAll(sql, params);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
-    // Migra as imagens antigas do lote em paralelo para reduzir a espera no primeiro acesso.
-    // O banco só recebe URLs depois que cada upload termina; falhas preservam a imagem original.
-    const responseBands = await Promise.all(bands.map(async (band) => {
-      const image = full ? band.image : await migrateLegacyBandImage(band);
-      return { ...band, image, slug: mkSlug(band.name) };
+    // Listagem pública é somente leitura: não deve provocar uploads ou migrações
+    // de imagens no Cloudinary durante um GET.
+    const responseBands = bands.map((band) => ({
+      ...band,
+      image: band.image,
+      slug: mkSlug(band.name)
     }));
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.json(responseBands);
@@ -1179,9 +1552,20 @@ app.delete("/api/bands/:id", async (req, res) => {
 app.post("/api/bands/submit", async (req, res) => {
   try {
     const b = req.body;
-    if (!b.name) return res.status(400).json({ error: "Nome da banda é obrigatório" });
+    if (!b || typeof b !== "object" || Array.isArray(b) || !b.name) {
+      return res.status(400).json({ error: "Nome da banda é obrigatório" });
+    }
+    let pendingImage;
+    try {
+      pendingImage = await preparePendingBandImage(b.image);
+    } catch (imageError) {
+      if (imageError.code === "INVALID_BAND_IMAGE") {
+        return res.status(400).json({ error: imageError.message });
+      }
+      throw imageError;
+    }
     const inserted = await db.getOne(`INSERT INTO pending_bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
-      [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, b.image, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site]);
+      [b.name, b.genre, b.city, b.state, b.year, b.members, b.biography, b.contact, pendingImage, b.instagram, b.facebook, b.youtube, b.spotify, b.bandcamp, b.site]);
     // Dispara o aviso assim que a inscrição é gravada, antes de processar a imagem.
     await notifyAdminByEmail("Nova banda aguardando aprovação", {
       "Banda": b.name, "Estilo": b.genre, "Cidade": [b.city, b.state].filter(Boolean).join(" / "),
@@ -1189,8 +1573,9 @@ app.post("/api/bands/submit", async (req, res) => {
       "Instagram": b.instagram, "Facebook": b.facebook, "YouTube": b.youtube, "Site": b.site,
       "ID da inscrição": inserted.id
     });
-    await migrateLegacyBandImage({ id: inserted.id, image: b.image }, "pending_bands");
-    res.json({ success: true, message: "Banda cadastrada com sucesso! Aguarde a aprovação." });
+    // Nenhum upload externo na inscrição pública: a imagem validada fica compactada
+    // na fila pendente e só é enviada ao Cloudinary quando um administrador aprova.
+    res.json({ success: true, id: inserted.id, message: "Banda cadastrada com sucesso! Aguarde a aprovação." });
   } catch (err) {
     console.error("Erro ao enviar banda para aprovação:", err.message);
     res.status(500).json({ error: "Não foi possível cadastrar a banda" });
@@ -1205,10 +1590,23 @@ app.post("/api/approve-band/:id", async (req, res) => {
   try {
     const band = await db.getOne("SELECT * FROM pending_bands WHERE id = $1", [req.params.id]);
     if (!band) return res.status(404).send();
+
+    // Linhas antigas da fila podem conter URLs externas. Não as importe no servidor
+    // durante a aprovação: aceite somente imagem validada ou URL já hospedada no Cloudinary.
+    let approvedImage;
+    try {
+      approvedImage = await preparePendingBandImage(band.image);
+    } catch (imageError) {
+      if (imageError.code === "INVALID_BAND_IMAGE") {
+        return res.status(400).json({ error: "A imagem desta inscrição é inválida ou externa. Atualize a imagem antes de aprovar." });
+      }
+      throw imageError;
+    }
+
     // created_at = NOW() na aprovação para que a banda apareça como "nova" na Home.
     const inserted = await db.getOne(`INSERT INTO bands (name, genre, city, state, year, members, biography, contact, image, instagram, facebook, youtube, spotify, bandcamp, site, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, NOW()) RETURNING id`,
-      [band.name, band.genre, band.city, band.state, band.year, band.members, band.biography, band.contact, band.image, band.instagram, band.facebook, band.youtube, band.spotify, band.bandcamp, band.site]);
-    await migrateLegacyBandImage({ id: inserted.id, image: band.image }, "bands");
+      [band.name, band.genre, band.city, band.state, band.year, band.members, band.biography, band.contact, approvedImage, band.instagram, band.facebook, band.youtube, band.spotify, band.bandcamp, band.site]);
+    await migrateLegacyBandImage({ id: inserted.id, image: approvedImage }, "bands");
     await db.run("DELETE FROM pending_bands WHERE id = $1", [req.params.id]);
     res.json({ success: true });
   } catch (err) {
@@ -1222,7 +1620,7 @@ app.delete("/api/pending-bands/:id", async (req, res) => {
     await db.run("DELETE FROM pending_bands WHERE id = $1", [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1283,12 +1681,14 @@ app.post("/api/releases", async (req, res) => {
   res.json({ success:true });
 });
 app.put("/api/releases/:id", async (req, res) => {
+  if (!/^[1-9]\d*$/.test(String(req.params.id))) return res.status(400).json({ error: "ID de lançamento inválido" });
   const r=req.body;
   if(!r.title||!r.artist) return res.status(400).json({error:"Título e artista/banda são obrigatórios"});
   await db.run("UPDATE releases SET title=$1, artist=$2, type=$3, release_date=$4, image=$5, spotify=$6, youtube=$7, description=$8 WHERE id=$9",[r.title,r.artist,r.type||"Single",r.release_date||null,r.image||null,r.spotify||null,r.youtube||null,r.description||null,req.params.id]);
   res.json({success:true});
 });
 app.delete("/api/releases/:id", async (req, res) => {
+  if (!/^[1-9]\d*$/.test(String(req.params.id))) return res.status(400).json({ error: "ID de lançamento inválido" });
   try {
     const result = await db.query("DELETE FROM releases WHERE id = $1 RETURNING id", [req.params.id]);
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
@@ -1298,7 +1698,7 @@ app.delete("/api/releases/:id", async (req, res) => {
     return res.status(200).json({ success: true, deletedId: result.rows[0].id });
   } catch (err) {
     console.error("Erro ao excluir lançamento:", err.message);
-    return res.status(500).json({ error: "Erro ao excluir lançamento", detail: err.message });
+    return res.status(500).json({ error: "Erro ao excluir lançamento" });
   }
 });
 
@@ -1403,34 +1803,39 @@ app.get("/api/comments/:pageType/:pageId", async (req, res) => {
     res.set("Cache-Control", "public, s-maxage=15, stale-while-revalidate=30");
     res.json(comments);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
 app.post("/api/comments", async (req, res) => {
   try {
-    const { page_type, page_id, user_id, user_name, user_avatar, content } = req.body;
-    if (!page_type || !page_id || !user_name || !content) {
-      return res.status(400).json({ error: "Campos obrigatórios: page_type, page_id, user_name, content" });
+    const { page_type, page_id, content } = req.body;
+    if (!page_type || !/^\d+$/.test(String(page_id || "")) || !content) {
+      return res.status(400).json({ error: "Campos obrigatórios: page_type, page_id e content" });
     }
     if (content.trim().length < 2) return res.status(400).json({ error: "Comentário muito curto" });
     if (content.length > 1000) return res.status(400).json({ error: "Comentário muito longo (máx 1000 caracteres)" });
     const result = await pool.query(
       "INSERT INTO comments (page_type, page_id, user_id, user_name, user_avatar, content) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-      [page_type, parseInt(page_id), user_id || null, user_name, user_avatar || null, content.trim()]
+      [String(page_type).slice(0, 40), parseInt(page_id, 10), req.authUser.id, req.authUser.display_name || req.authUser.username, req.authUser.avatar || null, content.trim()]
     );
     res.json({ success: true, comment: result.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
 app.delete("/api/comments/:id", async (req, res) => {
   try {
+    const comment = await db.getOne("SELECT user_id FROM comments WHERE id = $1", [req.params.id]);
+    if (!comment) return res.status(404).json({ error: "Comentário não encontrado" });
+    if (Number(comment.user_id) !== Number(req.authUser.id) && !["admin", "editor"].includes(req.authUser.role)) {
+      return res.status(403).json({ error: "Você só pode excluir seu próprio comentário" });
+    }
     await db.run("DELETE FROM comments WHERE id = $1", [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível excluir o comentário" });
   }
 });
 
@@ -1446,7 +1851,7 @@ app.get("/api/rss-status", async (req, res) => {
     res.set("Cache-Control", "no-store");
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1525,7 +1930,7 @@ app.post("/api/import-rss", async (req, res) => {
     await cleanupRssPostsPerSource();
     res.json({ success: true, imported });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1557,7 +1962,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     res.json({ success: true, imported });
   } catch (err) {
     if (feedForStatus) await saveRssFeedStatus(feedForStatus, { status: "error", message: err.message });
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1609,7 +2014,7 @@ app.post("/api/reimport-rss", async (req, res) => {
     await cleanupRssPostsPerSource();
     res.json({ success: true, updated, created });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1627,7 +2032,7 @@ app.post("/api/fix-html-entities", async (req, res) => {
     }
     res.json({ success: true, fixed, total: allPosts.length, message: `${fixed} posts corrigidos de ${allPosts.length} total` });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1644,7 +2049,7 @@ app.post("/api/fix-missing-images", async (req, res) => {
     }
     res.json({ success: true, fixed, total: postsWithoutImages.length, message: `${fixed} imagens corrigidas de ${postsWithoutImages.length} posts sem imagem` });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1665,7 +2070,7 @@ app.post("/api/test-rss-images", async (req, res) => {
     }
     res.json({ success: true, feedUrl, totalItems: items.length, itemsWithImages, itemsWithoutImages });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1677,7 +2082,7 @@ app.post("/api/cleanup-duplicates", async (req, res) => {
     const result = await cleanupDuplicatePosts();
     res.json({ success: true, ...result, message: `${result.total} duplicatas removidas` });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 // --- OPEN GRAPH HELPERS ---
@@ -1781,7 +2186,7 @@ app.delete("/api/posts-without-images", async (req, res) => {
     const result = await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' RETURNING id");
     res.json({ success: true, deleted: result.rowCount });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1807,7 +2212,7 @@ app.get("/api/debug-rss", async (req, res) => {
     });
     res.json({ feedUrl, statusCode, contentType, hasItems, hasEntry, totalItems: items.length, xmlPreview, results });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 
@@ -1850,7 +2255,7 @@ app.get("/api/cron/rss", async (req, res) => {
     res.json({ success: true, message: "Importação RSS concluída" });
   } catch (err) {
     console.error("Erro no cron RSS:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
 });
 

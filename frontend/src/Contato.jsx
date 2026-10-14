@@ -53,7 +53,7 @@ function Contato() {
       setEmail("");
       setAssunto("");
       setMensagem("");
-    } catch (err) {
+    } catch {
       alert("Erro ao enviar mensagem. Tente novamente.");
     } finally {
       setSending(false);

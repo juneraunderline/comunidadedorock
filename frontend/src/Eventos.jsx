@@ -3,6 +3,16 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_URL from "./config/api";
 
+function safeExternalUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function Eventos() {
   const [events, setEvents] = useState([]);
 
@@ -11,13 +21,6 @@ function Eventos() {
       .then(res => setEvents(res.data))
       .catch(err => console.error("Erro ao carregar eventos:", err));
   }, []);
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "Data TBD";
-    const date = new Date(dateStr + "T00:00:00");
-    const options = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' };
-    return date.toLocaleDateString('pt-BR', options).toUpperCase();
-  };
 
   const formatWeekday = (dateStr) => {
     if (!dateStr) return "";
@@ -106,9 +109,9 @@ function Eventos() {
                     </p>
                   )}
                   
-                  {event.ticket_link ? (
+                  {safeExternalUrl(event.ticket_link) ? (
                     <a
-                      href={event.ticket_link}
+                      href={safeExternalUrl(event.ticket_link)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-primary btn-buy-tickets"

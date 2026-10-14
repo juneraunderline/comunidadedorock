@@ -27,8 +27,16 @@ function hasHomeCache(key) {
 function saveHomeCache(key, value) {
   try {
     if (typeof window !== "undefined") window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+  } catch { /* local storage may be disabled */ }
 }
+
+function SkeletonCard() { return (
+	    <div className="card skeleton-card">
+	      <div className="skeleton skeleton-image"></div>
+	      <div className="skeleton skeleton-text"></div>
+	      <div className="skeleton skeleton-text short"></div>
+	    </div>
+	  ); }
 
 function Home({ posts }) {
   const navigate = useNavigate();
@@ -43,15 +51,8 @@ function Home({ posts }) {
 	  const [loadingEvents, setLoadingEvents] = useState(() => !hasHomeCache("cdr_home_events_v1"));
 	  const loadingPosts = posts.length === 0;
 
-	  const SkeletonCard = () => (
-	    <div className="card skeleton-card">
-	      <div className="skeleton skeleton-image"></div>
-	      <div className="skeleton skeleton-text"></div>
-	      <div className="skeleton skeleton-text short"></div>
-	    </div>
-	  );
   const [displayCount, setDisplayCount] = useState(6);
-  const [brokenImages, setBrokenImages] = useState(new Set());
+  const [, setBrokenImages] = useState(new Set());
   useEffect(() => {
     const fitReleaseTitles = () => {
       document.querySelectorAll(".release-content h3").forEach((title) => {

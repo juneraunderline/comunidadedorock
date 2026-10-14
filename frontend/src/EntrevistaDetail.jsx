@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 import Comentarios from "./Comentarios";
+import DOMPurify from "dompurify";
 
 function EntrevistaDetail() {
   const { id } = useParams();
@@ -111,7 +112,7 @@ function EntrevistaDetail() {
 
             <div className="interview-detail-text">
               {interview.content ? (
-                <div dangerouslySetInnerHTML={{ __html: formatContent(interview.content) }} />
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatContent(interview.content)) }} />
               ) : (
                 <p>Sem descrição disponível</p>
               )}

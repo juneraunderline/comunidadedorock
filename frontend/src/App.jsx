@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import API_URL from "./config/api";
 import "./style.css";
 import logo from "./assets/logo.png";
-import hero from "./assets/hero-stage.jpg";
 import NavLink from "./NavLink";
 import Home from "./Home";
 import News from "./News";
@@ -51,12 +50,13 @@ function App() {
       return cached ? JSON.parse(cached) : [];
     } catch { return []; }
   });
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem("user");
-      return saved ? JSON.parse(saved) : null;
+      const token = localStorage.getItem("cdr_session_token");
+      return saved && token ? JSON.parse(saved) : null;
     } catch { return null; }
   });
 
@@ -66,9 +66,40 @@ function App() {
   };
 
   const handleLogout = () => {
+    // Envia explicitamente o token antes de apagá-lo do navegador.
+    const token = localStorage.getItem("cdr_session_token");
+    if (token) axios.post(`${API_URL}/api/logout`, {}, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
     setUser(null);
     localStorage.removeItem("user");
+    localStorage.removeItem("cdr_session_token");
   };
+
+  // O perfil em localStorage não é confiável: validar a sessão no servidor ao abrir o site.
+  useEffect(() => {
+    let active = true;
+    const token = localStorage.getItem("cdr_session_token");
+    if (!token) {
+      localStorage.removeItem("user");
+      return () => { active = false; };
+    }
+    axios.get(`${API_URL}/api/session`, { timeout: 10000 })
+      .then((response) => {
+        if (!active) return;
+        setUser(response.data.user);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      })
+      .catch((error) => {
+        if (!active) return;
+        // Revogar o estado local apenas quando o servidor confirmar sessão inválida.
+        // Falhas transitórias (ex.: API acordando após hibernação) não devem deslogar o usuário.
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          setUser(null);
+          localStorage.removeItem("user");
+          localStorage.removeItem("cdr_session_token");
+        }
+      });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -84,7 +115,7 @@ function App() {
         if (!active || !Array.isArray(response.data)) return;
         const nextPosts = response.data;
         setPosts((current) => JSON.stringify(current) === JSON.stringify(nextPosts) ? current : nextPosts);
-        try { localStorage.setItem("cdr_home_posts_v1", JSON.stringify(nextPosts)); } catch {}
+        try { localStorage.setItem("cdr_home_posts_v1", JSON.stringify(nextPosts)); } catch { /* cache storage may be unavailable */ }
         retryCount = 0;
         setLoading(false);
       } catch {

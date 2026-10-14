@@ -3,12 +3,23 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 import Comentarios from "./Comentarios";
+import DOMPurify from "dompurify";
+
+function safeExternalUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
 
 function getNewsSummary(content) {
   if (!content) return "";
 
   const container = document.createElement("div");
-  container.innerHTML = content;
+  container.innerHTML = DOMPurify.sanitize(content);
   const paragraph = container.querySelector("p");
   const text = (paragraph?.textContent || container.textContent || "")
     .replace(/\s+/g, " ")
@@ -47,20 +58,6 @@ function NewsDetail() {
     
     return `${day}/${month}/${year} às ${hours}:${mins}`;
   };
-
-  useEffect(() => {
-    axios.get(`${API_URL}/api/posts?full=1`)
-      .then(res => {
-        const selectedPost = res.data.find(p => p.slug === id || p.id === parseInt(id));
-        setPost(selectedPost);
-        setLoading(false);
-        
-        // Atualizar meta tags para compartilhamento
-        if (selectedPost) {
-          updateMetaTags(selectedPost);
-        }
-      });
-  }, [id]);
 
   const updateMetaTags = (post) => {
     const summary = getNewsSummary(post.content);
@@ -101,6 +98,22 @@ function NewsDetail() {
     // Atualizar título da página
     document.title = `${post.title} - Comunidade do Rock`;
   };
+
+  useEffect(() => {
+    axios.get(`${API_URL}/api/posts?full=1`)
+      .then(res => {
+        const selectedPost = res.data.find(p => p.slug === id || p.id === parseInt(id));
+        setPost(selectedPost);
+        setLoading(false);
+        
+        // Atualizar meta tags para compartilhamento
+        if (selectedPost) {
+          updateMetaTags(selectedPost);
+        }
+      });
+  }, [id]);
+
+
 
   const shareOnSocial = (platform) => {
     if (!post) return;
@@ -169,14 +182,14 @@ function NewsDetail() {
                   </p>
                 </>
               ) : (
-                <div dangerouslySetInnerHTML={{ __html: post.content }} />
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || "") }} />
               )}
             </div>
             
             <div className="news-detail-actions">
-              {post.link && (
+              {safeExternalUrl(post.link) && (
                 <a 
-                  href={post.link} 
+                  href={safeExternalUrl(post.link)} 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="btn btn-primary"

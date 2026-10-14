@@ -1,27 +1,32 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
+import DOMPurify from "dompurify";
 import API_URL, { getImageUrl } from "./config/api";
 
-function getNewsSummary(content) {
-  if (!content) return "";
-
-  const container = document.createElement("div");
-  container.innerHTML = content;
-  const paragraph = container.querySelector("p");
-  const text = (paragraph?.textContent || container.textContent || "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\.{3,}\s*$/, "");
-
-  return text ? `${text}...` : "";
+function safeExternalUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
 }
+
+function SkeletonCard() { return (
+    <div className="card skeleton-card">
+      <div className="skeleton skeleton-image"></div>
+      <div className="skeleton skeleton-text"></div>
+      <div className="skeleton skeleton-text short"></div>
+    </div>
+  ); }
 
 function News() {
   const [allPosts, setAllPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [brokenImages, setBrokenImages] = useState(new Set());
+  const [, setBrokenImages] = useState(new Set());
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
   const [searchParams] = useSearchParams();
@@ -116,13 +121,7 @@ function News() {
     setSourceFilter("");
   };
 
-  const SkeletonCard = () => (
-    <div className="card skeleton-card">
-      <div className="skeleton skeleton-image"></div>
-      <div className="skeleton skeleton-text"></div>
-      <div className="skeleton skeleton-text short"></div>
-    </div>
-  );
+
 
   return (
     <div>
@@ -208,9 +207,9 @@ function News() {
                     {p.source && <small className="card-source-label" style={{display: "block", color: "#999", fontSize: "12px", marginBottom: "8px"}}>Fonte: {p.source}</small>}
                     {!p.source && <small className="card-source-label" style={{display: "block", color: "#e9b61e", fontSize: "12px", marginBottom: "8px"}}>📝 Publicação própria</small>}
                     <h3>{p.title}</h3>
-                    {p.link && (
+                    {safeExternalUrl(p.link) && (
                       <a
-                        href={p.link}
+                        href={safeExternalUrl(p.link)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn btn-primary"

@@ -3,6 +3,16 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import API_URL from "./config/api";
 
+function safeExternalUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function EventDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -67,8 +77,8 @@ function EventDetail() {
           {event.artist && <p style={{ color: '#fff', marginBottom: '8px' }}>Bandas / artistas: <strong style={{ whiteSpace: 'pre-line' }}>{event.artist}</strong></p>}
           {event.ticket_location && <p style={{ color: '#fff', marginBottom: '12px' }}>Ponto físico de venda: <strong>{event.ticket_location}</strong></p>}
           {event.description && <p style={{ color: '#ccc', marginBottom: '16px', whiteSpace: 'pre-line' }}>{event.description}</p>}
-          {event.ticket_link ? (
-            <a href={event.ticket_link} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+          {safeExternalUrl(event.ticket_link) ? (
+            <a href={safeExternalUrl(event.ticket_link)} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
               Comprar ingresso online
             </a>
           ) : !event.ticket_location ? (

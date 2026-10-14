@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import DOMPurify from "dompurify";
 import API_URL, { getImageUrl } from "./config/api";
 
 
@@ -69,6 +70,35 @@ function normalizeInstagramUrl(value) {
   return username ? `https://www.instagram.com/${username}/` : "";
 }
 
+function FormatToolbar({ onFormat, onClearFormatting }) { return (
+    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "6px", padding: "6px", background: "#12121f", borderRadius: "4px", border: "1px solid #2c2c38" }}>
+      <button type="button" onClick={() => onFormat("bold")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", fontSize: "13px" }} title="Negrito">B</button>
+      <button type="button" onClick={() => onFormat("italic")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontStyle: "italic", fontSize: "13px" }} title="Itálico">I</button>
+      <button type="button" onClick={() => onFormat("underline")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", textDecoration: "underline", fontSize: "13px" }} title="Sublinhado">U</button>
+      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
+      <button type="button" onClick={() => onFormat("formatBlock", "h2")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Título">H2</button>
+      <button type="button" onClick={() => onFormat("formatBlock", "h3")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Subtítulo">H3</button>
+      <button type="button" onClick={() => onFormat("formatBlock", "p")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Parágrafo">P</button>
+      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
+      <button type="button" onClick={() => onFormat("insertUnorderedList")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Lista">• Lista</button>
+      <button type="button" onClick={() => onFormat("justifyLeft")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Alinhar esquerda">⬅</button>
+      <button type="button" onClick={() => onFormat("justifyCenter")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Centralizar">⬌</button>
+      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
+      <button type="button" onClick={() => {
+        const url = prompt("URL do link:");
+        if (url) {
+          const newTab = confirm("Abrir em nova aba?");
+          const sel = window.getSelection();
+          const text = sel.toString() || url;
+          const target = newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
+          document.execCommand("insertHTML", false, DOMPurify.sanitize(`<a href="${url}"${target} style="color:#e9b61e">${text}</a>`));
+        }
+      }} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Inserir link">🔗 Link</button>
+      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
+      <button type="button" onClick={onClearFormatting} style={{ background: "#3d2a2a", border: "1px solid #644", color: "#f88", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Limpar formatação">✕ Limpar</button>
+    </div>
+  ); }
+
 export default function Admin({ user: currentUser }) {
   const [posts, setPosts] = useState([]);
   const [bands, setBands] = useState([]);
@@ -111,25 +141,18 @@ export default function Admin({ user: currentUser }) {
   // Sincronizar conteúdo do editor quando editingPost muda
   useEffect(() => {
     if (editingPost && editingContentRef.current) {
-      editingContentRef.current.innerHTML = editingPost.content;
+      editingContentRef.current.innerHTML = DOMPurify.sanitize(editingPost.content || "");
     }
   }, [editingPost?.id]);
 
   // Sincronizar conteúdo do novo post
   useEffect(() => {
     if (newContentRef.current) {
-      newContentRef.current.innerHTML = newPost.content;
+      newContentRef.current.innerHTML = DOMPurify.sanitize(newPost.content || "");
     }
   }, []);
 
-  useEffect(() => {
-    if (currentUser && (currentUser.role === "admin" || currentUser.role === "editor")) {
-      fetchData();
-    }
-  }, [currentUser]);
-
   const isAdmin = currentUser?.role === "admin";
-  const isEditor = currentUser?.role === "editor";
 
   const handleImageUpload = (file, setter, field) => {
     if (!file) return;
@@ -172,6 +195,10 @@ export default function Admin({ user: currentUser }) {
     axios.get(`${API_URL}/api/users`).then(res => setAllUsers(res.data)).catch(() => {});
   };
 
+  useEffect(() => {
+    if (currentUser && (currentUser.role === "admin" || currentUser.role === "editor")) fetchData();
+  }, [currentUser]);
+
   // Função para comprimir imagem
   const compressImage = (file) => {
     return new Promise((resolve) => {
@@ -208,6 +235,23 @@ export default function Admin({ user: currentUser }) {
   const handleContentPaste = async (e, isEditing = false) => {
     const items = e.clipboardData?.items;
     if (!items) return;
+
+    const containsImage = Array.from(items).some(item => item.type.includes("image"));
+    if (!containsImage) {
+      const pastedHtml = e.clipboardData?.getData("text/html");
+      if (pastedHtml) {
+        e.preventDefault();
+        document.execCommand("insertHTML", false, DOMPurify.sanitize(pastedHtml));
+        const editor = e.currentTarget;
+        const newContent = editor.innerHTML;
+        if (isEditing) {
+          setEditingPost({ ...editingPost, content: newContent });
+        } else {
+          setNewPost({ ...newPost, content: newContent });
+        }
+      }
+      return;
+    }
 
     for (let item of items) {
       if (item.type.includes("image")) {
@@ -267,34 +311,7 @@ export default function Admin({ user: currentUser }) {
     }
   };
 
-  const FormatToolbar = () => (
-    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "6px", padding: "6px", background: "#12121f", borderRadius: "4px", border: "1px solid #2c2c38" }}>
-      <button type="button" onClick={() => execFormat("bold")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", fontSize: "13px" }} title="Negrito">B</button>
-      <button type="button" onClick={() => execFormat("italic")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontStyle: "italic", fontSize: "13px" }} title="Itálico">I</button>
-      <button type="button" onClick={() => execFormat("underline")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", textDecoration: "underline", fontSize: "13px" }} title="Sublinhado">U</button>
-      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
-      <button type="button" onClick={() => execFormat("formatBlock", "h2")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Título">H2</button>
-      <button type="button" onClick={() => execFormat("formatBlock", "h3")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Subtítulo">H3</button>
-      <button type="button" onClick={() => execFormat("formatBlock", "p")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Parágrafo">P</button>
-      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
-      <button type="button" onClick={() => execFormat("insertUnorderedList")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Lista">• Lista</button>
-      <button type="button" onClick={() => execFormat("justifyLeft")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Alinhar esquerda">⬅</button>
-      <button type="button" onClick={() => execFormat("justifyCenter")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Centralizar">⬌</button>
-      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
-      <button type="button" onClick={() => {
-        const url = prompt("URL do link:");
-        if (url) {
-          const newTab = confirm("Abrir em nova aba?");
-          const sel = window.getSelection();
-          const text = sel.toString() || url;
-          const target = newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
-          document.execCommand("insertHTML", false, `<a href="${url}"${target} style="color:#e9b61e">${text}</a>`);
-        }
-      }} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Inserir link">🔗 Link</button>
-      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
-      <button type="button" onClick={clearFormatting} style={{ background: "#3d2a2a", border: "1px solid #644", color: "#f88", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Limpar formatação">✕ Limpar</button>
-    </div>
-  );
+
 
   const handleContentInput = (e, isEditing = false) => {
     const newContent = e.currentTarget.innerHTML;
@@ -314,7 +331,7 @@ export default function Admin({ user: currentUser }) {
 
   const createPost = () => {
     // Ler conteúdo direto do ref para garantir que imagens coladas sejam incluídas
-    const finalContent = newContentRef.current ? newContentRef.current.innerHTML : newPost.content;
+    const finalContent = DOMPurify.sanitize(newContentRef.current ? newContentRef.current.innerHTML : newPost.content);
     
     if (!newPost.title.trim() || !finalContent.trim()) {
       alert("Preencha título e conteúdo");
@@ -351,7 +368,7 @@ export default function Admin({ user: currentUser }) {
 
   const saveEditPost = () => {
     // Ler conteúdo direto do ref para garantir que imagens coladas sejam incluídas
-    const finalContent = editingContentRef.current ? editingContentRef.current.innerHTML : editingPost.content;
+    const finalContent = DOMPurify.sanitize(editingContentRef.current ? editingContentRef.current.innerHTML : editingPost.content);
     
     if (!editingPost.title.trim() || !finalContent.trim()) {
       alert("Preencha título e conteúdo");
@@ -425,7 +442,7 @@ export default function Admin({ user: currentUser }) {
   };
 
   const toggleWeeklyFeaturedBand = async (band) => {
-    const featured = !Boolean(band.is_weekly_featured);
+    const featured = !band.is_weekly_featured;
     try {
       await axios.post(`${API_URL}/api/bands/${band.id}/weekly-featured`, { featured });
       await fetchData();
@@ -451,11 +468,6 @@ export default function Admin({ user: currentUser }) {
         alert("Banda adicionada com sucesso!");
       })
       .catch((err) => alert("Erro ao adicionar banda: " + (err.response?.data?.error || err.message)));
-  };
-
-  const cancelCreateBand = () => {
-    setNewBand({ name: "", genre: "", city: "", state: "", year: "", members: "", biography: "", contact: "", image: "", instagram: "", facebook: "", youtube: "", spotify: "", bandcamp: "", site: "" });
-    setNewBandMembers([{ name: "", role: "", instagram: "" }]);
   };
 
   const approveBand = (id) => {
@@ -1068,7 +1080,7 @@ export default function Admin({ user: currentUser }) {
             </div>
             <div className="form-group">
               <label>Conteúdo</label>
-              <FormatToolbar />
+              <FormatToolbar onFormat={execFormat} onClearFormatting={clearFormatting} />
               <div
                 ref={editingContentRef}
                 contentEditable
@@ -1136,7 +1148,7 @@ export default function Admin({ user: currentUser }) {
             </div>
             <div className="form-group">
               <label>Conteúdo</label>
-              <FormatToolbar />
+              <FormatToolbar onFormat={execFormat} onClearFormatting={clearFormatting} />
               <div
                 ref={newContentRef}
                 contentEditable
