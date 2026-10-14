@@ -1123,6 +1123,7 @@ app.use("/api", async (req, res, next) => {
   if (path === "/band-release-submissions" && method === "POST") return authenticate(req, res, next);
   if (path === "/band-claims/mine" && method === "GET") return authenticate(req, res, next);
   if (path === "/my-band" && (method === "GET" || method === "PUT")) return authenticate(req, res, next);
+  if (isPath(path, /^\\/user\\/\\d+\\/band$/) && method === "PUT") return authenticate(req, res, () => requireRoles("admin")(req, res, next));
   if (path === "/band-claims" && method === "POST") return authenticate(req, res, (req, res, next) => {
     if (!req.authUser.is_band) return res.status(403).json({ error: "Esta função está disponível apenas para contas de banda." });
     return next();
