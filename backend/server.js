@@ -1080,7 +1080,7 @@ app.use("/api", async (req, res, next) => {
   const path = req.path;
   const method = req.method.toUpperCase();
   if (path === "/health" || path === "/login" || path === "/register" ||
-      path === "/bands/submit" || path === "/cron/rss") return next();
+      path === "/cron/rss") return next();
   if (path === "/fan/data" || /^\/fan\/(favorites|events|vote|notifications)(?:\/\d+(?:\/read)?)?$/.test(path)) return authenticate(req, res, next);
   if (path === "/logout" && method === "POST") return authenticate(req, res, next);
   if (path === "/session" && method === "GET") return authenticate(req, res, next);
