@@ -14,11 +14,7 @@ export default function PainelBanda({ user }) {
   const navigate = useNavigate();
   const token = localStorage.getItem("cdr_session_token");
   const headers = useMemo(() => token ? { Authorization: `Bearer ${token}` } : {}, [token]);
-  const [bands, setBands] = useState([]);
   const [band, setBand] = useState(null);
-  const [claims, setClaims] = useState([]);
-  const [selectedBand, setSelectedBand] = useState("");
-  const [claimMessage, setClaimMessage] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -30,12 +26,7 @@ export default function PainelBanda({ user }) {
   const load = async () => {
     setError("");
     try {
-      const [mine, directory] = await Promise.all([
-        axios.get(`${API_URL}/api/band-claims/mine`, { headers }),
-        axios.get(`${API_URL}/api/bands`, { params: { limit: 500, sort: "recent" } })
-      ]);
-      setClaims(mine.data.claims || []);
-      setBands(Array.isArray(directory.data) ? directory.data : []);
+      const mine = await axios.get(`${API_URL}/api/band-claims/mine`, { headers });
       if (mine.data.bands?.length) setBand((await axios.get(`${API_URL}/api/my-band`, { headers })).data);
       else setBand(null);
     } catch (err) { setError(err.response?.data?.error || "Não foi possível carregar o painel."); }
@@ -47,16 +38,6 @@ export default function PainelBanda({ user }) {
     if (!(user.is_band || user.role === "banda")) { setError("Esta área é exclusiva para contas cadastradas como banda. Se você representa uma banda, fale com a administração para orientar a mudança do tipo de conta."); setLoading(false); return; }
     load();
   }, [user?.id]);
-
-  const submitClaim = async (event) => {
-    event.preventDefault(); setError(""); setMessage("");
-    if (!selectedBand) return setError("Escolha a banda cujo perfil você representa.");
-    try {
-      const response = await axios.post(`${API_URL}/api/band-claims`, { band_id: Number(selectedBand), message: claimMessage }, { headers });
-      setMessage(response.data.message || "Solicitação enviada para análise.");
-      setClaimMessage(""); setSelectedBand(""); await load();
-    } catch (err) { setError(err.response?.data?.error || "Não foi possível enviar a solicitação."); }
-  };
 
   const saveBand = async (event) => {
     event.preventDefault(); setError(""); setMessage(""); setSaving(true);
@@ -71,7 +52,7 @@ export default function PainelBanda({ user }) {
   return <section className="section" style={{ marginTop: 80, minHeight: "75vh" }}>
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
       <h1 style={{ color: "#fff", marginBottom: 8 }}>PAINEL <span className="highlight">DA BANDA</span></h1>
-      <p style={{ color: "#aaa", marginBottom: 24 }}>Solicite acesso ao perfil oficial da sua banda. A equipe revisará a solicitação antes de liberar a edição.</p>
+      <p style={{ color: "#aaa", marginBottom: 24 }}>A administração vincula cada conta ao perfil correto da banda. O acesso de edição só é liberado após a vinculação manual.</p>
       {message && <div role="status" style={{ background: "#153323", border: "1px solid #2f754b", color: "#a6efbf", padding: 12, borderRadius: 8, marginBottom: 16 }}>{message}</div>}
       {error && <div role="alert" style={{ background: "#3b191d", border: "1px solid #7a3038", color: "#ffb6bd", padding: 12, borderRadius: 8, marginBottom: 16 }}>{error}</div>}
       {loading ? <p style={{ color: "#aaa" }}>Carregando painel...</p> : !(user.is_band || user.role === "banda") ? <Link to="/perfil" className="btn btn-outline">Voltar ao perfil</Link> : band ? <>
