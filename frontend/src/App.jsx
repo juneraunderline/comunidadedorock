@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import API_URL from "./config/api";
@@ -6,27 +6,27 @@ import "./style.css";
 import logo from "./assets/logo.png";
 import NavLink from "./NavLink";
 import Home from "./Home";
-import News from "./News";
-import NewsDetail from "./NewsDetail";
-import Bandas from "./Bandas";
-import BandaDetail from "./BandaDetail";
-import Entrevistas from "./Entrevistas";
-import EntrevistaDetail from "./EntrevistaDetail";
-import Eventos from "./Eventos";
-import CadastrarEvento from "./CadastrarEvento";
-import EventDetail from "./EventDetail";
-import Contato from "./Contato";
-import CadastrarBanda from "./CadastrarBanda";
-import Admin from "./Admin";
-import Perfil from "./Perfil";
-import PainelBanda from "./PainelBanda";
-import AreaDoFa from "./AreaDoFa";
-import Votacao from "./Votacao";
-import Login from "./Login";
-import Sobre from "./Sobre";
-import PoliticaPrivacidade from "./PoliticaPrivacidade";
-import TermosDeUso from "./TermosDeUso";
-import GuiaDivulgacaoBandas from "./GuiaDivulgacaoBandas";
+const News = lazy(() => import("./News"));
+const NewsDetail = lazy(() => import("./NewsDetail"));
+const Bandas = lazy(() => import("./Bandas"));
+const BandaDetail = lazy(() => import("./BandaDetail"));
+const Entrevistas = lazy(() => import("./Entrevistas"));
+const EntrevistaDetail = lazy(() => import("./EntrevistaDetail"));
+const Eventos = lazy(() => import("./Eventos"));
+const CadastrarEvento = lazy(() => import("./CadastrarEvento"));
+const EventDetail = lazy(() => import("./EventDetail"));
+const Contato = lazy(() => import("./Contato"));
+const CadastrarBanda = lazy(() => import("./CadastrarBanda"));
+const Admin = lazy(() => import("./Admin"));
+const Perfil = lazy(() => import("./Perfil"));
+const PainelBanda = lazy(() => import("./PainelBanda"));
+const AreaDoFa = lazy(() => import("./AreaDoFa"));
+const Votacao = lazy(() => import("./Votacao"));
+const Login = lazy(() => import("./Login"));
+const Sobre = lazy(() => import("./Sobre"));
+const PoliticaPrivacidade = lazy(() => import("./PoliticaPrivacidade"));
+const TermosDeUso = lazy(() => import("./TermosDeUso"));
+const GuiaDivulgacaoBandas = lazy(() => import("./GuiaDivulgacaoBandas"));
 
 function CanonicalUrl() {
   const location = useLocation();
@@ -212,6 +212,7 @@ function App() {
           </button>
         </header>
 
+        <Suspense fallback={<main role="status" aria-live="polite" style={{ minHeight: "45vh", display: "grid", placeItems: "center", color: "#aaa", padding: "32px" }}>Carregando página…</main>}>
         <Routes>
           <Route path="/" element={<Home posts={posts} />} />
           <Route path="/noticias" element={<News />} />
@@ -236,6 +237,7 @@ function App() {
           <Route path="/termos" element={<TermosDeUso />} />
           <Route path="/admin" element={<Admin user={user} />} />
         </Routes>
+        </Suspense>
 
         {/* FOOTER */}
         <footer className="footer">
