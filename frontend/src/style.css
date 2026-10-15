@@ -2168,6 +2168,70 @@ body {
 }
 
 
+
+/* Minha Área: ações de bandas com dimensões consistentes e sem botões desproporcionais. */
+.fan-area-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 9px;
+  margin-top: 2px;
+}
+.fan-area-action-btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #e9b61e;
+  border-radius: 7px;
+  background: #e9b61e;
+  color: #101014;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, color .18s ease;
+}
+.fan-area-action-btn:hover {
+  background: #ffd34d;
+  border-color: #ffd34d;
+  color: #101014;
+}
+.fan-area-action-btn:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+.fan-area-action-btn.fan-area-action-secondary {
+  background: transparent;
+  border-color: #454552;
+  color: #ddd;
+}
+.fan-area-action-btn.fan-area-action-secondary:hover {
+  border-color: #e9b61e;
+  color: #e9b61e;
+}
+.fan-area-favorite-add {
+  width: 100%;
+  flex: 0 1 auto;
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+@media (max-width: 480px) {
+  .fan-area-actions { gap: 8px; }
+  .fan-area-action-btn { min-height: 36px; padding: 8px 9px; font-size: 12px; }
+  .fan-area-favorite-add { width: 100%; }
+}
+
+
 /* Minha Área: cada assunto fica em um card, seguindo o padrão visual das páginas de bandas. */
 .fan-area-section-card {
   background: linear-gradient(145deg, #111118 0%, #0e0e15 100%);
