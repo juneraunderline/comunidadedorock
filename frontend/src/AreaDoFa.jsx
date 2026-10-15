@@ -215,7 +215,7 @@ function AreaDoFa({ user }) {
           <p style={{ color: "#a6a6b3", lineHeight: 1.6, maxWidth: "700px" }}>Guarde as bandas que você curte e monte sua lista de shows para acompanhar. Tudo fica vinculado à sua conta.</p>
         </div>
 
-        <section style={{ marginBottom: "32px" }} aria-labelledby="feed-personalizado-title">
+        <section className="fan-area-section-card" style={{ marginBottom: "32px" }} aria-labelledby="feed-personalizado-title">
           <h2 id="feed-personalizado-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>📰 Notícias das suas bandas</h2>
           <p style={{ color: "#aaa", lineHeight: 1.6, margin: "0 0 14px" }}>Novidades encontradas nas notícias RSS que mencionam as bandas que você favoritou.</p>
           {favorites.length === 0 ? (
@@ -240,7 +240,7 @@ function AreaDoFa({ user }) {
         </section>
 
 
-        <section style={{ marginBottom: "32px" }} aria-labelledby="votacao-fas-title">
+        <section className="fan-area-section-card" style={{ marginBottom: "32px" }} aria-labelledby="votacao-fas-title">
           <h2 id="votacao-fas-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>🏆 Votação da Banda da Semana</h2>
           <p style={{ color: "#aaa", lineHeight: 1.6, margin: "0 0 14px" }}>Escolha sua favorita. Cada conta pode votar uma vez por semana; a votação reabre na segunda-feira.</p>
           {voteData.voted_band_id && <div style={{ ...panelStyle, marginBottom: "12px" }} role="status">Seu voto desta semana já foi registrado. Obrigado por fortalecer a cena independente!</div>}
@@ -255,7 +255,7 @@ function AreaDoFa({ user }) {
             {(!voteData.bands || voteData.bands.length === 0) && <div style={panelStyle}>Ainda não há bandas disponíveis para votação.</div>}
           </div>
         </section>
-        <section style={{ marginBottom: "32px" }} aria-labelledby="notificacoes-fas-title">
+        <section className="fan-area-section-card" style={{ marginBottom: "32px" }} aria-labelledby="notificacoes-fas-title">
           <h2 id="notificacoes-fas-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>🔔 Suas notificações <span style={{ color: "#e9b61e" }}>({notifications.filter(item => !item.is_read).length} novas)</span></h2>
           <p style={{ color: "#aaa", lineHeight: 1.6, margin: "0 0 14px" }}>Avisos sobre suas bandas favoritas, shows salvos e a votação semanal.</p>
           {notifications.length === 0 ? <div style={panelStyle}>Quando uma notícia mencionar uma banda favorita, um show salvo estiver próximo ou uma nova votação começar, o aviso aparecerá aqui.</div> : (
@@ -274,7 +274,7 @@ function AreaDoFa({ user }) {
             </div>
           )}
         </section>
-        <section style={{ marginBottom: "32px" }} aria-labelledby="bate-papo-fas-title">
+        <section className="fan-area-section-card" style={{ marginBottom: "32px" }} aria-labelledby="bate-papo-fas-title">
           <h2 id="bate-papo-fas-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>💬 Conversa entre fãs</h2>
           <p style={{ color: "#aaa", lineHeight: 1.6, margin: "0 0 14px" }}>Compartilhe uma ideia, recomende uma banda e mantenha o respeito com a comunidade.</p>
           <form onSubmit={submitComment} style={{ ...panelStyle, marginBottom: "12px" }}>
@@ -298,7 +298,7 @@ function AreaDoFa({ user }) {
 
         {loading ? <div style={{ padding: "36px 10px", color: "#aaa", textAlign: "center" }}>Carregando sua área...</div> : (
           <>
-            <section style={{ marginBottom: "32px" }}>
+            <section className="fan-area-section-card" style={{ marginBottom: "32px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "14px" }}>
                 <h2 style={{ margin: 0, fontSize: "22px" }}>🎸 Bandas favoritas <span style={{ color: "#e9b61e" }}>({favorites.length})</span></h2>
                 <Link to="/bandas" style={{ color: "#e9b61e", fontSize: "13px" }}>Explorar todas as bandas →</Link>
@@ -320,7 +320,7 @@ function AreaDoFa({ user }) {
               )}
             </section>
 
-            <section style={{ marginBottom: "32px" }}>
+            <section className="fan-area-section-card" style={{ marginBottom: "32px" }}>
               <h2 style={{ margin: "0 0 14px", fontSize: "22px" }}>🔎 Descobrir bandas</h2>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por banda, gênero ou cidade..." aria-label="Buscar bandas" style={{ boxSizing: "border-box", width: "100%", maxWidth: "520px", marginBottom: "14px", padding: "12px 14px", borderRadius: "8px", border: "1px solid #333340", background: "#111118", color: "#fff" }} />
               {matchingBands.length === 0 ? <p style={{ color: "#aaa" }}>Nenhuma banda encontrada nessa busca.</p> : (
@@ -337,7 +337,7 @@ function AreaDoFa({ user }) {
               )}
             </section>
 
-            <section>
+            <section className="fan-area-section-card" style={{ marginBottom: "32px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "14px" }}>
                 <h2 style={{ margin: 0, fontSize: "22px" }}>📅 Shows que quero assistir <span style={{ color: "#e9b61e" }}>({watchlist.length})</span></h2>
                 <Link to="/eventos" style={{ color: "#e9b61e", fontSize: "13px" }}>Ver agenda completa →</Link>
