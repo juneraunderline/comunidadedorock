@@ -72,14 +72,38 @@ function normalizeInstagramUrl(value) {
 
 function FormatToolbar({ onFormat, onClearFormatting }) {
   const [linkPanelOpen, setLinkPanelOpen] = useState(false);
-  const [toolbarPosition, setToolbarPosition] = useState({ top: 96, left: 16 });
+  const [isFloating, setIsFloating] = useState(false);
+  const [toolbarPosition, setToolbarPosition] = useState({ top: 82, left: 16 });
   const dragStateRef = useRef(null);
   const toolbarRef = useRef(null);
+  const anchorRef = useRef(null);
+  const lastScrollYRef = useRef(0);
+  const returnToStaticRef = useRef(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [linkNewTab, setLinkNewTab] = useState(false);
   const linkRangeRef = useRef(null);
   const linkAnchorRef = useRef(null);
   useEffect(() => {
+    lastScrollYRef.current = window.scrollY;
+    const onScroll = () => {
+      const anchor = anchorRef.current;
+      if (!anchor) return;
+      const currentY = window.scrollY;
+      const scrollingDown = currentY > lastScrollYRef.current;
+      lastScrollYRef.current = currentY;
+      if (returnToStaticRef.current) {
+        if (anchor.getBoundingClientRect().top >= 80) {
+          returnToStaticRef.current = false;
+          setIsFloating(false);
+        } else if (scrollingDown) {
+          returnToStaticRef.current = false;
+          setIsFloating(true);
+        }
+        return;
+      }
+      setIsFloating(anchor.getBoundingClientRect().top < 80);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
     const move = (event) => {
       if (!dragStateRef.current) return;
       const { pointerX, pointerY, startLeft, startTop } = dragStateRef.current;
@@ -97,6 +121,7 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
     window.addEventListener("pointerup", stop);
     window.addEventListener("pointercancel", stop);
     return () => {
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", stop);
       window.removeEventListener("pointercancel", stop);
@@ -133,22 +158,39 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
     <button type="button" aria-label={title} title={title} onMouseDown={(e) => e.preventDefault()} onClick={() => run(command, value)} style={{ ...buttonStyle, ...extra }}>{label}</button>
   );
   return (
+    <>
+    <div ref={anchorRef} style={{ height: isFloating ? "1px" : "auto", minHeight: isFloating ? "1px" : 0, marginBottom: isFloating ? 0 : "8px" }}>
     <div ref={toolbarRef} style={{
-      position: "fixed",
-      top: toolbarPosition.top,
-      left: toolbarPosition.left,
-      zIndex: 10000,
-      width: "min(900px, calc(100vw - 32px))",
-      maxHeight: "calc(100vh - 24px)",
-      overflowY: "auto",
+      position: isFloating ? "fixed" : "relative",
+      top: isFloating ? toolbarPosition.top : "auto",
+      left: isFloating ? toolbarPosition.left : "auto",
+      zIndex: isFloating ? 10000 : "auto",
+      width: isFloating ? "min(900px, calc(100vw - 32px))" : "100%",
+      maxHeight: isFloating ? "calc(100vh - 24px)" : "none",
+      overflowY: isFloating ? "auto" : "visible",
       isolation: "isolate",
       background: "linear-gradient(180deg, #1b1c2b 0%, #151622 100%)",
       border: "1px solid #34364a",
       borderRadius: "10px",
-      boxShadow: "0 12px 34px rgba(0,0,0,.42)"
+      boxShadow: isFloating ? "0 12px 34px rgba(0,0,0,.42)" : "0 8px 24px rgba(0,0,0,.16)"
     }}>
       <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "7px", padding: "8px 10px", borderBottom: "1px solid #303246", background: "#11121d" }}>
-        <button
+        {isFloating && <button
+          type="button"
+          title="Voltar a barra para o local original"
+          aria-label="Voltar barra para o local original"
+          onClick={() => {
+            returnToStaticRef.current = true;
+            setIsFloating(false);
+            const anchor = anchorRef.current;
+            if (anchor) {
+              const top = window.scrollY + anchor.getBoundingClientRect().top - 96;
+              window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+            }
+          }}
+          style={{ ...buttonStyle, color: "#f0bd22", fontSize: "16px", minWidth: "38px" }}
+        >↩</button>}
+        {isFloating && <button
           type="button"
           title="Arraste para mover a barra de formatação"
           aria-label="Mover barra de formatação"
@@ -163,8 +205,8 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
             };
           }}
           style={{ ...buttonStyle, cursor: "grab", touchAction: "none", color: "#f0bd22", fontSize: "17px", minWidth: "38px" }}
-        >⠿</button>
-        <span style={{ color: "#aeb0c6", fontSize: "11px", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginRight: "2px" }}>Arraste para mover · Texto</span>
+        >⠿</button>}
+        <span style={{ color: "#aeb0c6", fontSize: "11px", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginRight: "2px" }}>{isFloating ? "Barra flutuante · Arraste para mover" : "Texto"}</span>
         <div style={groupStyle}>
           {tool(<b>B</b>, "Negrito (Ctrl+B)", "bold")}
           {tool(<i>I</i>, "Itálico (Ctrl+I)", "italic")}
@@ -287,6 +329,8 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
         <span style={{ color: "#777a95", fontSize: "11px", marginLeft: "auto" }}>Dica: selecione um trecho para formatá-lo, como no Word.</span>
       </div>
     </div>
+    </div>
+    </>
   );
 }
 
