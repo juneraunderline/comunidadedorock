@@ -71,6 +71,9 @@ function normalizeInstagramUrl(value) {
 }
 
 function FormatToolbar({ onFormat, onClearFormatting }) {
+  const [linkPanelOpen, setLinkPanelOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkNewTab, setLinkNewTab] = useState(false);
   const buttonStyle = {
     background: "#252638",
     border: "1px solid #3b3d53",
@@ -160,26 +163,66 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
           {tool("☷", "Justificar texto", "justifyFull")}
         </div>
         <div style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
-          <button type="button" title="Inserir link" aria-label="Inserir link" onMouseDown={(e) => e.preventDefault()} onClick={() => {
-            const url = prompt("Cole a URL do link:");
-            if (url && (url.trim().startsWith("https://") || url.trim().startsWith("http://"))) {
-              const openInNewWindow = confirm("Deseja que este link abra em uma nova aba/janela?\\n\\nOK = Sim, abrir em nova aba\\nCancelar = Abrir na mesma aba");
-              run("createLink", url.trim());
-              if (openInNewWindow) {
-                const selection = window.getSelection();
-                const anchor = selection?.anchorNode?.parentElement?.closest("a");
-                if (anchor) {
-                  anchor.setAttribute("target", "_blank");
-                  anchor.setAttribute("rel", "noopener noreferrer");
-                }
-              }
-            } else if (url) {
-              alert("Informe um endereço começando com https:// ou http://.");
+          <button type="button" title="Inserir ou editar link" aria-label="Inserir ou editar link" onMouseDown={(e) => e.preventDefault()} onClick={() => {
+            const selection = window.getSelection();
+            const anchor = selection?.anchorNode?.nodeType === 1
+              ? selection.anchorNode.closest("a")
+              : selection?.anchorNode?.parentElement?.closest("a");
+            const selectedText = selection?.toString() || "";
+            setLinkUrl(anchor?.getAttribute("href") || "");
+            setLinkNewTab(anchor?.getAttribute("target") === "_blank");
+            setLinkPanelOpen(true);
+            if (!anchor && !selectedText) {
+              // O usuário pode inserir um endereço e o texto do link será a própria URL.
             }
           }} style={{ ...buttonStyle, color: "#f0bd22" }}>↗ Link</button>
           <button type="button" title="Remover formatação" onMouseDown={(e) => e.preventDefault()} onClick={onClearFormatting} style={{ ...buttonStyle, color: "#ff9696", background: "#30202a", borderColor: "#59323b" }}>Limpar</button>
         </div>
       </div>
+      {linkPanelOpen && (
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px", padding: "12px", background: "#202132", borderBottom: "1px solid #34364a" }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: "4px", flex: "1 1 240px", color: "#c7c9dc", fontSize: "12px" }}>
+            Endereço do link
+            <input autoFocus type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://exemplo.com" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.currentTarget.closest("div"); } }} style={{ background: "#11121d", border: "1px solid #464960", borderRadius: "6px", color: "#fff", padding: "9px 10px", minWidth: 0 }} />
+          </label>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: "7px", color: "#f0f0f6", fontSize: "13px", cursor: "pointer", paddingTop: "16px" }}>
+            <input type="checkbox" checked={linkNewTab} onChange={(e) => setLinkNewTab(e.target.checked)} />
+            Abrir em nova aba/janela
+          </label>
+          <button type="button" style={{ ...buttonStyle, background: "#e9b61e", borderColor: "#e9b61e", color: "#171717", fontWeight: 700 }} onMouseDown={(e) => e.preventDefault()} onClick={() => {
+            const url = linkUrl.trim();
+            if (!url || !(url.startsWith("https://") || url.startsWith("http://"))) {
+              alert("Informe um endereço começando com https:// ou http://.");
+              return;
+            }
+            const selection = window.getSelection();
+            let anchor = selection?.anchorNode?.nodeType === 1
+              ? selection.anchorNode.closest("a")
+              : selection?.anchorNode?.parentElement?.closest("a");
+            if (anchor) {
+              anchor.setAttribute("href", url);
+            } else {
+              run("createLink", url);
+              const updatedSelection = window.getSelection();
+              anchor = updatedSelection?.anchorNode?.nodeType === 1
+                ? updatedSelection.anchorNode.closest("a")
+                : updatedSelection?.anchorNode?.parentElement?.closest("a");
+            }
+            if (anchor) {
+              if (linkNewTab) {
+                anchor.setAttribute("target", "_blank");
+                anchor.setAttribute("rel", "noopener noreferrer");
+              } else {
+                anchor.removeAttribute("target");
+                anchor.removeAttribute("rel");
+              }
+              anchor.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+            setLinkPanelOpen(false);
+          }}>Aplicar link</button>
+          <button type="button" style={buttonStyle} onMouseDown={(e) => e.preventDefault()} onClick={() => setLinkPanelOpen(false)}>Cancelar</button>
+        </div>
+      )}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", padding: "7px 10px", background: "rgba(9,10,18,.28)" }}>
         <span style={{ color: "#aeb0c6", fontSize: "11px", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginRight: "4px" }}>Inserir</span>
         {tool("↵ Quebra de linha", "Inserir quebra de linha", "insertLineBreak")}
