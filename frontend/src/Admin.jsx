@@ -72,10 +72,36 @@ function normalizeInstagramUrl(value) {
 
 function FormatToolbar({ onFormat, onClearFormatting }) {
   const [linkPanelOpen, setLinkPanelOpen] = useState(false);
+  const [toolbarPosition, setToolbarPosition] = useState({ top: 96, left: 16 });
+  const dragStateRef = useRef(null);
+  const toolbarRef = useRef(null);
   const [linkUrl, setLinkUrl] = useState("");
   const [linkNewTab, setLinkNewTab] = useState(false);
   const linkRangeRef = useRef(null);
   const linkAnchorRef = useRef(null);
+  useEffect(() => {
+    const move = (event) => {
+      if (!dragStateRef.current) return;
+      const { pointerX, pointerY, startLeft, startTop } = dragStateRef.current;
+      const toolbar = toolbarRef.current;
+      if (!toolbar) return;
+      const maxLeft = Math.max(8, window.innerWidth - toolbar.offsetWidth - 8);
+      const maxTop = Math.max(8, window.innerHeight - 70);
+      setToolbarPosition({
+        left: Math.min(maxLeft, Math.max(8, startLeft + event.clientX - pointerX)),
+        top: Math.min(maxTop, Math.max(8, startTop + event.clientY - pointerY))
+      });
+    };
+    const stop = () => { dragStateRef.current = null; };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+    };
+  }, []);
   const buttonStyle = {
     background: "#252638",
     border: "1px solid #3b3d53",
@@ -107,20 +133,38 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
     <button type="button" aria-label={title} title={title} onMouseDown={(e) => e.preventDefault()} onClick={() => run(command, value)} style={{ ...buttonStyle, ...extra }}>{label}</button>
   );
   return (
-    <div style={{
-      position: "sticky",
-      top: "82px",
-      zIndex: 1000,
-      marginBottom: "8px",
+    <div ref={toolbarRef} style={{
+      position: "fixed",
+      top: toolbarPosition.top,
+      left: toolbarPosition.left,
+      zIndex: 10000,
+      width: "min(900px, calc(100vw - 32px))",
+      maxHeight: "calc(100vh - 24px)",
+      overflowY: "auto",
       isolation: "isolate",
       background: "linear-gradient(180deg, #1b1c2b 0%, #151622 100%)",
       border: "1px solid #34364a",
       borderRadius: "10px",
-      overflow: "hidden",
-      boxShadow: "0 8px 24px rgba(0,0,0,.16)"
+      boxShadow: "0 12px 34px rgba(0,0,0,.42)"
     }}>
-      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "7px", padding: "10px", borderBottom: "1px solid #303246" }}>
-        <span style={{ color: "#aeb0c6", fontSize: "11px", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginRight: "2px" }}>Texto</span>
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "7px", padding: "8px 10px", borderBottom: "1px solid #303246", background: "#11121d" }}>
+        <button
+          type="button"
+          title="Arraste para mover a barra de formatação"
+          aria-label="Mover barra de formatação"
+          onPointerDown={(e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            dragStateRef.current = {
+              pointerX: e.clientX,
+              pointerY: e.clientY,
+              startLeft: toolbarPosition.left,
+              startTop: toolbarPosition.top
+            };
+          }}
+          style={{ ...buttonStyle, cursor: "grab", touchAction: "none", color: "#f0bd22", fontSize: "17px", minWidth: "38px" }}
+        >⠿</button>
+        <span style={{ color: "#aeb0c6", fontSize: "11px", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginRight: "2px" }}>Arraste para mover · Texto</span>
         <div style={groupStyle}>
           {tool(<b>B</b>, "Negrito (Ctrl+B)", "bold")}
           {tool(<i>I</i>, "Itálico (Ctrl+I)", "italic")}
