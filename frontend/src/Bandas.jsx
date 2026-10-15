@@ -245,4 +245,52 @@ function Bandas() {
   );
 }
 
-export default Bandas;
+export default Bandas;  useEffect(() => {
+    let active = true;
+    let retryTimer;
+    const cacheKey = `cdr_bands_v1_${encodeURIComponent(search.trim())}_${encodeURIComponent(genreFilter)}`;
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
+      if (Array.isArray(cached)) {
+        setBands(cached);
+        setHasMore(cached.length === PAGE_SIZE);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+    } catch { setLoading(true); }
+    setError("");
+    const timer = setTimeout(() => {
+      const params = { limit: PAGE_SIZE, offset: 0, sort: "recent" };
+      if (search.trim()) params.search = search.trim();
+      if (genreFilter) params.genre = genreFilter;
+
+      const load = async (attempt = 0) => {
+        try {
+          const response = await axios.get(`${API_URL}/api/bands`, { params, timeout: 15000 });
+          if (!active) return;
+          if (!Array.isArray(response.data)) throw new Error("Resposta inválida da API");
+          setBands(response.data);
+          setHasMore(response.data.length === PAGE_SIZE);
+          setError("");
+          try { localStorage.setItem(cacheKey, JSON.stringify(response.data)); } catch {}
+          setLoading(false);
+        } catch {
+          if (!active) return;
+          if (attempt < 2) {
+            retryTimer = setTimeout(() => load(attempt + 1), 1800 * (attempt + 1));
+            return;
+          }
+          setError("Não foi possível atualizar as bandas agora. Mantivemos os dados salvos; tente novamente em instantes.");
+          setLoading(false);
+        }
+      };
+      load();
+    }, search.trim() ? 300 : 0);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      clearTimeout(retryTimer);
+    };
+  }, [search, genreFilter]);
