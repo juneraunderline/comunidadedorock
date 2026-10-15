@@ -74,6 +74,8 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
   const [linkPanelOpen, setLinkPanelOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [linkNewTab, setLinkNewTab] = useState(false);
+  const linkRangeRef = useRef(null);
+  const linkAnchorRef = useRef(null);
   const buttonStyle = {
     background: "#252638",
     border: "1px solid #3b3d53",
@@ -165,9 +167,11 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
         <div style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
           <button type="button" title="Inserir ou editar link" aria-label="Inserir ou editar link" onMouseDown={(e) => e.preventDefault()} onClick={() => {
             const selection = window.getSelection();
+            linkRangeRef.current = selection && selection.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
             const anchor = selection?.anchorNode?.nodeType === 1
               ? selection.anchorNode.closest("a")
               : selection?.anchorNode?.parentElement?.closest("a");
+            linkAnchorRef.current = anchor || null;
             const selectedText = selection?.toString() || "";
             setLinkUrl(anchor?.getAttribute("href") || "");
             setLinkNewTab(anchor?.getAttribute("target") === "_blank");
@@ -196,9 +200,16 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
               return;
             }
             const selection = window.getSelection();
-            let anchor = selection?.anchorNode?.nodeType === 1
-              ? selection.anchorNode.closest("a")
-              : selection?.anchorNode?.parentElement?.closest("a");
+            if (selection && linkRangeRef.current) {
+              selection.removeAllRanges();
+              selection.addRange(linkRangeRef.current);
+            }
+            let anchor = linkAnchorRef.current;
+            if (!anchor) {
+              anchor = selection?.anchorNode?.nodeType === 1
+                ? selection.anchorNode.closest("a")
+                : selection?.anchorNode?.parentElement?.closest("a");
+            }
             if (anchor) {
               anchor.setAttribute("href", url);
             } else {
