@@ -70,34 +70,107 @@ function normalizeInstagramUrl(value) {
   return username ? `https://www.instagram.com/${username}/` : "";
 }
 
-function FormatToolbar({ onFormat, onClearFormatting }) { return (
-    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "6px", padding: "6px", background: "#12121f", borderRadius: "4px", border: "1px solid #2c2c38" }}>
-      <button type="button" onClick={() => onFormat("bold")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", fontSize: "13px" }} title="Negrito">B</button>
-      <button type="button" onClick={() => onFormat("italic")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontStyle: "italic", fontSize: "13px" }} title="Itálico">I</button>
-      <button type="button" onClick={() => onFormat("underline")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", textDecoration: "underline", fontSize: "13px" }} title="Sublinhado">U</button>
-      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
-      <button type="button" onClick={() => onFormat("formatBlock", "h2")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Título">H2</button>
-      <button type="button" onClick={() => onFormat("formatBlock", "h3")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Subtítulo">H3</button>
-      <button type="button" onClick={() => onFormat("formatBlock", "p")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Parágrafo">P</button>
-      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
-      <button type="button" onClick={() => onFormat("insertUnorderedList")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Lista">• Lista</button>
-      <button type="button" onClick={() => onFormat("justifyLeft")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Alinhar esquerda">⬅</button>
-      <button type="button" onClick={() => onFormat("justifyCenter")} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Centralizar">⬌</button>
-      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
-      <button type="button" onClick={() => {
-        const url = prompt("URL do link:");
-        if (url) {
-          const newTab = confirm("Abrir em nova aba?");
-          const sel = window.getSelection();
-          const text = sel.toString() || url;
-          const target = newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
-          document.execCommand("insertHTML", false, DOMPurify.sanitize(`<a href="${url}"${target} style="color:#e9b61e">${text}</a>`));
-        }
-      }} style={{ background: "#2a2a3d", border: "1px solid #444", color: "#fff", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Inserir link">🔗 Link</button>
-      <span style={{ borderLeft: "1px solid #444", margin: "0 4px" }}></span>
-      <button type="button" onClick={onClearFormatting} style={{ background: "#3d2a2a", border: "1px solid #644", color: "#f88", padding: "4px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }} title="Limpar formatação">✕ Limpar</button>
+function FormatToolbar({ onFormat, onClearFormatting }) {
+  const buttonStyle = {
+    background: "#252638",
+    border: "1px solid #3b3d53",
+    color: "#f4f4f8",
+    minWidth: "34px",
+    height: "32px",
+    padding: "0 10px",
+    borderRadius: "6px",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    fontSize: "13px",
+    transition: "background .15s ease, border-color .15s ease"
+  };
+  const groupStyle = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    paddingRight: "9px",
+    marginRight: "3px",
+    borderRight: "1px solid #34364a"
+  };
+  const run = (command, value = null) => {
+    onFormat(command, value);
+  };
+  const tool = (label, title, command, value = null, extra = {}) => (
+    <button type="button" aria-label={title} title={title} onMouseDown={(e) => e.preventDefault()} onClick={() => run(command, value)} style={{ ...buttonStyle, ...extra }}>{label}</button>
+  );
+  return (
+    <div style={{
+      marginBottom: "8px",
+      background: "linear-gradient(180deg, #1b1c2b 0%, #151622 100%)",
+      border: "1px solid #34364a",
+      borderRadius: "10px",
+      overflow: "hidden",
+      boxShadow: "0 8px 24px rgba(0,0,0,.16)"
+    }}>
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "7px", padding: "10px", borderBottom: "1px solid #303246" }}>
+        <span style={{ color: "#aeb0c6", fontSize: "11px", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginRight: "2px" }}>Texto</span>
+        <div style={groupStyle}>
+          {tool(<b>B</b>, "Negrito (Ctrl+B)", "bold")}
+          {tool(<i>I</i>, "Itálico (Ctrl+I)", "italic")}
+          {tool(<u>U</u>, "Sublinhado (Ctrl+U)", "underline")}
+          {tool(<s>S</s>, "Tachado", "strikeThrough")}
+        </div>
+        <div style={groupStyle}>
+          <select aria-label="Estilo do parágrafo" title="Estilo do parágrafo" defaultValue="p" onMouseDown={(e) => e.stopPropagation()} onChange={(e) => run("formatBlock", e.target.value)} style={{ ...buttonStyle, width: "142px", justifyContent: "space-between", background: "#202132" }}>
+            <option value="p">Parágrafo normal</option>
+            <option value="h1">Título 1</option>
+            <option value="h2">Título 2</option>
+            <option value="h3">Título 3</option>
+            <option value="h4">Título 4</option>
+            <option value="blockquote">Citação</option>
+            <option value="pre">Texto pré-formatado</option>
+          </select>
+          <select aria-label="Tamanho da fonte" title="Tamanho da fonte" defaultValue="3" onMouseDown={(e) => e.stopPropagation()} onChange={(e) => run("fontSize", e.target.value)} style={{ ...buttonStyle, width: "92px", background: "#202132" }}>
+            <option value="1">Muito pequeno</option><option value="2">Pequeno</option><option value="3">Normal</option><option value="4">Grande</option><option value="5">Maior</option><option value="6">Título</option><option value="7">Enorme</option>
+          </select>
+        </div>
+        <div style={groupStyle}>
+          {tool("A−", "Diminuir recuo", "outdent")}
+          {tool("A+", "Aumentar recuo", "indent")}
+        </div>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", paddingRight: "9px", marginRight: "3px", borderRight: "1px solid #34364a" }}>
+          <label title="Cor do texto" style={{ ...buttonStyle, position: "relative", overflow: "hidden", padding: "0 8px" }}>
+            <span style={{ fontWeight: 800 }}>A</span><span style={{ width: "14px", height: "4px", background: "#f0bd22", borderRadius: "2px", position: "absolute", bottom: "4px" }} />
+            <input aria-label="Cor do texto" type="color" defaultValue="#f0bd22" onMouseDown={(e) => e.stopPropagation()} onChange={(e) => run("foreColor", e.target.value)} style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
+          </label>
+          <label title="Cor de destaque do texto" style={{ ...buttonStyle, position: "relative", overflow: "hidden", padding: "0 8px" }}>
+            <span style={{ background: "#f0bd22", color: "#161622", padding: "1px 4px", borderRadius: "3px", fontWeight: 800 }}>ab</span>
+            <input aria-label="Cor de destaque do texto" type="color" defaultValue="#f0bd22" onMouseDown={(e) => e.stopPropagation()} onChange={(e) => run("hiliteColor", e.target.value)} style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
+          </label>
+        </div>
+        <div style={groupStyle}>
+          {tool("☰", "Lista com marcadores", "insertUnorderedList")}
+          {tool("1.", "Lista numerada", "insertOrderedList")}
+        </div>
+        <div style={groupStyle}>
+          {tool("⇤", "Alinhar à esquerda", "justifyLeft")}
+          {tool("↔", "Centralizar", "justifyCenter")}
+          {tool("⇥", "Alinhar à direita", "justifyRight")}
+          {tool("☷", "Justificar texto", "justifyFull")}
+        </div>
+        <div style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
+          {tool("↗ Link", "Inserir link", "createLink", null, { color: "#f0bd22" })}
+          <button type="button" title="Remover formatação" onMouseDown={(e) => e.preventDefault()} onClick={onClearFormatting} style={{ ...buttonStyle, color: "#ff9696", background: "#30202a", borderColor: "#59323b" }}>Limpar</button>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", padding: "7px 10px", background: "rgba(9,10,18,.28)" }}>
+        <span style={{ color: "#aeb0c6", fontSize: "11px", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginRight: "4px" }}>Inserir</span>
+        {tool("↵ Quebra de linha", "Inserir quebra de linha", "insertLineBreak")}
+        {tool("— Linha divisória", "Inserir linha horizontal", "insertHorizontalRule")}
+        {tool("❝ Citação", "Formatar como citação", "formatBlock", "blockquote")}
+        <span style={{ color: "#777a95", fontSize: "11px", marginLeft: "auto" }}>Dica: selecione um trecho para formatá-lo, como no Word.</span>
+      </div>
     </div>
-  ); }
+  );
+}
 
 export default function Admin({ user: currentUser }) {
   const [posts, setPosts] = useState([]);
