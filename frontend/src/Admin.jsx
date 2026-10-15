@@ -103,6 +103,9 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
   );
   return (
     <div style={{
+      position: "sticky",
+      top: "8px",
+      zIndex: 50,
       marginBottom: "8px",
       background: "linear-gradient(180deg, #1b1c2b 0%, #151622 100%)",
       border: "1px solid #34364a",
@@ -159,8 +162,20 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
         <div style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
           <button type="button" title="Inserir link" aria-label="Inserir link" onMouseDown={(e) => e.preventDefault()} onClick={() => {
             const url = prompt("Cole a URL do link:");
-            if (url && (url.trim().startsWith("https://") || url.trim().startsWith("http://"))) run("createLink", url.trim());
-            else if (url) alert("Informe um endereço começando com https:// ou http://.");
+            if (url && (url.trim().startsWith("https://") || url.trim().startsWith("http://"))) {
+              const openInNewWindow = confirm("Deseja que este link abra em uma nova aba/janela?\\n\\nOK = Sim, abrir em nova aba\\nCancelar = Abrir na mesma aba");
+              run("createLink", url.trim());
+              if (openInNewWindow) {
+                const selection = window.getSelection();
+                const anchor = selection?.anchorNode?.parentElement?.closest("a");
+                if (anchor) {
+                  anchor.setAttribute("target", "_blank");
+                  anchor.setAttribute("rel", "noopener noreferrer");
+                }
+              }
+            } else if (url) {
+              alert("Informe um endereço começando com https:// ou http://.");
+            }
           }} style={{ ...buttonStyle, color: "#f0bd22" }}>↗ Link</button>
           <button type="button" title="Remover formatação" onMouseDown={(e) => e.preventDefault()} onClick={onClearFormatting} style={{ ...buttonStyle, color: "#ff9696", background: "#30202a", borderColor: "#59323b" }}>Limpar</button>
         </div>
