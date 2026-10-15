@@ -109,9 +109,10 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
   return (
     <div style={{
       position: "sticky",
-      top: "8px",
-      zIndex: 50,
+      top: "82px",
+      zIndex: 1000,
       marginBottom: "8px",
+      isolation: "isolate",
       background: "linear-gradient(180deg, #1b1c2b 0%, #151622 100%)",
       border: "1px solid #34364a",
       borderRadius: "10px",
