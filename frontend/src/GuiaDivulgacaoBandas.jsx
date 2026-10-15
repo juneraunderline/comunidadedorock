@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 const sections = [
   {
@@ -47,6 +47,26 @@ const sections = [
 ];
 
 function GuiaDivulgacaoBandas() {
+  useEffect(() => {
+    const previousTitle = document.title;
+    const description = "Aprenda a montar um release musical, organizar links e fotos, apresentar um lançamento à imprensa e divulgar sua banda independente com clareza.";
+    let descriptionTag = document.querySelector('meta[name="description"]');
+    const previousDescription = descriptionTag?.getAttribute("content") || null;
+    const createdDescriptionTag = !descriptionTag;
+    if (!descriptionTag) {
+      descriptionTag = document.createElement("meta");
+      descriptionTag.setAttribute("name", "description");
+      document.head.appendChild(descriptionTag);
+    }
+    document.title = "Como divulgar sua banda independente | Comunidade do Rock";
+    descriptionTag.setAttribute("content", description);
+    return () => {
+      document.title = previousTitle;
+      if (createdDescriptionTag) descriptionTag.remove();
+      else if (previousDescription !== null) descriptionTag.setAttribute("content", previousDescription);
+    };
+  }, []);
+
   return (
     <main className="section" style={{ maxWidth: "900px", margin: "0 auto", padding: "36px 20px 64px" }}>
       <nav aria-label="Navegação estrutural" style={{ color: "#999", fontSize: "13px", marginBottom: "22px" }}>
@@ -72,6 +92,7 @@ function GuiaDivulgacaoBandas() {
       </div>
 
       <div style={{ color: "#ddd", fontSize: "16px", lineHeight: 1.85 }}>
+        <p style={{ color: "#999", fontSize: "13px", marginBottom: "22px" }}>Guia editorial da Comunidade do Rock · Atualizado em 15 de outubro de 2026</p>
         <p>
           Ter músicas disponíveis é só uma parte do trabalho de uma banda independente. Para chegar a novos ouvintes, produtores, casas de shows e veículos especializados, também é importante apresentar o projeto com clareza e manter os canais de contato funcionando. Este guia organiza ações que podem ser feitas aos poucos, com ferramentas simples e sem prometer resultados automáticos.
         </p>
@@ -84,6 +105,51 @@ function GuiaDivulgacaoBandas() {
             {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           </section>
         ))}
+
+
+        <section style={{ marginTop: "38px" }}>
+          <h2 style={{ color: "#fff", fontSize: "23px", lineHeight: 1.35, marginBottom: "12px" }}>Como montar um release musical que a imprensa consiga usar</h2>
+          <p>Um release é um texto curto que apresenta uma novidade jornalística: o lançamento de um single, álbum ou videoclipe, uma turnê, uma mudança importante na formação ou outro acontecimento confirmado. Ele não substitui a música nem obriga um veículo a publicar a pauta. Sua função é entregar os dados essenciais para que a pessoa responsável avalie rapidamente se o assunto combina com o público dela.</p>
+          <p>Comece pelo fato mais importante. Em vez de um título genérico como “Banda lança música nova”, tente uma formulação específica, sem exageros: “Banda de [cidade] apresenta o single [nome], inspirado em [contexto real]”. Não use “revolucionário”, “o maior do Brasil” ou números de audiência se não houver evidência verificável para sustentar essas afirmações.</p>
+          <p>No primeiro parágrafo, responda ao básico: quem está lançando, o que foi lançado, quando chega ao público e onde pode ser ouvido. Depois explique o contexto da obra, cite participantes confirmados da gravação e acrescente uma declaração real de alguém da banda, caso exista. Não invente aspas nem atribua frases a artistas sem autorização.</p>
+        </section>
+
+        <section style={{ marginTop: "32px", padding: "22px", border: "1px solid #33333d", borderRadius: "10px", background: "#15151b" }}>
+          <h2 style={{ color: "#e9b61e", fontSize: "22px", marginTop: 0 }}>Modelo de release para adaptar</h2>
+          <p style={{ color: "#bbb" }}>Substitua os campos entre colchetes por informações confirmadas. Apague o que não se aplicar e não envie o texto com campos em aberto.</p>
+          <div style={{ padding: "16px", background: "#0c0c10", borderRadius: "8px", border: "1px solid #303039", whiteSpace: "pre-wrap", overflowWrap: "anywhere", color: "#eee", fontSize: "14px" }}>
+            {"ASSUNTO: [Nome da banda] lança [single/álbum/videoclipe] em [data]\n\n[Nome da banda], projeto de [cidade/estado], apresenta [nome do lançamento] em [data]. O trabalho pode ser ouvido/visto em [link direto].\n\n[Explique em duas ou três frases o contexto da música, o tema da letra ou uma decisão real da gravação. Inclua apenas informações confirmadas.]\n\nO lançamento contou com [integrantes, produtores ou convidados confirmados, se relevante]. “ [Declaração real e autorizada de um integrante] ”, comenta [nome e função].\n\nOuça/assista: [link direto]\nFotos e material de divulgação: [link da pasta com acesso liberado]\nInstagram/site: [link]\nContato para imprensa: [nome ou função e e-mail]\n\nSobre a banda: [biografia objetiva de duas a quatro frases, com cidade, estilo, formação ou lançamentos relevantes]."}
+          </div>
+          <p style={{ marginBottom: 0 }}>Esse modelo é um ponto de partida, não uma fórmula obrigatória. O texto final deve refletir a história real da banda e a novidade específica que está sendo apresentada.</p>
+        </section>
+
+        <section style={{ marginTop: "32px" }}>
+          <h2 style={{ color: "#fff", fontSize: "23px", lineHeight: 1.35, marginBottom: "12px" }}>Como enviar a pauta sem atrapalhar quem recebe</h2>
+          <p>Use um assunto de e-mail que identifique a banda e a novidade. Escreva uma mensagem breve, explique por que a pauta pode interessar àquele veículo e inclua o link para ouvir a música logo no começo. Antes de enviar, abra todos os links em uma janela anônima para confirmar que não exigem login nem autorização particular.</p>
+          <p>Prefira uma pasta organizada com fotos em boa resolução, créditos, capa e biografia. Informe quem fotografou e confirme que a banda tem autorização para disponibilizar o material. Para arquivos de áudio e vídeo, links de plataformas conhecidas costumam ser mais práticos do que anexos pesados.</p>
+          <p>Não dispare mensagens em massa com destinatários visíveis. Personalize o contato e respeite as regras de cada veículo. Se não houver resposta, um único acompanhamento educado depois de alguns dias úteis é suficiente; não cobre publicação nem trate o silêncio como promessa de cobertura.</p>
+        </section>
+
+        <section style={{ marginTop: "32px" }}>
+          <h2 style={{ color: "#fff", fontSize: "23px", lineHeight: 1.35, marginBottom: "12px" }}>Organize o lançamento em um calendário simples</h2>
+          <ul style={{ paddingLeft: "22px" }}>
+            <li><strong>Antes do lançamento:</strong> confirme a data nas plataformas, prepare a capa, revise os créditos e deixe os links prontos.</li>
+            <li><strong>No dia:</strong> publique o link direto, compartilhe um trecho autorizado e envie o release aos contatos relevantes.</li>
+            <li><strong>Depois:</strong> compartilhe material de bastidores, apresentações confirmadas ou informações novas — não repita a mesma chamada sem acrescentar nada.</li>
+            <li><strong>Ao longo do tempo:</strong> atualize a biografia, registre os resultados e mantenha uma lista de contatos que aceitaram receber futuras pautas.</li>
+          </ul>
+          <p>Uma planilha pode registrar o veículo, o contato público, a data de envio, a pauta apresentada e a resposta recebida. Use os dados apenas para organizar o trabalho e respeite pedidos para não receber novos contatos.</p>
+        </section>
+
+        <section style={{ marginTop: "32px" }}>
+          <h2 style={{ color: "#fff", fontSize: "23px", lineHeight: 1.35, marginBottom: "12px" }}>Dúvidas frequentes</h2>
+          <h3 style={{ color: "#e9b61e", fontSize: "18px" }}>Preciso pagar para divulgar uma música?</h3>
+          <p>Não necessariamente. É possível divulgar por canais próprios, enviar pautas relevantes e construir relações com a cena sem comprar publicação. Se um serviço oferecer publicidade paga, confira o que está sendo contratado e não confunda anúncio comercial com cobertura editorial independente.</p>
+          <h3 style={{ color: "#e9b61e", fontSize: "18px" }}>Um release garante que a imprensa publique a notícia?</h3>
+          <p>Não. Cada veículo decide o que publicar de acordo com sua linha editorial, espaço e interesse do público. Um release claro facilita a avaliação, mas não garante cobertura, público, contratos ou resultados comerciais.</p>
+          <h3 style={{ color: "#e9b61e", fontSize: "18px" }}>Posso enviar a mesma pauta para todos os sites?</h3>
+          <p>Os fatos centrais podem ser os mesmos, mas a mensagem de apresentação deve ser adaptada ao veículo. Verifique se ele aceita releases, quais formatos prefere e se há um contato editorial público para esse tipo de assunto.</p>
+        </section>
 
         <section style={{ marginTop: "38px", padding: "22px", border: "1px solid #33333d", borderRadius: "10px", background: "#15151b" }}>
           <h2 style={{ color: "#e9b61e", fontSize: "22px", marginTop: 0 }}>Checklist rápido antes de enviar sua próxima pauta</h2>
