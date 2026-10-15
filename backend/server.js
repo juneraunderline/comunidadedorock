@@ -135,7 +135,7 @@ const pool = new Pool({
   // rapidamente reduz o risco de esgotar max_client_conn.
   max: 1,
   idleTimeoutMillis: 1000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 15000,
   allowExitOnIdle: true
 });
 
@@ -433,18 +433,41 @@ let initializationPromise = null;
 let initializationStage = "not_started";
 let initializationErrorCode = null;
 
+const waitForDatabaseRetry = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+function isTransientDatabaseError(err) {
+  const code = String(err?.code || "");
+  const message = String(err?.message || "");
+  return /^(08|53|57P0|57P3|53300|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|ENOTFOUND)/i.test(code) ||
+    /connection terminated|connection refused|connection timeout|timeout expired|server closed the connection|too many clients|starting up|temporarily unavailable|socket hang up|could not connect/i.test(message);
+}
+
 async function ensureInitialized() {
   if (!initializationPromise) {
     initializationPromise = (async () => {
-      initializationStage = "creating_tables";
-      initializationErrorCode = null;
-      await initDb();
-      initializationStage = "loading_feeds";
-      await loadFeeds();
-      initializationStage = "ready";
-      // A limpeza de duplicatas não deve rodar em toda requisição/cold start.
-      // Ela é executada somente pelo endpoint manual /api/cleanup-duplicates.
-      return true;
+      const delays = [0, 2000, 5000, 10000];
+      let lastError;
+      for (let attempt = 0; attempt < delays.length; attempt++) {
+        if (delays[attempt]) await waitForDatabaseRetry(delays[attempt]);
+        try {
+          initializationStage = "creating_tables";
+          initializationErrorCode = null;
+          await initDb();
+          initializationStage = "loading_feeds";
+          await loadFeeds();
+          initializationStage = "ready";
+          // A limpeza de duplicatas não deve rodar em toda requisição/cold start.
+          // Ela é executada somente pelo endpoint manual /api/cleanup-duplicates.
+          return true;
+        } catch (err) {
+          lastError = err;
+          initializationStage = "failed";
+          initializationErrorCode = typeof err.code === "string" ? err.code : "UNKNOWN";
+          if (attempt === delays.length - 1 || !isTransientDatabaseError(err)) throw err;
+          console.warn(`Inicialização do banco falhou (tentativa ${attempt + 1}/${delays.length}); nova tentativa em breve:`, initializationErrorCode);
+        }
+      }
+      throw lastError;
     })().catch(err => {
       initializationStage = "failed";
       initializationErrorCode = typeof err.code === "string" ? err.code : "UNKNOWN";
@@ -930,10 +953,15 @@ async function autoImportRss() {
   if (isImporting) return; // Evitar execuções sobrepostas
   isImporting = true;
   try {
-    // Recarregar feeds do banco para pegar novos feeds adicionados
-    try {
-      rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
-    } catch (e) { console.warn("Erro ao recarregar feeds:", e.message); }
+    // Recarregar feeds do banco para pegar novos feeds adicionados.
+    // Se o banco não responder, falhar a execução para o agendador tentar novamente.
+    rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
+    if (!rssFeeds.length) {
+      console.warn("Importação RSS não executada: nenhuma fonte cadastrada no banco.");
+      return { success: false, feeds: 0, failedFeeds: 0, imported: 0, reason: "no_feeds" };
+    }
+    let failedFeeds = 0;
+    let importedTotal = 0;
     for (const feed of rssFeeds) {
       let importedForFeed = 0;
       let itemCountForFeed = 0;
@@ -960,6 +988,7 @@ async function autoImportRss() {
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
         itemCountForFeed = items.length;
         if (!xml.trim()) {
+          failedFeeds++;
           await saveRssFeedStatus(feed, { status: "error", message: "Não foi possível obter o conteúdo do feed (resposta vazia ou bloqueada).", items: 0 });
           continue;
         }
@@ -1006,15 +1035,23 @@ async function autoImportRss() {
           items: itemCountForFeed
         });
       } catch (e) {
+        failedFeeds++;
         console.warn(`Erro no feed ${feed.name}: ${e.message}`);
         await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: importedForFeed, items: itemCountForFeed });
       }
+      importedTotal += importedForFeed;
     }
     // Limpar notícias sem imagem e limitar cada fonte às 3 mais recentes.
     try {
       await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'");
       await cleanupRssPostsPerSource();
-    } catch (e) { console.warn("Erro ao limitar notícias por fonte:", e.message); }
+    } catch (e) {
+      console.warn("Erro ao limitar notícias por fonte:", e.message);
+      throw e;
+    }
+    const summary = { success: failedFeeds < rssFeeds.length, feeds: rssFeeds.length, failedFeeds, imported: importedTotal };
+    console.log("Resumo da importação RSS:", JSON.stringify(summary));
+    return summary;
   } finally {
     isImporting = false;
   }
@@ -2677,8 +2714,16 @@ app.get("/api/cron/rss", async (req, res) => {
     if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
       return res.status(401).json({ error: "Não autorizado" });
     }
-    await autoImportRss();
-    res.json({ success: true, message: "Importação RSS concluída" });
+    const result = await autoImportRss();
+    if (!result || result.reason === "no_feeds") {
+      return res.status(503).json({ success: false, error: "Importação RSS não concluída: nenhuma fonte foi carregada do banco." });
+    }
+    // Se todas as fontes falharam, sinalizar erro HTTP para o GitHub Actions
+    // repetir a chamada em vez de registrar uma falsa execução bem-sucedida.
+    if (result.feeds > 0 && result.failedFeeds === result.feeds) {
+      return res.status(503).json({ success: false, error: "Todas as fontes RSS falharam nesta execução; tente novamente.", ...result });
+    }
+    return res.json({ ...result, message: result.failedFeeds ? "Importação concluída com falhas em algumas fontes." : "Importação RSS concluída" });
   } catch (err) {
     console.error("Erro no cron RSS:", err);
     res.status(500).json({ error: "Não foi possível concluir a solicitação" });
