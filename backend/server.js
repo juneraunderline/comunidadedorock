@@ -2631,32 +2631,43 @@ app.get("/api/debug-rss", async (req, res) => {
   }
 });
 
-// Sitemap dinâmico: inclui páginas públicas e conteúdos publicados do banco.
+// Sitemap: sempre entrega as páginas públicas, mesmo se o Layerbase estiver hibernando.
+// As URLs de conteúdo são acrescentadas quando o banco responde; formulários e áreas privadas
+// ficam fora para não desperdiçar rastreamento em páginas sem conteúdo editorial.
 app.get("/sitemap.xml", async (req, res) => {
-  try {
-    await ensureInitialized();
-    const base = "https://comunidadedorock.com.br";
-    const [posts, bands, interviews, events] = await Promise.all([
-      db.getAll("SELECT id, created_at FROM posts ORDER BY created_at DESC"),
-      db.getAll("SELECT id, created_at FROM bands ORDER BY created_at DESC"),
-      db.getAll("SELECT id, created_at FROM interviews ORDER BY created_at DESC"),
-      db.getAll("SELECT id, created_at FROM events WHERE status = 'approved' ORDER BY created_at DESC")
-    ]);
-    const staticPaths = ["/", "/noticias", "/bandas", "/entrevistas", "/eventos", "/guias/divulgacao-banda-independente", "/cadastrar-banda", "/sobre", "/privacidade", "/termos", "/contato"];
-    const urls = staticPaths.map((path) => ({ loc: base + path }));
-    for (const post of posts) urls.push({ loc: base + "/noticias/" + post.id, lastmod: post.created_at });
-    for (const band of bands) urls.push({ loc: base + "/bandas/" + band.id, lastmod: band.created_at });
-    for (const interview of interviews) urls.push({ loc: base + "/entrevistas/" + interview.id, lastmod: interview.created_at });
-    for (const event of events) urls.push({ loc: base + "/eventos/" + event.id, lastmod: event.created_at });
-    const escapeXml = (value) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/\'/g, "&apos;");
-    const entries = urls.map(({ loc, lastmod }) => "  <url><loc>" + escapeXml(loc) + "</loc>" + (lastmod ? "<lastmod>" + new Date(lastmod).toISOString().slice(0, 10) + "</lastmod>" : "") + "</url>").join("\n");
-    res.set("Content-Type", "application/xml; charset=utf-8");
-    res.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
-    res.send('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + entries + "\n</urlset>");
-  } catch (err) {
-    console.error("Erro ao gerar sitemap:", err);
-    res.status(500).type("text/plain").send("Não foi possível gerar o sitemap.");
-  }
+  const base = "https://comunidadedorock.com.br";
+  const staticPaths = ["/", "/noticias", "/bandas", "/entrevistas", "/eventos", "/guias/divulgacao-banda-independente", "/sobre", "/privacidade", "/termos", "/contato"];
+  const urls = staticPaths.map((path) => ({ loc: base + path }));
+
+  const safeSitemapQuery = async (label, query) => {
+    try {
+      return await db.getAll(query);
+    } catch (err) {
+      console.warn("Sitemap: conteúdo dinâmico temporariamente indisponível (" + label + "):", err.code || "DB_ERROR");
+      return [];
+    }
+  };
+
+  const [posts, bands, interviews, events] = await Promise.all([
+    safeSitemapQuery("notícias", "SELECT id, created_at FROM posts ORDER BY created_at DESC"),
+    safeSitemapQuery("bandas", "SELECT id, created_at FROM bands WHERE COALESCE(TRIM(name), '') <> '' ORDER BY created_at DESC"),
+    safeSitemapQuery("entrevistas", "SELECT id, created_at FROM interviews WHERE COALESCE(TRIM(title), '') <> '' AND COALESCE(TRIM(content), '') <> '' ORDER BY created_at DESC"),
+    safeSitemapQuery("eventos", "SELECT id, created_at FROM events WHERE status = 'approved' AND COALESCE(TRIM(title), '') <> '' ORDER BY created_at DESC")
+  ]);
+
+  for (const post of posts) urls.push({ loc: base + "/noticias/" + post.id, lastmod: post.created_at });
+  for (const band of bands) urls.push({ loc: base + "/bandas/" + band.id, lastmod: band.created_at });
+  for (const interview of interviews) urls.push({ loc: base + "/entrevistas/" + interview.id, lastmod: interview.created_at });
+  for (const event of events) urls.push({ loc: base + "/eventos/" + event.id, lastmod: event.created_at });
+
+  const escapeXml = (value) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+  const entries = urls.map(({ loc, lastmod }) => {
+    const validDate = lastmod && !Number.isNaN(new Date(lastmod).getTime());
+    return "  <url><loc>" + escapeXml(loc) + "</loc>" + (validDate ? "<lastmod>" + new Date(lastmod).toISOString().slice(0, 10) + "</lastmod>" : "") + "</url>";
+  }).join("\n");
+  res.set("Content-Type", "application/xml; charset=utf-8");
+  res.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
+  res.send('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + entries + "\n</urlset>");
 });
 // Inicialização compatível com Vercel e desenvolvimento local.
 // Em produção serverless, o banco é inicializado sob demanda pelo middleware acima.
