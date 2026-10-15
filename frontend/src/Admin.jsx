@@ -79,6 +79,7 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
   const anchorRef = useRef(null);
   const lastScrollYRef = useRef(0);
   const returnToStaticRef = useRef(false);
+  const hiddenUntilReturnRef = useRef(false);
   const hasReachedToolbarRef = useRef(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [linkNewTab, setLinkNewTab] = useState(false);
@@ -96,6 +97,18 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
       lastScrollYRef.current = currentY;
       const anchorTop = anchor.getBoundingClientRect().top;
 
+      // Ao dispensar a barra, ela permanece escondida durante a rolagem para baixo.
+      // A trava só é liberada quando o usuário volta à posição original da barra.
+      if (hiddenUntilReturnRef.current) {
+        if (anchorTop >= 80) {
+          hiddenUntilReturnRef.current = false;
+          hasReachedToolbarRef.current = true;
+          returnToStaticRef.current = false;
+          setIsFloating(false);
+        }
+        return;
+      }
+
       if (anchorTop >= 80) {
         hasReachedToolbarRef.current = true;
         returnToStaticRef.current = false;
@@ -103,8 +116,6 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
         return;
       }
 
-      // Se a página já abriu abaixo da barra, rolar mais para baixo não deve fazê-la aparecer.
-      // Primeiro é necessário voltar até a posição original; só depois rolar para baixo.
       if (returnToStaticRef.current) {
         if (scrollingDown && hasReachedToolbarRef.current) {
           returnToStaticRef.current = false;
@@ -201,7 +212,8 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
           title="Voltar a barra para o local original"
           aria-label="Voltar barra para o local original"
           onClick={() => {
-            returnToStaticRef.current = true;
+            hiddenUntilReturnRef.current = true;
+            returnToStaticRef.current = false;
             setIsFloating(false);
           }}
           style={{ ...buttonStyle, color: "#f0bd22", fontSize: "16px", minWidth: "38px" }}
