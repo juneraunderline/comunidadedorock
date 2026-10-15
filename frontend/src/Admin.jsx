@@ -206,7 +206,7 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
           }}
           style={{ ...buttonStyle, cursor: "grab", touchAction: "none", color: "#f0bd22", fontSize: "17px", minWidth: "38px" }}
         >⠿</button>}
-        <span style={{ color: "#aeb0c6", fontSize: "11px", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginRight: "2px" }}>{isFloating ? "Barra flutuante · Arraste para mover" : "Texto"}</span>
+        <span style={{ color: "#aeb0c6", fontSize: "11px", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginRight: "2px" }}>{isFloating ? "" : "Texto"}</span>
         <div style={groupStyle}>
           {tool(<b>B</b>, "Negrito (Ctrl+B)", "bold")}
           {tool(<i>I</i>, "Itálico (Ctrl+I)", "italic")}
