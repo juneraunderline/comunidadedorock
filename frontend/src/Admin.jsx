@@ -187,11 +187,6 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
           onClick={() => {
             returnToStaticRef.current = true;
             setIsFloating(false);
-            const anchor = anchorRef.current;
-            if (anchor) {
-              const top = window.scrollY + anchor.getBoundingClientRect().top - 96;
-              window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-            }
           }}
           style={{ ...buttonStyle, color: "#f0bd22", fontSize: "16px", minWidth: "38px" }}
         >↩</button>}
