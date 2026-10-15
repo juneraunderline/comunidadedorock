@@ -255,9 +255,13 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
           <button type="button" title="Inserir ou editar link" aria-label="Inserir ou editar link" onMouseDown={(e) => e.preventDefault()} onClick={() => {
             const selection = window.getSelection();
             linkRangeRef.current = selection && selection.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
-            const anchor = selection?.anchorNode?.nodeType === 1
+            const rangeNode = linkRangeRef.current?.commonAncestorContainer;
+            const elementNode = rangeNode?.nodeType === 1 ? rangeNode : rangeNode?.parentElement;
+            const rangeAnchor = elementNode?.closest("a");
+            const selectionAnchor = selection?.anchorNode?.nodeType === 1
               ? selection.anchorNode.closest("a")
               : selection?.anchorNode?.parentElement?.closest("a");
+            const anchor = rangeAnchor || selectionAnchor;
             linkAnchorRef.current = anchor || null;
             const selectedText = selection?.toString() || "";
             setLinkUrl(anchor?.getAttribute("href") || "");
@@ -291,7 +295,9 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
               selection.removeAllRanges();
               selection.addRange(linkRangeRef.current);
             }
-            let anchor = linkAnchorRef.current;
+            const rangeNode = linkRangeRef.current?.commonAncestorContainer;
+            const elementNode = rangeNode?.nodeType === 1 ? rangeNode : rangeNode?.parentElement;
+            let anchor = linkAnchorRef.current || elementNode?.closest("a");
             if (!anchor) {
               anchor = selection?.anchorNode?.nodeType === 1
                 ? selection.anchorNode.closest("a")
@@ -302,9 +308,11 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
             } else {
               run("createLink", url);
               const updatedSelection = window.getSelection();
-              anchor = updatedSelection?.anchorNode?.nodeType === 1
+              const updatedRangeNode = updatedSelection?.rangeCount ? updatedSelection.getRangeAt(0).commonAncestorContainer : null;
+              const updatedElementNode = updatedRangeNode?.nodeType === 1 ? updatedRangeNode : updatedRangeNode?.parentElement;
+              anchor = updatedElementNode?.closest("a") || (updatedSelection?.anchorNode?.nodeType === 1
                 ? updatedSelection.anchorNode.closest("a")
-                : updatedSelection?.anchorNode?.parentElement?.closest("a");
+                : updatedSelection?.anchorNode?.parentElement?.closest("a"));
             }
             if (anchor) {
               if (linkNewTab) {
@@ -377,14 +385,14 @@ export default function Admin({ user: currentUser }) {
   // Sincronizar conteúdo do editor quando editingPost muda
   useEffect(() => {
     if (editingPost && editingContentRef.current) {
-      editingContentRef.current.innerHTML = DOMPurify.sanitize(editingPost.content || "");
+      editingContentRef.current.innerHTML = DOMPurify.sanitize(editingPost.content || "", { ADD_ATTR: ["target", "rel"] });
     }
   }, [editingPost?.id]);
 
   // Sincronizar conteúdo do novo post
   useEffect(() => {
     if (newContentRef.current) {
-      newContentRef.current.innerHTML = DOMPurify.sanitize(newPost.content || "");
+      newContentRef.current.innerHTML = DOMPurify.sanitize(newPost.content || "", { ADD_ATTR: ["target", "rel"] });
     }
   }, []);
 
@@ -479,7 +487,7 @@ export default function Admin({ user: currentUser }) {
       const pastedHtml = e.clipboardData?.getData("text/html");
       if (pastedHtml) {
         e.preventDefault();
-        document.execCommand("insertHTML", false, DOMPurify.sanitize(pastedHtml));
+        document.execCommand("insertHTML", false, DOMPurify.sanitize(pastedHtml, { ADD_ATTR: ["target", "rel"] }));
         const editor = e.currentTarget;
         const newContent = editor.innerHTML;
         if (isEditing) {
@@ -569,7 +577,7 @@ export default function Admin({ user: currentUser }) {
 
   const createPost = () => {
     // Ler conteúdo direto do ref para garantir que imagens coladas sejam incluídas
-    const finalContent = DOMPurify.sanitize(newContentRef.current ? newContentRef.current.innerHTML : newPost.content);
+    const finalContent = DOMPurify.sanitize(newContentRef.current ? newContentRef.current.innerHTML : newPost.content, { ADD_ATTR: ["target", "rel"] });
     
     if (!newPost.title.trim() || !finalContent.trim()) {
       alert("Preencha título e conteúdo");
@@ -606,7 +614,7 @@ export default function Admin({ user: currentUser }) {
 
   const saveEditPost = () => {
     // Ler conteúdo direto do ref para garantir que imagens coladas sejam incluídas
-    const finalContent = DOMPurify.sanitize(editingContentRef.current ? editingContentRef.current.innerHTML : editingPost.content);
+    const finalContent = DOMPurify.sanitize(editingContentRef.current ? editingContentRef.current.innerHTML : editingPost.content, { ADD_ATTR: ["target", "rel"] });
     
     if (!editingPost.title.trim() || !finalContent.trim()) {
       alert("Preencha título e conteúdo");
