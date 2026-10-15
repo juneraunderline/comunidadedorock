@@ -225,7 +225,10 @@ async function loadFeeds() {
       }
       rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
     }
-  } catch (e) { console.error(e); }
+  } catch (e) {
+    console.error("Falha ao carregar fontes RSS do banco:", e.code || e.message || e);
+    throw e;
+  }
 }
 
 
@@ -2714,6 +2717,9 @@ app.get("/api/cron/rss", async (req, res) => {
     if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
       return res.status(401).json({ error: "Não autorizado" });
     }
+    // Inicializar tabelas e carregar feeds nesta própria invocação serverless.
+    // Sem isso, uma instância fria pode importar com a lista RSS vazia.
+    await ensureInitialized();
     const result = await autoImportRss();
     if (!result || result.reason === "no_feeds") {
       return res.status(503).json({ success: false, error: "Importação RSS não concluída: nenhuma fonte foi carregada do banco." });
