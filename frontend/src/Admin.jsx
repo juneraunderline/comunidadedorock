@@ -166,8 +166,13 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
       left: isFloating ? toolbarPosition.left : "auto",
       zIndex: isFloating ? 10000 : "auto",
       width: isFloating ? "min(900px, calc(100vw - 32px))" : "100%",
-      maxHeight: isFloating ? "calc(100vh - 24px)" : "none",
-      overflowY: isFloating ? "auto" : "visible",
+      height: isFloating ? "260px" : "auto",
+      minWidth: isFloating ? "280px" : 0,
+      minHeight: isFloating ? "120px" : 0,
+      maxWidth: isFloating ? "calc(100vw - 16px)" : "none",
+      maxHeight: isFloating ? "calc(100vh - 16px)" : "none",
+      resize: isFloating ? "both" : "none",
+      overflow: isFloating ? "auto" : "visible",
       isolation: "isolate",
       background: "linear-gradient(180deg, #1b1c2b 0%, #151622 100%)",
       border: "1px solid #34364a",
@@ -326,7 +331,6 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
         {tool("↵ Quebra de linha", "Inserir quebra de linha", "insertLineBreak")}
         {tool("— Linha divisória", "Inserir linha horizontal", "insertHorizontalRule")}
         {tool("❝ Citação", "Formatar como citação", "formatBlock", "blockquote")}
-        <span style={{ color: "#777a95", fontSize: "11px", marginLeft: "auto" }}>Dica: selecione um trecho para formatá-lo, como no Word.</span>
       </div>
     </div>
     </div>
