@@ -159,7 +159,7 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
         <div style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
           <button type="button" title="Inserir link" aria-label="Inserir link" onMouseDown={(e) => e.preventDefault()} onClick={() => {
             const url = prompt("Cole a URL do link:");
-            if (url && /^https?:\\/\\//i.test(url.trim())) run("createLink", url.trim());
+            if (url && (url.trim().startsWith("https://") || url.trim().startsWith("http://"))) run("createLink", url.trim());
             else if (url) alert("Informe um endereço começando com https:// ou http://.");
           }} style={{ ...buttonStyle, color: "#f0bd22" }}>↗ Link</button>
           <button type="button" title="Remover formatação" onMouseDown={(e) => e.preventDefault()} onClick={onClearFormatting} style={{ ...buttonStyle, color: "#ff9696", background: "#30202a", borderColor: "#59323b" }}>Limpar</button>
