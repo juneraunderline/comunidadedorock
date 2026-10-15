@@ -182,7 +182,7 @@ function NewsDetail() {
                   </p>
                 </>
               ) : (
-                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || "") }} />
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || "", { ADD_ATTR: ["target", "rel"] }) }} />
               )}
             </div>
             
