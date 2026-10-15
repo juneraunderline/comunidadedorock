@@ -79,29 +79,45 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
   const anchorRef = useRef(null);
   const lastScrollYRef = useRef(0);
   const returnToStaticRef = useRef(false);
+  const hasReachedToolbarRef = useRef(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [linkNewTab, setLinkNewTab] = useState(false);
   const linkRangeRef = useRef(null);
   const linkAnchorRef = useRef(null);
   useEffect(() => {
     lastScrollYRef.current = window.scrollY;
+    // Só habilita o modo flutuante depois que o usuário alcança a posição original da barra.
+    hasReachedToolbarRef.current = Boolean(anchorRef.current && anchorRef.current.getBoundingClientRect().top >= 80);
     const onScroll = () => {
       const anchor = anchorRef.current;
       if (!anchor) return;
       const currentY = window.scrollY;
       const scrollingDown = currentY > lastScrollYRef.current;
       lastScrollYRef.current = currentY;
+      const anchorTop = anchor.getBoundingClientRect().top;
+
+      if (anchorTop >= 80) {
+        hasReachedToolbarRef.current = true;
+        returnToStaticRef.current = false;
+        setIsFloating(false);
+        return;
+      }
+
+      // Se a página já abriu abaixo da barra, rolar mais para baixo não deve fazê-la aparecer.
+      // Primeiro é necessário voltar até a posição original; só depois rolar para baixo.
       if (returnToStaticRef.current) {
-        if (anchor.getBoundingClientRect().top >= 80) {
-          returnToStaticRef.current = false;
-          setIsFloating(false);
-        } else if (scrollingDown) {
+        if (scrollingDown && hasReachedToolbarRef.current) {
           returnToStaticRef.current = false;
           setIsFloating(true);
         }
         return;
       }
-      setIsFloating(anchor.getBoundingClientRect().top < 80);
+
+      if (scrollingDown && hasReachedToolbarRef.current) {
+        setIsFloating(true);
+      } else if (!hasReachedToolbarRef.current) {
+        setIsFloating(false);
+      }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     const move = (event) => {
