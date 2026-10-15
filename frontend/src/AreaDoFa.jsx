@@ -310,9 +310,9 @@ function AreaDoFa({ user }) {
                     <div style={{ padding: "14px" }}>
                       <h3 style={{ margin: "0 0 6px", fontSize: "18px" }}>{band.name}</h3>
                       <p style={{ color: "#aaa", fontSize: "13px", margin: "0 0 12px" }}>{band.genre || "Rock"}{band.city ? ` · ${band.city}` : ""}{band.state ? `/${band.state}` : ""}</p>
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                        <Link to={`/bandas/${band.id}`} style={{ ...buttonStyle, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Ver banda</Link>
-                        <button onClick={() => toggleFavorite(band)} disabled={saving === `band-${band.id}`} style={{ ...buttonStyle, background: "transparent", color: "#ddd", borderColor: "#454552" }}>{saving === `band-${band.id}` ? "Salvando..." : "Remover"}</button>
+                      <div className="fan-area-actions">
+                        <Link className="fan-area-action-btn" to={`/bandas/${band.id}`}>Ver banda</Link>
+                        <button className="fan-area-action-btn fan-area-action-secondary" onClick={() => toggleFavorite(band)} disabled={saving === `band-${band.id}`}>{saving === `band-${band.id}` ? "Salvando..." : "Remover"}</button>
                       </div>
                     </div>
                   </article>)}
@@ -330,7 +330,7 @@ function AreaDoFa({ user }) {
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <h3 style={{ margin: "0 0 4px", fontSize: "16px" }}>{band.name}</h3>
                       <p style={{ color: "#aaa", fontSize: "12px", margin: "0 0 10px" }}>{band.genre || "Rock"}{band.city ? ` · ${band.city}` : ""}</p>
-                      <button onClick={() => toggleFavorite(band)} disabled={saving === `band-${band.id}`} style={buttonStyle}>{saving === `band-${band.id}` ? "Salvando..." : "＋ Adicionar aos favoritos"}</button>
+                      <button className="fan-area-action-btn fan-area-favorite-add" onClick={() => toggleFavorite(band)} disabled={saving === `band-${band.id}`}>{saving === `band-${band.id}` ? "Salvando..." : "＋ Adicionar aos favoritos"}</button>
                     </div>
                   </article>)}
                 </div>
