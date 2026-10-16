@@ -1044,10 +1044,10 @@ async function autoImportRss() {
       }
       importedTotal += importedForFeed;
     }
-    // Limpar notícias sem imagem e limitar cada fonte às 3 mais recentes.
+    // Limpar notícias sem imagem e preservar o histórico de notícias RSS.
     try {
       await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'");
-      await cleanupRssPostsPerSource();
+
     } catch (e) {
       console.warn("Erro ao limitar notícias por fonte:", e.message);
       throw e;
@@ -2356,7 +2356,7 @@ app.post("/api/import-rss", async (req, res) => {
       try {
         const items = await getFeedItems(feed.url);
         feedItems = items.length;
-        for (const itemXml of items.slice(0, 3)) {
+        for (const itemXml of items.slice(0, 10)) {
           const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const rssImage = extractImageFromItem(itemXml, content);
@@ -2372,7 +2372,7 @@ app.post("/api/import-rss", async (req, res) => {
             feedImported++;
           }
         }
-        await saveRssFeedStatus(feed, { status: feedImported > 0 ? "updated" : "no_new", message: feedImported > 0 ? `${feedImported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported: feedImported, items: feedItems });
+        await saveRssFeedStatus(feed, { status: feedImported > 0 ? "updated" : "no_new", message: feedImported > 0 ? `${feedImported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 10 primeiros itens do feed.", imported: feedImported, items: feedItems });
       } catch (e) {
         console.warn(`Erro no feed ${feed.name}: ${e.message}`);
         await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: feedImported, items: feedItems });
@@ -2380,7 +2380,7 @@ app.post("/api/import-rss", async (req, res) => {
     }
     // Limpar posts sem imagem após import manual
     await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
-    await cleanupRssPostsPerSource();
+
     res.json({ success: true, imported });
   } catch (err) {
     res.status(500).json({ error: "Não foi possível concluir a solicitação" });
@@ -2395,7 +2395,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     if (!feed || !feed.url) return res.status(400).json({ error: "Feed inválido" });
     let imported = 0;
     const items = await getFeedItems(feed.url);
-    for (const itemXml of items.slice(0, 3)) {
+    for (const itemXml of items.slice(0, 10)) {
       const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
       const content = decodeHtmlEntities(extractContentFromItem(itemXml));
       const rssImage = extractImageFromItem(itemXml, content);
@@ -2411,8 +2411,8 @@ app.post("/api/import-rss-single", async (req, res) => {
       }
     }
     await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
-    await cleanupRssPostsPerSource();
-    await saveRssFeedStatus(feed, { status: imported > 0 ? "updated" : "no_new", message: imported > 0 ? `${imported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported, items: items.length });
+
+    await saveRssFeedStatus(feed, { status: imported > 0 ? "updated" : "no_new", message: imported > 0 ? `${imported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 10 primeiros itens do feed.", imported, items: items.length });
     res.json({ success: true, imported });
   } catch (err) {
     if (feedForStatus) await saveRssFeedStatus(feedForStatus, { status: "error", message: err.message });
@@ -2435,7 +2435,7 @@ app.post("/api/reimport-rss", async (req, res) => {
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
         feedItems = items.length;
-        for (const itemXml of items.slice(0, 3)) {
+        for (const itemXml of items.slice(0, 10)) {
           const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const image = extractImageFromItem(itemXml, content);
@@ -2466,7 +2466,7 @@ app.post("/api/reimport-rss", async (req, res) => {
         await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: feedCreated, updated: feedUpdated, items: feedItems });
       }
     }
-    await cleanupRssPostsPerSource();
+
     res.json({ success: true, updated, created });
   } catch (err) {
     res.status(500).json({ error: "Não foi possível concluir a solicitação" });
@@ -2657,7 +2657,7 @@ app.get("/api/debug-rss", async (req, res) => {
     const xmlPreview = xml.substring(0, 1000);
     const hasItems = xml.includes("<item");
     const hasEntry = xml.includes("<entry");
-    const results = items.slice(0, 3).map(itemXml => {
+    const results = items.slice(0, 10).map(itemXml => {
       const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").trim();
       const rawHtml = extractRawContent(itemXml);
       const image = extractImageFromItem(itemXml, null);
