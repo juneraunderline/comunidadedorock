@@ -1149,7 +1149,11 @@ export default function Admin({ user: currentUser, onLogout }) {
         .cdr-admin-topbar > strong { font-size: 17px; }
         .cdr-admin-topbar > div { display: flex; align-items: center; gap: 9px; color: #aaa; font-size: 12px; }
         .cdr-admin-topbar > div > i, .cdr-admin-status-dot { display: inline-block; width: 8px; height: 8px; background: #31b56b; border-radius: 50%; }
-        .cdr-admin-user { border-left: 1px solid #444; margin-left: 8px; padding-left: 15px; color: #eee; }
+        .cdr-admin-user { display: inline-flex; align-items: center; color: #eee; text-decoration: none; font-weight: 700; border-left: 1px solid #444; margin-left: 8px; padding-left: 15px; }
+        .cdr-admin-user:hover { color: var(--cdr-accent-bright); }
+        .cdr-admin-account-actions { display: flex; align-items: center; gap: 12px; }
+        .cdr-admin-topbar .cdr-admin-topbar-logout { border-color: #5a4a1e; background: #211d12; color: #e9b61e; cursor: pointer; }
+        .cdr-admin-topbar .cdr-admin-topbar-logout:hover { border-color: #e9b61e; background: #302712; color: #fff; }
         .cdr-admin-topbar .btn { white-space: nowrap; text-decoration: none; padding: 7px 10px; }
         .admin-dashboard > .admin-header, .admin-dashboard > .admin-tabs { display: none !important; }
         .cdr-admin-overview { max-width: 1600px; margin: 0 auto; }
@@ -1210,25 +1214,17 @@ export default function Admin({ user: currentUser, onLogout }) {
           {isAdmin && <button className={activeTab === "lancamentos-banda" ? "active" : ""} onClick={() => { setActiveTab("lancamentos-banda"); setMobileSidebarOpen(false); }}>◷ <span>Lançamentos pendentes</span>{bandReleaseSubmissions.filter(item => item.status === "pending").length > 0 && <b>{bandReleaseSubmissions.filter(item => item.status === "pending").length}</b>}</button>}
           {isAdmin && <button className={activeTab === "usuarios" ? "active" : ""} onClick={() => { setActiveTab("usuarios"); setMobileSidebarOpen(false); }}>♙ <span>Usuários</span></button>}
         </nav>
-        <div className="cdr-admin-sidebar-footer">
-          <span>Usuário conectado</span>
-          <strong>{currentUser?.display_name || currentUser?.name || currentUser?.username || "Usuário"}</strong>
-          <small>@{currentUser?.username || "conta ativa"}</small>
-          {currentUser?.role && <small className="cdr-admin-user-role">{currentUser.role === "admin" ? "Administrador" : currentUser.role === "editor" ? "Editor" : currentUser.role === "banda" ? "Conta de banda" : "Usuário"}</small>}
-          <a className="cdr-admin-footer-action" href="/">← Voltar ao site</a>
-          <button className="cdr-admin-footer-action cdr-admin-logout" type="button" onClick={onLogout}>Sair da conta ↗</button>
-        </div>
       </aside>
       <div className="cdr-admin-topbar">
         <button type="button" className="cdr-admin-sidebar-toggle" aria-label={mobileSidebarOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={mobileSidebarOpen} onClick={() => setMobileSidebarOpen(value => !value)} style={{ display: "none" }}>{mobileSidebarOpen ? "×" : "☰"}</button>
         <strong>{activeTab === "dashboard" ? "Dashboard" : activeTab.replace("-", " ").toUpperCase()}</strong>
-        <div><i></i> Site administrativo <span className="cdr-admin-user">{currentUser.display_name || currentUser.username} · {currentUser.role}</span><a href="/" className="btn btn-outline">Voltar ao site</a></div>
+        <div className="cdr-admin-account-actions"><a href="/perfil" className="cdr-admin-user" aria-label="Abrir perfil de ${currentUser.display_name || currentUser.username}">{currentUser.display_name || currentUser.username} · {currentUser.role}</a><button type="button" className="btn btn-outline cdr-admin-topbar-logout" onClick={onLogout}>Sair</button></div>
       </div>
 
 
       {activeTab === "dashboard" && (
         <section className="cdr-admin-overview">
-          <div className="cdr-admin-welcome"><div><p>Bem-vindo(a) ao painel do</p><h1>Comunidade do Rock</h1><span>Aqui você gerencia o conteúdo do nosso portal de rock.</span></div><strong>Juntos pelo rock independente!</strong></div>
+          <div className="cdr-admin-welcome"><div><p>Bem-vindo(a) ao painel do</p><h1>Comunidade do Rock</h1><span>Aqui você gerencia o conteúdo do nosso portal de rock.</span></div></div>
           <div className="cdr-admin-metrics">
             <article><span className="metric-icon">▤</span><div><small>Notícias publicadas</small><strong>{posts.length}</strong><em>Conteúdo do portal</em></div></article>
             <article><span className="metric-icon">▣</span><div><small>Notícias arquivadas</small><strong>{archivedPostsCount}</strong><em>Preservadas no arquivo histórico</em></div></article>
