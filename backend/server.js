@@ -1004,7 +1004,7 @@ async function autoImportRss() {
         
         // Examinar até 10 itens por fonte para pular notícias antigas ou sem imagem.
         // Importar no máximo 3 notícias novas e válidas por fonte em cada execução.
-        for (const itemXml of items.slice(0, 3)) {
+        for (const itemXml of items.slice(0, 10)) {
           if (importedForFeed >= 3) break;
           const rawTitle = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
           const title = decodeHtmlEntities(rawTitle);
@@ -1062,6 +1062,12 @@ async function autoImportRss() {
     } catch (e) {
       console.warn("Erro ao arquivar notícias antigas:", e.message);
       throw e;
+    }
+    // Mantém a limpeza original de registros sem imagem; notícias antigas por portal são arquivadas.
+    try {
+      await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'");
+    } catch (cleanupError) {
+      console.warn("Não foi possível limpar notícias sem imagem:", cleanupError.message);
     }
     const summary = { success: failedFeeds < rssFeeds.length, feeds: rssFeeds.length, failedFeeds, imported: importedTotal };
     console.log("Resumo da importação RSS:", JSON.stringify(summary));
