@@ -1129,7 +1129,7 @@ export default function Admin({ user: currentUser }) {
     <div className="admin-dashboard">
 
       <style>{`
-        .admin-dashboard { --cdr-accent: #c91525; --cdr-accent-bright: #f02030; position: relative; min-height: 100vh; margin-top: 80px; padding: 86px 28px 36px 278px; color: #f5f5f5; background: #090909; }
+        .admin-dashboard { --cdr-accent: #e9b61e; --cdr-accent-bright: #ffd84d; position: relative; min-height: 100vh; margin-top: 80px; padding: 86px 28px 36px 278px; color: #f5f5f5; background: #090909; }
         .cdr-admin-sidebar { position: fixed; z-index: 1200; top: 0; bottom: 0; left: 0; width: 250px; display: flex; flex-direction: column; background: #080808; border-right: 1px solid #292929; }
         .cdr-admin-brand { min-height: 150px; padding: 18px 20px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; border-bottom: 1px solid #292929; }
         .cdr-admin-brand img { display: block; max-width: 190px; width: 100%; max-height: 92px; object-fit: contain; object-position: left center; }
@@ -1139,8 +1139,8 @@ export default function Admin({ user: currentUser }) {
         .cdr-admin-sidebar nav button > :first-child { color: #eee; font-size: 19px; min-width: 20px; }
         .cdr-admin-sidebar nav button span { flex: 1; }
         .cdr-admin-sidebar nav button b { font-size: 11px; color: white; background: var(--cdr-accent); border-radius: 12px; padding: 2px 6px; }
-        .cdr-admin-sidebar nav button:hover, .cdr-admin-sidebar nav button.active { color: #fff; background: linear-gradient(90deg, rgba(201,21,37,.42), rgba(201,21,37,.08)); border-left-color: var(--cdr-accent-bright); }
-        .cdr-admin-sidebar-footer { margin-top: auto; padding: 20px 18px; border-top: 1px solid #242424; color: #999; font-size: 12px; background: radial-gradient(ellipse at bottom left, rgba(201,21,37,.2), transparent 70%); }
+        .cdr-admin-sidebar nav button:hover, .cdr-admin-sidebar nav button.active { color: #fff; background: linear-gradient(90deg, rgba(233,182,30,.22), rgba(233,182,30,.06)); border-left-color: var(--cdr-accent-bright); }
+        .cdr-admin-sidebar-footer { margin-top: auto; padding: 20px 18px; border-top: 1px solid #242424; color: #999; font-size: 12px; background: radial-gradient(ellipse at bottom left, rgba(233,182,30,.16), transparent 70%); }
         .cdr-admin-sidebar-footer strong { display: block; color: var(--cdr-accent-bright); font-size: 22px; font-style: italic; margin-top: 10px; }
         .cdr-admin-topbar { position: fixed; z-index: 1100; top: 0; right: 0; left: 250px; height: 64px; padding: 0 28px; display: flex; justify-content: space-between; align-items: center; gap: 16px; background: rgba(8,8,8,.97); border-bottom: 1px solid #292929; }
         .cdr-admin-topbar > strong { font-size: 17px; }
@@ -1150,7 +1150,7 @@ export default function Admin({ user: currentUser }) {
         .cdr-admin-topbar .btn { white-space: nowrap; text-decoration: none; padding: 7px 10px; }
         .admin-dashboard > .admin-header, .admin-dashboard > .admin-tabs { display: none !important; }
         .cdr-admin-overview { max-width: 1600px; margin: 0 auto; }
-        .cdr-admin-welcome { display: flex; align-items: center; justify-content: space-between; gap: 22px; min-height: 150px; padding: 24px; margin-bottom: 18px; border: 1px solid #292929; border-radius: 10px; background: linear-gradient(90deg, rgba(0,0,0,.96), rgba(0,0,0,.52)), radial-gradient(ellipse at right, rgba(201,21,37,.23), transparent 60%); }
+        .cdr-admin-welcome { display: flex; align-items: center; justify-content: space-between; gap: 22px; min-height: 150px; padding: 24px; margin-bottom: 18px; border: 1px solid #292929; border-radius: 10px; background: linear-gradient(90deg, rgba(0,0,0,.96), rgba(0,0,0,.52)), radial-gradient(ellipse at right, rgba(233,182,30,.18), transparent 60%); }
         .cdr-admin-welcome p { color: #ddd; font-size: clamp(20px, 2vw, 29px); font-weight: 700; margin: 0; }
         .cdr-admin-welcome h1 { color: var(--cdr-accent-bright); font-size: clamp(28px, 3vw, 43px); line-height: 1.1; margin: 0 0 8px; }
         .cdr-admin-welcome span { color: #bdbdbd; font-size: 14px; }
@@ -1173,7 +1173,7 @@ export default function Admin({ user: currentUser }) {
         .cdr-admin-panel > button small { grid-column: 2 / 4; color: #888; font-size: 11px; margin-top: -7px; }
         .cdr-admin-shortcuts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
         .cdr-admin-shortcuts button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; min-height: 95px; padding: 12px 7px; color: var(--cdr-accent-bright); background: #171717; border: 1px solid #292929; border-radius: 8px; font-size: 24px; cursor: pointer; }
-        .cdr-admin-shortcuts button:hover { background: #241214; border-color: #78202a; }
+        .cdr-admin-shortcuts button:hover { background: #24200f; border-color: #8c7018; }
         .cdr-admin-shortcuts button span { color: #ddd; font-size: 12px; text-align: center; }
         .cdr-admin-system-note { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 15px 18px; background: #111; border: 1px solid #292929; border-radius: 8px; }
         .cdr-admin-system-note strong { font-size: 13px; }
