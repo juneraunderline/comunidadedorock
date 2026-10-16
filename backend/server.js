@@ -1063,12 +1063,8 @@ async function autoImportRss() {
       console.warn("Erro ao arquivar notícias antigas:", e.message);
       throw e;
     }
-    // Mantém a limpeza original de registros sem imagem; notícias antigas por portal são arquivadas.
-    try {
-      await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'");
-    } catch (cleanupError) {
-      console.warn("Não foi possível limpar notícias sem imagem:", cleanupError.message);
-    }
+    // Não apagar notícias automaticamente, mesmo quando a imagem está ausente ou inválida.
+    // O histórico deve ser preservado; imagens podem ser corrigidas separadamente.
     const summary = { success: failedFeeds < rssFeeds.length, feeds: rssFeeds.length, failedFeeds, imported: importedTotal };
     console.log("Resumo da importação RSS:", JSON.stringify(summary));
     return summary;
