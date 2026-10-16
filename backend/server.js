@@ -2407,6 +2407,9 @@ app.post("/api/import-rss", async (req, res) => {
     // Limpar posts sem imagem após import manual
     // Notícias sem imagem também são preservadas; não apagar registros automaticamente.
 
+    // Limpar posts sem imagem após importação manual, como no comportamento original.
+    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
+
     res.json({ success: true, imported });
   } catch (err) {
     res.status(500).json({ error: "Não foi possível concluir a solicitação" });
@@ -2438,6 +2441,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     }
     // Notícias sem imagem também são preservadas; não apagar registros automaticamente.
 
+    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
     await saveRssFeedStatus(feed, { status: imported > 0 ? "updated" : "no_new", message: imported > 0 ? `${imported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported, items: items.length });
     res.json({ success: true, imported });
   } catch (err) {
