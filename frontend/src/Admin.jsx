@@ -386,6 +386,7 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
 
 export default function Admin({ user: currentUser, onLogout }) {
   const [posts, setPosts] = useState([]);
+  const [archivedPostsCount, setArchivedPostsCount] = useState(0);
   const [bands, setBands] = useState([]);
   const [pendingBands, setPendingBands] = useState([]);
   const [interviews, setInterviews] = useState([]);
@@ -472,7 +473,8 @@ export default function Admin({ user: currentUser, onLogout }) {
 
   const getRssStatus = (feed) => rssStatuses.find(item => Number(item.feed_id) === Number(feed.id));
   const fetchData = () => {
-    axios.get(`${API_URL}/api/posts?full=1`).then(res => setPosts(res.data));
+    axios.get(`${API_URL}/api/posts?full=1`).then(res => setPosts(Array.isArray(res.data) ? res.data : []));
+    axios.get(`${API_URL}/api/posts/archive/count`).then(res => setArchivedPostsCount(Number(res.data?.count) || 0)).catch(() => setArchivedPostsCount(0));
     axios.get(`${API_URL}/api/bands?full=1`).then(res => setBands(res.data));
     axios.get(`${API_URL}/api/pending-bands`).then(res => setPendingBands(res.data));
     axios.get(`${API_URL}/api/interviews?full=1`).then(res => setInterviews(res.data));
@@ -1229,6 +1231,7 @@ export default function Admin({ user: currentUser, onLogout }) {
           <div className="cdr-admin-welcome"><div><p>Bem-vindo(a) ao painel do</p><h1>Comunidade do Rock</h1><span>Aqui você gerencia o conteúdo do nosso portal de rock.</span></div><strong>Juntos pelo rock independente!</strong></div>
           <div className="cdr-admin-metrics">
             <article><span className="metric-icon">▤</span><div><small>Notícias publicadas</small><strong>{posts.length}</strong><em>Conteúdo do portal</em></div></article>
+            <article><span className="metric-icon">▣</span><div><small>Notícias arquivadas</small><strong>{archivedPostsCount}</strong><em>Preservadas no arquivo histórico</em></div></article>
             <article><span className="metric-icon">♫</span><div><small>Bandas cadastradas</small><strong>{bands.length}</strong><em>{pendingBands.length} aguardando moderação</em></div></article>
             <article><span className="metric-icon">▦</span><div><small>Eventos</small><strong>{events.length}</strong><em>{events.filter(event => event.status === "pending").length} aguardando aprovação</em></div></article>
             <article><span className="metric-icon">♩</span><div><small>Entrevistas</small><strong>{interviews.length}</strong><em>Conteúdo editorial</em></div></article>
