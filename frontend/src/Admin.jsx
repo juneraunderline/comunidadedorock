@@ -1142,7 +1142,7 @@ export default function Admin({ user: currentUser }) {
         .cdr-admin-sidebar nav button b { font-size: 11px; color: white; background: var(--cdr-accent); border-radius: 12px; padding: 2px 6px; }
         .cdr-admin-sidebar nav button:hover, .cdr-admin-sidebar nav button.active { color: #fff; background: linear-gradient(90deg, rgba(233,182,30,.22), rgba(233,182,30,.06)); border-left-color: var(--cdr-accent-bright); }
         .cdr-admin-sidebar-footer { margin-top: auto; padding: 20px 18px; border-top: 1px solid #242424; color: #999; font-size: 12px; background: radial-gradient(ellipse at bottom left, rgba(233,182,30,.16), transparent 70%); }
-        .cdr-admin-sidebar-footer strong { display: block; color: var(--cdr-accent-bright); font-size: 22px; font-style: italic; margin-top: 10px; }
+        .cdr-admin-sidebar-footer strong { display: block; color: var(--cdr-accent-bright); font-size: 14px; font-style: normal; font-weight: 700; line-height: 1.4; margin-top: 8px; overflow-wrap: anywhere; }.cdr-admin-sidebar-footer small { display: block; margin-top: 5px; color: #aaa; font-size: 12px; overflow-wrap: anywhere; }.cdr-admin-sidebar-footer .cdr-admin-user-role { color: #e9b61e; }
         .cdr-admin-topbar { position: fixed; z-index: 1100; top: 0; right: 0; left: 250px; height: 64px; padding: 0 28px; display: flex; justify-content: space-between; align-items: center; gap: 16px; background: rgba(8,8,8,.97); border-bottom: 1px solid #292929; }
         .cdr-admin-topbar > strong { font-size: 17px; }
         .cdr-admin-topbar > div { display: flex; align-items: center; gap: 9px; color: #aaa; font-size: 12px; }
@@ -1208,7 +1208,7 @@ export default function Admin({ user: currentUser }) {
           {isAdmin && <button className={activeTab === "lancamentos-banda" ? "active" : ""} onClick={() => { setActiveTab("lancamentos-banda"); setMobileSidebarOpen(false); }}>◷ <span>Lançamentos pendentes</span>{bandReleaseSubmissions.filter(item => item.status === "pending").length > 0 && <b>{bandReleaseSubmissions.filter(item => item.status === "pending").length}</b>}</button>}
           {isAdmin && <button className={activeTab === "usuarios" ? "active" : ""} onClick={() => { setActiveTab("usuarios"); setMobileSidebarOpen(false); }}>♙ <span>Usuários</span></button>}
         </nav>
-        <div className="cdr-admin-sidebar-footer"><span>O melhor do rock underground brasileiro...</span><strong>Desde 2004</strong></div>
+        <div className="cdr-admin-sidebar-footer"><span>Usuário conectado</span><strong>{currentUser?.display_name || currentUser?.name || currentUser?.username || "Usuário"}</strong><small>@{currentUser?.username || "conta ativa"}</small>{currentUser?.role && <small className="cdr-admin-user-role">{currentUser.role === "admin" ? "Administrador" : currentUser.role === "editor" ? "Editor" : currentUser.role === "banda" ? "Conta de banda" : "Usuário"}</small>}</div>
       </aside>
       <div className="cdr-admin-topbar">
         <button type="button" className="cdr-admin-sidebar-toggle" aria-label={mobileSidebarOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={mobileSidebarOpen} onClick={() => setMobileSidebarOpen(value => !value)} style={{ display: "none" }}>{mobileSidebarOpen ? "×" : "☰"}</button>
