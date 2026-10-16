@@ -172,6 +172,9 @@ function App() {
               <NavLink to="/minha-area" onClick={() => setMenuOpen(false)}>MINHA ÁREA</NavLink>
             )}
             <NavLink to="/contato" onClick={() => setMenuOpen(false)}>CONTATO</NavLink>
+            {user?.role === "admin" && (
+              <NavLink to="/admin" onClick={() => setMenuOpen(false)}>PAINEL ADMIN</NavLink>
+            )}
           </nav>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
             {user ? (
