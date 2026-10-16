@@ -167,6 +167,8 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS api_rate_limit_buckets (bucket_key VARCHAR(160) NOT NULL, window_start TIMESTAMPTZ NOT NULL, hit_count INTEGER NOT NULL DEFAULT 0, expires_at TIMESTAMPTZ NOT NULL, PRIMARY KEY (bucket_key, window_start))`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_api_rate_limit_expiry ON api_rate_limit_buckets (expires_at)`);
   await db.run(`CREATE TABLE IF NOT EXISTS posts (id SERIAL PRIMARY KEY, title TEXT, content TEXT, image TEXT, link TEXT, source TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ`);
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_posts_archive_created ON posts (archived_at, created_at DESC, id DESC)`);
   await db.run(`CREATE TABLE IF NOT EXISTS bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, is_weekly_featured BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW())`);
   // Garante que bancos antigos recebam as colunas adicionadas depois da criação.
   await db.run(`ALTER TABLE bands ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`);
@@ -1002,7 +1004,7 @@ async function autoImportRss() {
         
         // Examinar até 10 itens por fonte para pular notícias antigas ou sem imagem.
         // Importar no máximo 3 notícias novas e válidas por fonte em cada execução.
-        for (const itemXml of items.slice(0, 10)) {
+        for (const itemXml of items.slice(0, 3)) {
           if (importedForFeed >= 3) break;
           const rawTitle = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
           const title = decodeHtmlEntities(rawTitle);
@@ -1033,7 +1035,7 @@ async function autoImportRss() {
         }
         await saveRssFeedStatus(feed, {
           status: importedForFeed > 0 ? "updated" : "no_new",
-          message: importedForFeed > 0 ? `${importedForFeed} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 10 primeiros itens do feed.",
+          message: importedForFeed > 0 ? `${importedForFeed} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.",
           imported: importedForFeed,
           items: itemCountForFeed
         });
@@ -1044,12 +1046,21 @@ async function autoImportRss() {
       }
       importedTotal += importedForFeed;
     }
-    // Limpar notícias sem imagem e preservar o histórico de notícias RSS.
+    // Mantém 3 notícias recentes por portal e arquiva as anteriores sem apagá-las.
     try {
-      await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'");
-
+      await pool.query(`
+        WITH ranked AS (
+          SELECT id, ROW_NUMBER() OVER (
+            PARTITION BY source ORDER BY created_at DESC NULLS LAST, id DESC
+          ) AS position
+          FROM posts WHERE source IS NOT NULL AND TRIM(source) <> ''
+        )
+        UPDATE posts
+        SET archived_at = CASE WHEN ranked.position > 3 THEN COALESCE(posts.archived_at, NOW()) ELSE NULL END
+        FROM ranked WHERE posts.id = ranked.id
+      `);
     } catch (e) {
-      console.warn("Erro ao limitar notícias por fonte:", e.message);
+      console.warn("Erro ao arquivar notícias antigas:", e.message);
       throw e;
     }
     const summary = { success: failedFeeds < rssFeeds.length, feeds: rssFeeds.length, failedFeeds, imported: importedTotal };
@@ -1062,23 +1073,6 @@ async function autoImportRss() {
 // Não executar importação RSS em loop dentro da Vercel Serverless Function.\n// A importação é disparada exclusivamente pelo endpoint /api/cron/rss via GitHub Actions.\n// Isso evita chamadas externas contínuas que podem derrubar a Function e fazer o conteúdo da API parecer indisponível.
 
 
-
-// Mantém no máximo as 3 notícias mais recentes de cada fonte RSS.
-// Publicações próprias (source vazio) não são afetadas.
-async function cleanupRssPostsPerSource() {
-  await pool.query(`
-    WITH ranked AS (
-      SELECT id, ROW_NUMBER() OVER (
-        PARTITION BY source
-        ORDER BY created_at DESC NULLS LAST, id DESC
-      ) AS position
-      FROM posts
-      WHERE source IS NOT NULL AND TRIM(source) <> ''
-    )
-    DELETE FROM posts
-    WHERE id IN (SELECT id FROM ranked WHERE position > 3)
-  `);
-}
 
 // --- SEGURANÇA DE SESSÃO E AUTORIZAÇÃO ---
 // Token aleatório de curta duração; somente o hash é persistido no banco.
@@ -1587,6 +1581,31 @@ app.patch("/api/band-release-submissions/:id", async (req, res) => {
   } finally { client.release(); }
 });
 
+// Arquivo de notícias RSS: consulta paginada para não pesar a listagem principal.
+app.get("/api/posts/archive", async (req, res) => {
+  try {
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 8));
+    const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+    const search = req.query.search || null;
+    const source = req.query.source || null;
+    let query = "SELECT id, title, image, link, source, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 500) AS summary FROM posts WHERE archived_at IS NOT NULL";
+    const params = [];
+    let idx = 1;
+    if (search) { query += " AND (title ILIKE $" + idx + " OR content ILIKE $" + idx + ")"; params.push("%" + search + "%"); idx++; }
+    if (source) {
+      if (source === "__manual__") query += " AND (source IS NULL OR source = '')";
+      else { query += " AND source ILIKE $" + idx; params.push("%" + source + "%"); idx++; }
+    }
+    query += " ORDER BY archived_at DESC, created_at DESC NULLS LAST, id DESC LIMIT $" + idx + " OFFSET $" + (idx + 1);
+    params.push(limit, offset);
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.json(await db.getAll(query, params));
+  } catch (err) {
+    console.error("Falha ao consultar arquivo de notícias:", err.code || "DB_ERROR");
+    res.status(500).json({ error: "Não foi possível carregar o arquivo de notícias." });
+  }
+});
+
 // Posts
 app.get("/api/posts", async (req, res) => {
   try {
@@ -1597,8 +1616,8 @@ app.get("/api/posts", async (req, res) => {
     
     const full = req.query.full === "1";
     let query = full
-      ? "SELECT * FROM posts WHERE 1=1"
-      : "SELECT id, title, image, link, source, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 500) AS summary FROM posts WHERE 1=1";
+      ? "SELECT * FROM posts WHERE archived_at IS NULL"
+      : "SELECT id, title, image, link, source, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 500) AS summary FROM posts WHERE archived_at IS NULL";
     let params = [];
     let paramIdx = 1;
     
@@ -2356,7 +2375,7 @@ app.post("/api/import-rss", async (req, res) => {
       try {
         const items = await getFeedItems(feed.url);
         feedItems = items.length;
-        for (const itemXml of items.slice(0, 10)) {
+        for (const itemXml of items.slice(0, 3)) {
           const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const rssImage = extractImageFromItem(itemXml, content);
@@ -2372,14 +2391,14 @@ app.post("/api/import-rss", async (req, res) => {
             feedImported++;
           }
         }
-        await saveRssFeedStatus(feed, { status: feedImported > 0 ? "updated" : "no_new", message: feedImported > 0 ? `${feedImported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 10 primeiros itens do feed.", imported: feedImported, items: feedItems });
+        await saveRssFeedStatus(feed, { status: feedImported > 0 ? "updated" : "no_new", message: feedImported > 0 ? `${feedImported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported: feedImported, items: feedItems });
       } catch (e) {
         console.warn(`Erro no feed ${feed.name}: ${e.message}`);
         await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: feedImported, items: feedItems });
       }
     }
     // Limpar posts sem imagem após import manual
-    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
+    // Notícias sem imagem também são preservadas; não apagar registros automaticamente.
 
     res.json({ success: true, imported });
   } catch (err) {
@@ -2395,7 +2414,7 @@ app.post("/api/import-rss-single", async (req, res) => {
     if (!feed || !feed.url) return res.status(400).json({ error: "Feed inválido" });
     let imported = 0;
     const items = await getFeedItems(feed.url);
-    for (const itemXml of items.slice(0, 10)) {
+    for (const itemXml of items.slice(0, 3)) {
       const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
       const content = decodeHtmlEntities(extractContentFromItem(itemXml));
       const rssImage = extractImageFromItem(itemXml, content);
@@ -2410,9 +2429,9 @@ app.post("/api/import-rss-single", async (req, res) => {
         imported++;
       }
     }
-    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
+    // Notícias sem imagem também são preservadas; não apagar registros automaticamente.
 
-    await saveRssFeedStatus(feed, { status: imported > 0 ? "updated" : "no_new", message: imported > 0 ? `${imported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 10 primeiros itens do feed.", imported, items: items.length });
+    await saveRssFeedStatus(feed, { status: imported > 0 ? "updated" : "no_new", message: imported > 0 ? `${imported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported, items: items.length });
     res.json({ success: true, imported });
   } catch (err) {
     if (feedForStatus) await saveRssFeedStatus(feedForStatus, { status: "error", message: err.message });
@@ -2435,7 +2454,7 @@ app.post("/api/reimport-rss", async (req, res) => {
         const xml = await response.text();
         const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
         feedItems = items.length;
-        for (const itemXml of items.slice(0, 10)) {
+        for (const itemXml of items.slice(0, 3)) {
           const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const image = extractImageFromItem(itemXml, content);
@@ -2657,7 +2676,7 @@ app.get("/api/debug-rss", async (req, res) => {
     const xmlPreview = xml.substring(0, 1000);
     const hasItems = xml.includes("<item");
     const hasEntry = xml.includes("<entry");
-    const results = items.slice(0, 10).map(itemXml => {
+    const results = items.slice(0, 3).map(itemXml => {
       const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").trim();
       const rawHtml = extractRawContent(itemXml);
       const image = extractImageFromItem(itemXml, null);
