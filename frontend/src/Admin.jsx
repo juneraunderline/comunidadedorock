@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import DOMPurify from "dompurify";
 import API_URL, { getImageUrl } from "./config/api";
+import logo from "./assets/logo.png";
 
 
 
@@ -392,7 +393,7 @@ export default function Admin({ user: currentUser }) {
   const [newBand, setNewBand] = useState({ name: "", genre: "", city: "", state: "", year: "", members: "", biography: "", contact: "", image: "", instagram: "", facebook: "", youtube: "", spotify: "", bandcamp: "", site: "" });
   const [newBandMembers, setNewBandMembers] = useState([{ name: "", role: "", instagram: "" }]);
   const [editingBandMembers, setEditingBandMembers] = useState([{ name: "", role: "", instagram: "" }]);
-  const [activeTab, setActiveTab] = useState("noticias");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [editingPost, setEditingPost] = useState(null);
   const [selectedPosts, setSelectedPosts] = useState(new Set());
   const [editingBand, setEditingBand] = useState(null);
@@ -1128,6 +1129,61 @@ export default function Admin({ user: currentUser }) {
     <div className="admin-dashboard">
 
       <style>{`
+        .admin-dashboard { --cdr-accent: #c91525; --cdr-accent-bright: #f02030; position: relative; min-height: 100vh; margin-top: 80px; padding: 86px 28px 36px 278px; color: #f5f5f5; background: #090909; }
+        .cdr-admin-sidebar { position: fixed; z-index: 1200; top: 0; bottom: 0; left: 0; width: 250px; display: flex; flex-direction: column; background: #080808; border-right: 1px solid #292929; }
+        .cdr-admin-brand { min-height: 150px; padding: 18px 20px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; border-bottom: 1px solid #292929; }
+        .cdr-admin-brand img { display: block; max-width: 190px; width: 100%; max-height: 92px; object-fit: contain; object-position: left center; }
+        .cdr-admin-brand span { color: #aaa; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; }
+        .cdr-admin-sidebar nav { display: flex; flex-direction: column; gap: 3px; padding: 14px 8px; overflow-y: auto; }
+        .cdr-admin-sidebar nav button { display: flex; align-items: center; gap: 13px; width: 100%; min-height: 43px; padding: 10px 12px; color: #bdbdbd; background: transparent; border: 0; border-left: 3px solid transparent; text-align: left; font: inherit; font-size: 13px; cursor: pointer; border-radius: 0 5px 5px 0; }
+        .cdr-admin-sidebar nav button > :first-child { color: #eee; font-size: 19px; min-width: 20px; }
+        .cdr-admin-sidebar nav button span { flex: 1; }
+        .cdr-admin-sidebar nav button b { font-size: 11px; color: white; background: var(--cdr-accent); border-radius: 12px; padding: 2px 6px; }
+        .cdr-admin-sidebar nav button:hover, .cdr-admin-sidebar nav button.active { color: #fff; background: linear-gradient(90deg, rgba(201,21,37,.42), rgba(201,21,37,.08)); border-left-color: var(--cdr-accent-bright); }
+        .cdr-admin-sidebar-footer { margin-top: auto; padding: 20px 18px; border-top: 1px solid #242424; color: #999; font-size: 12px; background: radial-gradient(ellipse at bottom left, rgba(201,21,37,.2), transparent 70%); }
+        .cdr-admin-sidebar-footer strong { display: block; color: var(--cdr-accent-bright); font-size: 22px; font-style: italic; margin-top: 10px; }
+        .cdr-admin-topbar { position: fixed; z-index: 1100; top: 0; right: 0; left: 250px; height: 64px; padding: 0 28px; display: flex; justify-content: space-between; align-items: center; gap: 16px; background: rgba(8,8,8,.97); border-bottom: 1px solid #292929; }
+        .cdr-admin-topbar > strong { font-size: 17px; }
+        .cdr-admin-topbar > div { display: flex; align-items: center; gap: 9px; color: #aaa; font-size: 12px; }
+        .cdr-admin-topbar > div > i, .cdr-admin-status-dot { display: inline-block; width: 8px; height: 8px; background: #31b56b; border-radius: 50%; }
+        .cdr-admin-user { border-left: 1px solid #444; margin-left: 8px; padding-left: 15px; color: #eee; }
+        .cdr-admin-topbar .btn { white-space: nowrap; text-decoration: none; padding: 7px 10px; }
+        .admin-dashboard > .admin-header, .admin-dashboard > .admin-tabs { display: none !important; }
+        .cdr-admin-overview { max-width: 1600px; margin: 0 auto; }
+        .cdr-admin-welcome { display: flex; align-items: center; justify-content: space-between; gap: 22px; min-height: 150px; padding: 24px; margin-bottom: 18px; border: 1px solid #292929; border-radius: 10px; background: linear-gradient(90deg, rgba(0,0,0,.96), rgba(0,0,0,.52)), radial-gradient(ellipse at right, rgba(201,21,37,.23), transparent 60%); }
+        .cdr-admin-welcome p { color: #ddd; font-size: clamp(20px, 2vw, 29px); font-weight: 700; margin: 0; }
+        .cdr-admin-welcome h1 { color: var(--cdr-accent-bright); font-size: clamp(28px, 3vw, 43px); line-height: 1.1; margin: 0 0 8px; }
+        .cdr-admin-welcome span { color: #bdbdbd; font-size: 14px; }
+        .cdr-admin-welcome > strong { max-width: 230px; color: #eee; font-size: clamp(17px, 2vw, 25px); font-style: italic; text-align: right; }
+        .cdr-admin-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .cdr-admin-metrics article { display: flex; align-items: center; gap: 14px; min-width: 0; padding: 18px 15px; border: 1px solid #292929; border-radius: 9px; background: linear-gradient(145deg,#151515,#0d0d0d); }
+        .cdr-admin-metrics .metric-icon { color: var(--cdr-accent-bright); font-size: 34px; line-height: 1; }
+        .cdr-admin-metrics article div { min-width: 0; display: flex; flex-direction: column; }
+        .cdr-admin-metrics small { color: #bbb; font-size: 12px; }
+        .cdr-admin-metrics strong { color: #f3f3f3; font-size: 27px; line-height: 1.35; }
+        .cdr-admin-metrics em { color: #8b8b8b; font-size: 10px; font-style: normal; }
+        .cdr-admin-overview-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; }
+        .cdr-admin-panel { padding: 18px; border: 1px solid #292929; border-radius: 9px; background: linear-gradient(145deg,#121212,#0c0c0c); }
+        .cdr-admin-panel h2 { font-size: 17px; margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid #292929; }
+        .cdr-admin-panel > button { display: grid; grid-template-columns: 25px minmax(0,1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 13px 3px; border: 0; border-bottom: 1px solid #242424; background: transparent; color: #ccc; text-align: left; cursor: pointer; }
+        .cdr-admin-panel > button:last-child { border-bottom: 0; }
+        .cdr-admin-panel > button:first-letter { color: var(--cdr-accent-bright); }
+        .cdr-admin-panel > button span { font-size: 13px; }
+        .cdr-admin-panel > button b { color: white; font-size: 15px; }
+        .cdr-admin-panel > button small { grid-column: 2 / 4; color: #888; font-size: 11px; margin-top: -7px; }
+        .cdr-admin-shortcuts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+        .cdr-admin-shortcuts button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; min-height: 95px; padding: 12px 7px; color: var(--cdr-accent-bright); background: #171717; border: 1px solid #292929; border-radius: 8px; font-size: 24px; cursor: pointer; }
+        .cdr-admin-shortcuts button:hover { background: #241214; border-color: #78202a; }
+        .cdr-admin-shortcuts button span { color: #ddd; font-size: 12px; text-align: center; }
+        .cdr-admin-system-note { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 15px 18px; background: #111; border: 1px solid #292929; border-radius: 8px; }
+        .cdr-admin-system-note strong { font-size: 13px; }
+        .cdr-admin-system-note p { color: #999; font-size: 12px; margin: 2px 0 0; }
+        .cdr-admin-since { margin-left: auto; color: var(--cdr-accent-bright); font-weight: 700; white-space: nowrap; }
+        .admin-dashboard > section.admin-card { margin-bottom: 16px; }
+        .admin-dashboard .btn-primary, .admin-dashboard .admin-tabs button.active { background: var(--cdr-accent); }
+        .admin-dashboard .admin-card h2, .admin-dashboard .edit-post-form h3 { color: #f4f4f4; }
+        @media (max-width: 1100px) { .cdr-admin-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } .cdr-admin-overview-grid { grid-template-columns: 1fr; } .admin-dashboard { padding-left: 268px; padding-right: 18px; } }
+        @media (max-width: 700px) { .admin-dashboard { padding: 80px 12px 24px; margin-top: 0; } .cdr-admin-sidebar { width: 66px; } .cdr-admin-brand { min-height: 82px; padding: 8px; align-items: center; } .cdr-admin-brand img { max-width: 48px; max-height: 52px; object-fit: contain; } .cdr-admin-brand span, .cdr-admin-sidebar nav button span, .cdr-admin-sidebar nav button b, .cdr-admin-sidebar-footer, .cdr-admin-topbar > div > span, .cdr-admin-topbar > div > a { display: none; } .cdr-admin-sidebar nav { padding: 10px 5px; } .cdr-admin-sidebar nav button { justify-content: center; padding: 9px 3px; font-size: 0; } .cdr-admin-sidebar nav button > :first-child { font-size: 20px; } .cdr-admin-topbar { left: 66px; height: 58px; padding: 0 12px; } .cdr-admin-topbar > strong { font-size: 14px; } .cdr-admin-topbar > div { font-size: 10px; } .cdr-admin-welcome { min-height: 130px; padding: 17px; } .cdr-admin-welcome > strong { display: none; } .cdr-admin-metrics { gap: 8px; } .cdr-admin-metrics article { padding: 12px 9px; gap: 8px; } .cdr-admin-metrics .metric-icon { font-size: 25px; } .cdr-admin-metrics strong { font-size: 22px; } .cdr-admin-metrics small { font-size: 10px; } .cdr-admin-metrics em { font-size: 9px; } .cdr-admin-shortcuts { grid-template-columns: repeat(2,minmax(0,1fr)); } .cdr-admin-system-note { align-items: flex-start; } .cdr-admin-since { display: none; } }
         .admin-collapsible-form { margin: 14px 0; border: 1px solid #45454f; border-radius: 10px; background: #17171d; overflow: hidden; }
         .admin-collapsible-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 17px; border: 0; background: linear-gradient(135deg, #22222b, #191920); color: #f3f3f6; font: inherit; font-weight: 700; text-align: left; cursor: pointer; transition: background .18s ease; }
         .admin-collapsible-toggle:hover { background: #292933; }
@@ -1137,26 +1193,57 @@ export default function Admin({ user: currentUser }) {
         .admin-collapsible-content > .edit-post-form { margin: 0; }
         @media (max-width: 600px) { .admin-collapsible-toggle { padding: 13px; } .admin-collapsible-content { padding: 12px; } }
       `}</style>
-      <header className="admin-header">
-        <div>
-          <h1>PAINEL <span>ADMIN</span></h1>
-          <p>Logado como <strong>{currentUser.display_name || currentUser.username}</strong> ({currentUser.role})</p>
-        </div>
-        <a href="/" className="btn btn-outline" style={{ textDecoration: "none" }}>Voltar ao site</a>
-      </header>
-
-      <div className="admin-tabs">
-        {isAdmin && <button className={activeTab === "rss" ? "active" : ""} onClick={() => setActiveTab("rss")}>RSS</button>}
-        <button className={activeTab === "noticias" ? "active" : ""} onClick={() => setActiveTab("noticias")}>NOTÍCIAS</button>
-        {isAdmin && <button className={activeTab === "bandas" ? "active" : ""} onClick={() => setActiveTab("bandas")}>BANDAS</button>}
-        {isAdmin && <button className={activeTab === "entrevistas" ? "active" : ""} onClick={() => setActiveTab("entrevistas")}>ENTREVISTAS</button>}
-        <button className={activeTab === "eventos" ? "active" : ""} onClick={() => setActiveTab("eventos")}>EVENTOS</button>
-        {isAdmin && <button className={activeTab === "lancamentos" ? "active" : ""} onClick={() => setActiveTab("lancamentos")}>LANÇAMENTOS</button>}
-        {isAdmin && <button className={activeTab === "usuarios" ? "active" : ""} onClick={() => setActiveTab("usuarios")}>USUÁRIOS</button>}
-        {isAdmin && <button className={activeTab === "lancamentos-banda" ? "active" : ""} onClick={() => setActiveTab("lancamentos-banda")}>LANÇAMENTOS PENDENTES{bandReleaseSubmissions.filter(item => item.status === "pending").length ? ` (${bandReleaseSubmissions.filter(item => item.status === "pending").length})` : ""}</button>}
+      <aside className="cdr-admin-sidebar">
+        <div className="cdr-admin-brand"><img src={logo} alt="Comunidade do Rock" /><span>Painel Administrativo</span></div>
+        <nav aria-label="Navegação administrativa">
+          <button className={activeTab === "dashboard" ? "active" : ""} onClick={() => setActiveTab("dashboard")}>▦ <span>Dashboard</span></button>
+          {isAdmin && <button className={activeTab === "rss" ? "active" : ""} onClick={() => setActiveTab("rss")}>◔ <span>RSS / Portais</span></button>}
+          <button className={activeTab === "noticias" ? "active" : ""} onClick={() => setActiveTab("noticias")}>▤ <span>Notícias</span></button>
+          {isAdmin && <button className={activeTab === "bandas" ? "active" : ""} onClick={() => setActiveTab("bandas")}>♫ <span>Bandas</span></button>}
+          {isAdmin && <button className={activeTab === "entrevistas" ? "active" : ""} onClick={() => setActiveTab("entrevistas")}>♩ <span>Entrevistas</span></button>}
+          <button className={activeTab === "eventos" ? "active" : ""} onClick={() => setActiveTab("eventos")}>▦ <span>Eventos</span></button>
+          {isAdmin && <button className={activeTab === "lancamentos" ? "active" : ""} onClick={() => setActiveTab("lancamentos")}>★ <span>Lançamentos</span></button>}
+          {isAdmin && <button className={activeTab === "lancamentos-banda" ? "active" : ""} onClick={() => setActiveTab("lancamentos-banda")}>◷ <span>Lançamentos pendentes</span>{bandReleaseSubmissions.filter(item => item.status === "pending").length > 0 && <b>{bandReleaseSubmissions.filter(item => item.status === "pending").length}</b>}</button>}
+          {isAdmin && <button className={activeTab === "usuarios" ? "active" : ""} onClick={() => setActiveTab("usuarios")}>♙ <span>Usuários</span></button>}
+        </nav>
+        <div className="cdr-admin-sidebar-footer"><span>O melhor do rock underground brasileiro...</span><strong>Desde 2004</strong></div>
+      </aside>
+      <div className="cdr-admin-topbar">
+        <strong>{activeTab === "dashboard" ? "Dashboard" : activeTab.replace("-", " ").toUpperCase()}</strong>
+        <div><i></i> Site administrativo <span className="cdr-admin-user">{currentUser.display_name || currentUser.username} · {currentUser.role}</span><a href="/" className="btn btn-outline">Voltar ao site</a></div>
       </div>
 
-      {activeTab === "rss" && (
+
+      {activeTab === "dashboard" && (
+        <section className="cdr-admin-overview">
+          <div className="cdr-admin-welcome"><div><p>Bem-vindo(a) ao painel do</p><h1>Comunidade do Rock</h1><span>Aqui você gerencia o conteúdo do nosso portal de rock.</span></div><strong>Juntos pelo rock independente!</strong></div>
+          <div className="cdr-admin-metrics">
+            <article><span className="metric-icon">▤</span><div><small>Notícias publicadas</small><strong>{posts.length}</strong><em>Conteúdo do portal</em></div></article>
+            <article><span className="metric-icon">♫</span><div><small>Bandas cadastradas</small><strong>{bands.length}</strong><em>{pendingBands.length} aguardando moderação</em></div></article>
+            <article><span className="metric-icon">▦</span><div><small>Eventos</small><strong>{events.length}</strong><em>{events.filter(event => event.status === "pending").length} aguardando aprovação</em></div></article>
+            <article><span className="metric-icon">♩</span><div><small>Entrevistas</small><strong>{interviews.length}</strong><em>Conteúdo editorial</em></div></article>
+          </div>
+          <div className="cdr-admin-overview-grid">
+            <section className="cdr-admin-panel"><h2>⚡ Atividade e pendências</h2>
+              <button onClick={() => setActiveTab("noticias")}>▤ <span>Gerenciar notícias</span><b>{posts.length}</b><small>Abrir lista</small></button>
+              {isAdmin && <button onClick={() => setActiveTab("bandas")}>♫ <span>Bandas para revisar</span><b>{pendingBands.length}</b><small>Moderação</small></button>}
+              <button onClick={() => setActiveTab("eventos")}>▦ <span>Eventos enviados</span><b>{events.filter(event => event.status === "pending").length}</b><small>Revisar eventos</small></button>
+              {isAdmin && <button onClick={() => setActiveTab("lancamentos-banda")}>★ <span>Lançamentos pendentes</span><b>{bandReleaseSubmissions.filter(item => item.status === "pending").length}</b><small>Ver envios</small></button>}
+            </section>
+            <section className="cdr-admin-panel"><h2>🚀 Atalhos rápidos</h2><div className="cdr-admin-shortcuts">
+              <button onClick={() => setActiveTab("noticias")}>▤<span>Publicar notícia</span></button>
+              {isAdmin && <button onClick={() => setActiveTab("bandas")}>♫<span>Cadastrar banda</span></button>}
+              <button onClick={() => setActiveTab("eventos")}>▦<span>Gerenciar eventos</span></button>
+              {isAdmin && <button onClick={() => setActiveTab("rss")}>◔<span>Importar RSS</span></button>}
+              {isAdmin && <button onClick={() => setActiveTab("entrevistas")}>♩<span>Entrevistas</span></button>}
+              {isAdmin && <button onClick={() => setActiveTab("usuarios")}>⚙<span>Usuários</span></button>}
+            </div></section>
+          </div>
+          <div className="cdr-admin-system-note"><span className="cdr-admin-status-dot"></span><div><strong>Comunidade do Rock</strong><p>Área administrativa · mantenha o portal atualizado e acompanhe as pendências de moderação.</p></div><span className="cdr-admin-since">Desde 2004</span></div>
+        </section>
+      )}
+
+
       <section className="admin-card">
         <h2>FEEDS RSS</h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
