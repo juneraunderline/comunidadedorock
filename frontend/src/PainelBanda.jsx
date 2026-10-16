@@ -50,10 +50,12 @@ export default function PainelBanda({ user }) {
   };
 
   if (!user) return null;
-  return <section className="section" style={{ marginTop: 80, minHeight: "75vh" }}>
-    <div style={{ maxWidth: 900, margin: "0 auto" }}>
-      <h1 style={{ color: "#fff", marginBottom: 8 }}>PAINEL <span className="highlight">DA BANDA</span></h1>
-      <p style={{ color: "#aaa", marginBottom: 24, maxWidth: 680 }}>Tudo da sua banda em um só lugar. Escolha uma área abaixo para editar seu perfil, enviar um lançamento ou divulgar um show. O que você enviar passará pela análise da administração antes de ser publicado.</p>
+  return <section className="section cdr-band-dashboard" style={{ marginTop: 80, minHeight: "75vh" }}>
+    <div className="cdr-band-dashboard-inner">
+      <header className="cdr-band-dashboard-heading">
+        <div><p>ÁREA EXCLUSIVA</p><h1>PAINEL <span className="highlight">DA BANDA</span></h1><span>Gerencie o perfil, os lançamentos e os eventos da sua banda.</span></div>
+        <strong>COMUNIDADE DO ROCK</strong>
+      </header>
       {message && <div role="status" style={{ background: "#153323", border: "1px solid #2f754b", color: "#a6efbf", padding: 12, borderRadius: 8, marginBottom: 16 }}>{message}</div>}
       {error && <div role="alert" style={{ background: "#3b191d", border: "1px solid #7a3038", color: "#ffb6bd", padding: 12, borderRadius: 8, marginBottom: 16 }}>{error}</div>}
       {loading ? <p style={{ color: "#aaa" }}>Carregando seu espaço...</p> : !(user.is_band || user.role === "banda") ? <Link to="/perfil" className="btn btn-outline">Voltar ao perfil</Link> : band ? <>
