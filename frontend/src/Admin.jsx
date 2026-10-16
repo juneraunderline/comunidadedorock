@@ -4,6 +4,20 @@ import DOMPurify from "dompurify";
 import API_URL, { getImageUrl } from "./config/api";
 
 
+
+function CollapsibleAdminForm({ title, children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="admin-collapsible-form">
+      <button type="button" className="admin-collapsible-toggle" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+        <span>{title}</span>
+        <span className="admin-collapsible-icon" aria-hidden="true">{open ? "−" : "+"}</span>
+      </button>
+      {open && <div className="admin-collapsible-content">{children}</div>}
+    </section>
+  );
+}
+
 function parseBandMembers(value) {
   const text = String(value || "").trim();
   if (!text) return [{ name: "", role: "", instagram: "" }];
@@ -1112,6 +1126,17 @@ export default function Admin({ user: currentUser }) {
 
   return (
     <div className="admin-dashboard">
+
+      <style>{`
+        .admin-collapsible-form { margin: 14px 0; border: 1px solid #45454f; border-radius: 10px; background: #17171d; overflow: hidden; }
+        .admin-collapsible-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 17px; border: 0; background: linear-gradient(135deg, #22222b, #191920); color: #f3f3f6; font: inherit; font-weight: 700; text-align: left; cursor: pointer; transition: background .18s ease; }
+        .admin-collapsible-toggle:hover { background: #292933; }
+        .admin-collapsible-toggle:focus-visible { outline: 2px solid #e9b61e; outline-offset: -3px; }
+        .admin-collapsible-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 28px; width: 28px; height: 28px; border-radius: 7px; background: #e9b61e; color: #171717; font-size: 22px; line-height: 1; }
+        .admin-collapsible-content { padding: 16px; border-top: 1px solid #393943; }
+        .admin-collapsible-content > .edit-post-form { margin: 0; }
+        @media (max-width: 600px) { .admin-collapsible-toggle { padding: 13px; } .admin-collapsible-content { padding: 12px; } }
+      `}</style>
       <header className="admin-header">
         <div>
           <h1>PAINEL <span>ADMIN</span></h1>
@@ -1145,7 +1170,7 @@ export default function Admin({ user: currentUser }) {
           <span style={{ padding: "5px 9px", borderRadius: "5px", background: "#40351a", color: "#f4d27b" }}>● Sem novidades</span>
           <span style={{ padding: "5px 9px", borderRadius: "5px", background: "#461f25", color: "#ff9ba4" }}>● Erro</span>
         </div>
-        <div className="edit-post-form">
+        <CollapsibleAdminForm title="Novo feed RSS">
           <h3>Novo Feed RSS</h3>
           <div className="form-group">
             <label>Nome do Feed</label>
@@ -1177,7 +1202,7 @@ export default function Admin({ user: currentUser }) {
           <div className="form-actions">
             <button className="btn btn-primary" onClick={addRssFeed}>Adicionar Feed</button>
           </div>
-        </div>
+        </CollapsibleAdminForm>
 
         {rssFeeds.length === 0 ? (
           <p style={{ color: "#afafba" }}>Nenhum feed adicionado</p>
@@ -1343,7 +1368,7 @@ export default function Admin({ user: currentUser }) {
         <h2>GERENCIAR NOTÍCIAS</h2>
         
         {editingPost && (
-          <div className="edit-post-form">
+          <CollapsibleAdminForm title="Editar notícia">
             <h3>Editando Notícia</h3>
             <div className="form-group">
               <label>Título</label>
@@ -1406,11 +1431,11 @@ export default function Admin({ user: currentUser }) {
               <button className="btn btn-primary" onClick={saveEditPost}>Salvar</button>
               <button className="btn btn-outline" onClick={cancelEditPost}>Cancelar</button>
             </div>
-          </div>
+          </CollapsibleAdminForm>
         )}
 
         {!editingPost && (
-          <div className="edit-post-form">
+          <CollapsibleAdminForm title="Nova notícia">
             <h3>Nova Notícia</h3>
             <div className="form-group">
               <label>Título</label>
@@ -1474,7 +1499,7 @@ export default function Admin({ user: currentUser }) {
             <div className="form-actions">
               <button className="btn btn-primary" onClick={createPost}>Publicar</button>
             </div>
-          </div>
+          </CollapsibleAdminForm>
         )}
 
         <div className="posts-list">
@@ -1558,7 +1583,7 @@ export default function Admin({ user: currentUser }) {
         </div>
 
         {editingBand && (
-          <div className="edit-post-form">
+          <CollapsibleAdminForm title="Editar banda">
             <h3>Editando Banda</h3>
             <div className="form-group">
               <label>Nome</label>
@@ -1698,12 +1723,12 @@ export default function Admin({ user: currentUser }) {
               <button className="btn btn-primary" onClick={saveEditBand}>Salvar</button>
               <button className="btn btn-outline" onClick={cancelEditBand}>Cancelar</button>
             </div>
-          </div>
+          </CollapsibleAdminForm>
         )}
 
         {!editingBand && (
           <>
-            <div className="edit-post-form">
+            <CollapsibleAdminForm title="Nova banda">
               <h3>Nova Banda</h3>
               <div className="form-group">
                 <label>Nome</label>
@@ -1855,7 +1880,7 @@ export default function Admin({ user: currentUser }) {
               <div className="form-actions">
                 <button className="btn btn-primary" onClick={createBand}>Publicar</button>
               </div>
-            </div>
+            </CollapsibleAdminForm>
 
             <div className="bands-section">
               <h3>Bandas Aprovadas ({bands.length})</h3>
@@ -1896,7 +1921,7 @@ export default function Admin({ user: currentUser }) {
         <h2>GERENCIAR ENTREVISTAS</h2>
 
         {editingInterview && (
-          <div className="edit-post-form">
+          <CollapsibleAdminForm title="Editar entrevista">
             <h3>Editando Entrevista</h3>
             <div className="form-group">
               <label>Título</label>
@@ -1954,11 +1979,11 @@ export default function Admin({ user: currentUser }) {
               <button className="btn btn-primary" onClick={saveEditInterview}>Salvar</button>
               <button className="btn btn-outline" onClick={cancelEditInterview}>Cancelar</button>
             </div>
-          </div>
+          </CollapsibleAdminForm>
         )}
 
         {!editingInterview && (
-          <div className="edit-post-form">
+          <CollapsibleAdminForm title="Nova entrevista">
             <h3>Nova Entrevista</h3>
             <div className="form-group">
               <label>Título</label>
@@ -2015,7 +2040,7 @@ export default function Admin({ user: currentUser }) {
             <div className="form-actions">
               <button className="btn btn-primary" onClick={createInterview}>Publicar</button>
             </div>
-          </div>
+          </CollapsibleAdminForm>
         )}
 
         <div className="interviews-list">
@@ -2045,7 +2070,7 @@ export default function Admin({ user: currentUser }) {
       {activeTab === "lancamentos" && isAdmin && (
       <section className="admin-card">
         <h2>GERENCIAR LANÇAMENTOS</h2>
-        <div className="edit-post-form">
+        <CollapsibleAdminForm title="Novo lançamento">
           <h3>Novo lançamento</h3>
           <div className="form-group"><label>Título</label><input value={newRelease.title} onChange={e=>setNewRelease({...newRelease,title:e.target.value})} placeholder="Nome do single, EP ou álbum" /></div>
           <div className="form-group"><label>Banda / Artista</label><input value={newRelease.artist} onChange={e=>setNewRelease({...newRelease,artist:e.target.value})} /></div>
@@ -2056,12 +2081,12 @@ export default function Admin({ user: currentUser }) {
           <div className="form-group"><label>YouTube / Clipe</label><input value={newRelease.youtube} onChange={e=>setNewRelease({...newRelease,youtube:e.target.value})} /></div>
           
           <div className="form-actions"><button className="btn btn-primary" onClick={createRelease}>Publicar lançamento</button></div>
-        </div>
+        </CollapsibleAdminForm>
         <div className="interviews-list">
           <h3>Lançamentos publicados ({releases.length})</h3>
           {releases.map(r=><div key={r.id} className="post-item"><div className="post-preview">{r.image&&<img src={getImageUrl(r.image)} alt={r.title}/>}<div className="post-info"><h4>{r.title}</h4><p><strong>{r.artist}</strong> · {r.type}</p>{r.release_date&&<small>{r.release_date}</small>}</div></div><div className="post-actions"><button className="btn btn-primary" onClick={()=>setEditingRelease({...r})}>✏️ Editar</button><button className="btn btn-outline" onClick={()=>deleteRelease(r.id)}>🗑 Deletar</button></div></div>)}
         </div>
-        {editingRelease && <div className="edit-post-form"><h3>Editando lançamento</h3><div className="form-group"><label>Título</label><input value={editingRelease.title} onChange={e=>setEditingRelease({...editingRelease,title:e.target.value})}/></div><div className="form-group"><label>Banda / Artista</label><input value={editingRelease.artist} onChange={e=>setEditingRelease({...editingRelease,artist:e.target.value})}/></div><div className="form-group"><label>Tipo</label><input value={editingRelease.type||"Single"} onChange={e=>setEditingRelease({...editingRelease,type:e.target.value})}/></div><div className="form-group"><label>Data</label><input type="date" value={editingRelease.release_date||""} onChange={e=>setEditingRelease({...editingRelease,release_date:e.target.value})}/></div><div className="form-group"><label>Imagem</label><input value={editingRelease.image||""} onChange={e=>setEditingRelease({...editingRelease,image:e.target.value})}/></div><div className="form-group"><label>Spotify</label><input value={editingRelease.spotify||""} onChange={e=>setEditingRelease({...editingRelease,spotify:e.target.value})}/></div><div className="form-group"><label>YouTube</label><input value={editingRelease.youtube||""} onChange={e=>setEditingRelease({...editingRelease,youtube:e.target.value})}/></div><div className="form-actions"><button className="btn btn-primary" onClick={saveEditRelease}>Salvar</button><button className="btn btn-outline" onClick={()=>setEditingRelease(null)}>Cancelar</button></div></div>}
+        {editingRelease && <CollapsibleAdminForm title="Editar lançamento"><h3>Editando lançamento</h3><div className="form-group"><label>Título</label><input value={editingRelease.title} onChange={e=>setEditingRelease({...editingRelease,title:e.target.value})}/></div><div className="form-group"><label>Banda / Artista</label><input value={editingRelease.artist} onChange={e=>setEditingRelease({...editingRelease,artist:e.target.value})}/></div><div className="form-group"><label>Tipo</label><input value={editingRelease.type||"Single"} onChange={e=>setEditingRelease({...editingRelease,type:e.target.value})}/></div><div className="form-group"><label>Data</label><input type="date" value={editingRelease.release_date||""} onChange={e=>setEditingRelease({...editingRelease,release_date:e.target.value})}/></div><div className="form-group"><label>Imagem</label><input value={editingRelease.image||""} onChange={e=>setEditingRelease({...editingRelease,image:e.target.value})}/></div><div className="form-group"><label>Spotify</label><input value={editingRelease.spotify||""} onChange={e=>setEditingRelease({...editingRelease,spotify:e.target.value})}/></div><div className="form-group"><label>YouTube</label><input value={editingRelease.youtube||""} onChange={e=>setEditingRelease({...editingRelease,youtube:e.target.value})}/></div><div className="form-actions"><button className="btn btn-primary" onClick={saveEditRelease}>Salvar</button><button className="btn btn-outline" onClick={()=>setEditingRelease(null)}>Cancelar</button></div></CollapsibleAdminForm>}
       </section>
       )}
 
@@ -2070,7 +2095,7 @@ export default function Admin({ user: currentUser }) {
         <h2>GERENCIAR EVENTOS</h2>
 
         {editingEvent && (
-          <div className="edit-post-form">
+          <CollapsibleAdminForm title="Editar evento">
             <h3>Editando Evento</h3>
             <div className="form-group">
               <label>Título</label>
@@ -2182,11 +2207,11 @@ export default function Admin({ user: currentUser }) {
               <button className="btn btn-primary" onClick={saveEditEvent}>Salvar</button>
               <button className="btn btn-outline" onClick={cancelEditEvent}>Cancelar</button>
             </div>
-          </div>
+          </CollapsibleAdminForm>
         )}
 
         {!editingEvent && (
-          <div className="edit-post-form">
+          <CollapsibleAdminForm title="Novo evento">
             <h3>Novo Evento</h3>
             <div className="form-group">
               <label>Título</label>
@@ -2297,7 +2322,7 @@ export default function Admin({ user: currentUser }) {
             <div className="form-actions">
               <button className="btn btn-primary" onClick={createEvent}>Publicar</button>
             </div>
-          </div>
+          </CollapsibleAdminForm>
         )}
 
         <div className="events-list">
