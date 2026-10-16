@@ -1158,7 +1158,7 @@ export default function Admin({ user: currentUser, onLogout }) {
         .cdr-admin-welcome h1 { color: var(--cdr-accent-bright); font-size: clamp(28px, 3vw, 43px); line-height: 1.1; margin: 0 0 8px; }
         .cdr-admin-welcome span { color: #bdbdbd; font-size: 14px; }
         .cdr-admin-welcome > strong { max-width: 230px; color: #eee; font-size: clamp(17px, 2vw, 25px); font-style: italic; text-align: right; }
-        .cdr-admin-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .cdr-admin-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
         .cdr-admin-metrics article { display: flex; align-items: center; gap: 14px; min-width: 0; padding: 18px 15px; border: 1px solid #292929; border-radius: 9px; background: linear-gradient(145deg,#151515,#0d0d0d); }
         .cdr-admin-metrics .metric-icon { color: var(--cdr-accent-bright); font-size: 34px; line-height: 1; }
         .cdr-admin-metrics article div { min-width: 0; display: flex; flex-direction: column; }
