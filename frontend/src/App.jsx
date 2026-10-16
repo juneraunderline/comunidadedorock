@@ -238,7 +238,7 @@ function App() {
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/privacidade" element={<PoliticaPrivacidade />} />
           <Route path="/termos" element={<TermosDeUso />} />
-          <Route path="/admin" element={<Admin user={user} />} />
+          <Route path="/admin" element={<Admin user={user} onLogout={handleLogout} />} />
         </Routes>
         </Suspense>
 
