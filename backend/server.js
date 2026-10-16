@@ -1584,6 +1584,18 @@ app.patch("/api/band-release-submissions/:id", async (req, res) => {
   } finally { client.release(); }
 });
 
+// Métrica do dashboard: total de notícias preservadas no arquivo histórico.
+app.get("/api/posts/archive/count", async (req, res) => {
+  try {
+    const result = await db.getOne("SELECT COUNT(*)::int AS count FROM posts WHERE archived_at IS NOT NULL");
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.json({ count: Number(result?.count) || 0 });
+  } catch (err) {
+    console.error("Falha ao contar notícias arquivadas:", err.code || "DB_ERROR");
+    res.status(500).json({ error: "Não foi possível contar as notícias arquivadas." });
+  }
+});
+
 // Arquivo de notícias RSS: consulta paginada para não pesar a listagem principal.
 app.get("/api/posts/archive", async (req, res) => {
   try {
