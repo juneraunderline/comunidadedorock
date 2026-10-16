@@ -31,10 +31,6 @@ function News() {
   const [sourceFilter, setSourceFilter] = useState("");
   const [searchParams] = useSearchParams();
   const [hasMore, setHasMore] = useState(true);
-  const [showArchive, setShowArchive] = useState(false);
-  const [archivePosts, setArchivePosts] = useState([]);
-  const [archiveHasMore, setArchiveHasMore] = useState(true);
-  const [archiveLoading, setArchiveLoading] = useState(false);
   const [sources, setSources] = useState([]);
   const navigate = useNavigate();
   
@@ -121,24 +117,6 @@ function News() {
         setHasMore(res.data.length === PAGE_SIZE);
       })
       .catch(err => console.error("Erro ao carregar mais posts:", err));
-  };
-
-  const loadArchive = async (reset = false) => {
-    if (archiveLoading) return;
-    setArchiveLoading(true);
-    const offset = reset ? 0 : archivePosts.length;
-    try {
-      const response = await axios.get(API_URL + "/api/posts/archive", {
-        params: { limit: PAGE_SIZE, offset, search: search || undefined, source: (portalFilter || sourceFilter) || undefined },
-        timeout: 15000
-      });
-      setArchivePosts(prev => reset ? response.data : [...prev, ...response.data]);
-      setArchiveHasMore(response.data.length === PAGE_SIZE);
-    } catch (err) {
-      console.error("Erro ao carregar arquivo de notícias:", err);
-    } finally {
-      setArchiveLoading(false);
-    }
   };
 
   const visiblePosts = allPosts;
@@ -282,44 +260,6 @@ function News() {
             </div>
           )}
         </div>
-      </section>
-
-      <section className="section" style={{ marginTop: "12px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap", padding: "18px 20px", border: "1px solid #2a2a33", borderRadius: "10px", background: "#10101a" }}>
-          <div>
-            <h2 style={{ margin: 0 }}>ARQUIVO <span className="highlight">DE NOTÍCIAS</span></h2>
-            <p style={{ color: "#999", margin: "6px 0 0", fontSize: "13px" }}>Notícias antigas preservadas, carregadas aos poucos para manter o site leve.</p>
-          </div>
-          <button className="btn btn-primary" onClick={() => {
-            const next = !showArchive;
-            setShowArchive(next);
-            if (next && archivePosts.length === 0) loadArchive(true);
-          }}>
-            {showArchive ? "Ocultar arquivo ↑" : "Consultar arquivo ↓"}
-          </button>
-        </div>
-        {showArchive && (
-          <div style={{ marginTop: "18px" }}>
-            <div className="grid grid-2">
-              {archivePosts.map(p => (
-                <div key={p.id} className="card" onClick={() => navigate("/noticias/" + p.id)} style={{ cursor: "pointer" }}>
-                  <div className="card-image">
-                    {p.image ? <img src={getImageUrl(p.image)} alt={p.title} loading="lazy" /> : <div style={{ padding: "24px", color: "#999" }}>Sem imagem</div>}
-                    <div className="card-source">{p.source || "Comunidade do Rock"}</div>
-                  </div>
-                  <div className="card-content">
-                    <small className="card-date">{formatDatePT(p.created_at)}</small>
-                    <h3>{p.title}</h3>
-                    {safeExternalUrl(p.link) && <a href={safeExternalUrl(p.link)} target="_blank" rel="noopener noreferrer" className="btn btn-primary" onClick={e => e.stopPropagation()} style={{ marginTop: "12px", display: "inline-flex", textDecoration: "none" }}>Leia Mais →</a>}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {archiveLoading && <p style={{ textAlign: "center", color: "#999" }}>Carregando arquivo...</p>}
-            {!archiveLoading && archivePosts.length === 0 && <p style={{ textAlign: "center", color: "#999", padding: "24px" }}>Ainda não há notícias arquivadas. As próximas notícias antigas serão preservadas automaticamente.</p>}
-            {archiveHasMore && archivePosts.length > 0 && <div style={{ textAlign: "center", padding: "20px" }}><button className="btn btn-primary" onClick={() => loadArchive(false)} disabled={archiveLoading}>Carregar mais notícias antigas ↓</button></div>}
-          </div>
-        )}
       </section>
     </div>
   );
