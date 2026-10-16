@@ -53,7 +53,7 @@ export default function PainelBanda({ user }) {
   return <section className="section cdr-band-dashboard" style={{ marginTop: 80, minHeight: "75vh" }}>
     <div className="cdr-band-dashboard-inner">
       <header className="cdr-band-dashboard-heading">
-        <div><p>ÁREA EXCLUSIVA</p><h1>PAINEL <span className="highlight">DA BANDA</span></h1><span>Gerencie o perfil, os lançamentos e os eventos da sua banda.</span></div>
+        <div><p>ÁREA EXCLUSIVA</p><h1>PAINEL <span className="highlight">{band?.name || "DA BANDA"}</span></h1><span>Gerencie o perfil, os lançamentos e os eventos da sua banda.</span></div>
         <strong>COMUNIDADE DO ROCK</strong>
       </header>
       {message && <div role="status" style={{ background: "#153323", border: "1px solid #2f754b", color: "#a6efbf", padding: 12, borderRadius: 8, marginBottom: 16 }}>{message}</div>}
