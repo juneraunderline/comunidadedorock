@@ -2140,6 +2140,15 @@ body {
 }
 
 
+/* Cabeçalho desktop: compacta a navegação para incluir o acesso administrativo sem cortar links. */
+@media (min-width: 769px) and (max-width: 1440px) {
+  .header { gap: 18px; padding-left: 22px; padding-right: 22px; }
+  .header-logo { max-width: 190px; height: 32px; }
+  .nav-menu { gap: 12px; min-width: 0; }
+  .nav-menu .nav-link { font-size: 10px; letter-spacing: .5px; white-space: nowrap; }
+  .user-name-header { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
 /* Painel admin: permite acessar todas as abas com rolagem horizontal no celular */
 @media (max-width: 768px) {
   .admin-tabs {
