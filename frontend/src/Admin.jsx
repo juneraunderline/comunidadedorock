@@ -1244,6 +1244,7 @@ export default function Admin({ user: currentUser }) {
       )}
 
 
+      {activeTab === "rss" && (
       <section className="admin-card">
         <h2>FEEDS RSS</h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
