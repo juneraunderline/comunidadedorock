@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - ".github/workflows/rss-import.yml"
+      - "backend/server.js"
+      - "backend/package.json"
   schedule:
     - cron: "*/15 * * * *"
   workflow_dispatch:
