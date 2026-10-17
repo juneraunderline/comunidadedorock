@@ -2181,12 +2181,18 @@ body {
 }
 
 
-/* Cabeçalho desktop: compacta a navegação para incluir o acesso administrativo sem cortar links. */
+/* Cabeçalho desktop: links legíveis, distribuídos pelo espaço disponível. */
 @media (min-width: 769px) and (max-width: 1440px) {
-  .header { gap: 18px; padding-left: 22px; padding-right: 22px; }
+  .header { gap: 14px; padding-left: 20px; padding-right: 20px; }
   .header-logo { max-width: 190px; height: 32px; }
-  .nav-menu { gap: 12px; min-width: 0; }
-  .nav-menu .nav-link { font-size: 10px; letter-spacing: .5px; white-space: nowrap; }
+  .nav-menu { gap: clamp(7px, .8vw, 12px); min-width: 0; }
+  .nav-menu .nav-link {
+    font-size: clamp(12px, 1vw, 15px);
+    letter-spacing: .35px;
+    white-space: nowrap;
+    padding-left: 1px;
+    padding-right: 1px;
+  }
   .user-name-header { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
