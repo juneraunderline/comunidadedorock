@@ -57,10 +57,51 @@ body {
 
 .nav-menu {
   display: flex;
-  gap: 40px;
-  flex: 1;
-  justify-content: flex-end;
+  gap: clamp(12px, 1.35vw, 24px);
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: space-evenly;
   align-items: center;
+}
+
+/* Em telas grandes, a navegação ocupa de forma equilibrada todo o espaço
+   entre a logo e a área de login/perfil, sem alterar o menu mobile. */
+@media (min-width: 769px) {
+  .header {
+    gap: 28px;
+  }
+
+  .header-logo {
+    height: 42px;
+  }
+
+  .nav-menu {
+    justify-content: space-evenly;
+  }
+
+  .nav-link {
+    font-size: 13px;
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+    padding: 8px 2px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) {
+  .header {
+    gap: 16px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .nav-menu {
+    gap: 10px;
+  }
+
+  .nav-link {
+    font-size: 11px;
+    letter-spacing: 0.3px;
+  }
 }
 
 .nav-link {
