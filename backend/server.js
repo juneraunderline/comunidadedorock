@@ -134,8 +134,10 @@ const pool = new Pool({
   // Em Vercel serverless, manter apenas uma conexão por instância e liberá-la
   // rapidamente reduz o risco de esgotar max_client_conn.
   max: 1,
-  idleTimeoutMillis: 1000,
-  connectionTimeoutMillis: 15000,
+  // Evita abrir/fechar uma conexão em praticamente cada requisição. O pool é
+  // pequeno por instância e reaproveita a conexão durante picos curtos de tráfego.
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 10000,
   allowExitOnIdle: true
 });
 
