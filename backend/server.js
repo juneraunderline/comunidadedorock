@@ -1107,7 +1107,22 @@ async function autoImportRss() {
     if (cleanup.rowCount > 0) {
       console.log(`🗑️ Removidas ${cleanup.rowCount} notícia(s) sem imagem.`);
     }
-    const summary = { success: failedFeeds < rssFeeds.length, feeds: rssFeeds.length, failedFeeds, imported: importedTotal, removedWithoutImage: cleanup.rowCount };
+    // O TMDQA! já tinha notícias com URLs de imagem quebradas. Verificar a
+    // acessibilidade dessas imagens e remover apenas as entradas que falham.
+    const tmdqaPosts = await db.getAll(
+      "SELECT id, image FROM posts WHERE source ILIKE '%TMDQA%' AND image IS NOT NULL AND BTRIM(image) <> ''"
+    );
+    let removedTmdqaWithoutImage = 0;
+    for (const post of tmdqaPosts) {
+      if (!(await isValidImage(post.image))) {
+        await db.run("DELETE FROM posts WHERE id = $1", [post.id]);
+        removedTmdqaWithoutImage++;
+      }
+    }
+    if (removedTmdqaWithoutImage > 0) {
+      console.log(`🗑️ Removidas ${removedTmdqaWithoutImage} notícia(s) do TMDQA! com imagem inválida/inacessível.`);
+    }
+    const summary = { success: failedFeeds < rssFeeds.length, feeds: rssFeeds.length, failedFeeds, imported: importedTotal, removedWithoutImage: cleanup.rowCount, removedTmdqaWithoutImage };
     console.log("Resumo da importação RSS:", JSON.stringify(summary));
     return summary;
   } finally {
