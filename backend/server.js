@@ -134,10 +134,10 @@ const pool = new Pool({
   // Em Vercel serverless, manter apenas uma conexão por instância e liberá-la
   // rapidamente reduz o risco de esgotar max_client_conn.
   max: 1,
-  // Evita abrir/fechar uma conexão em praticamente cada requisição. O pool é
-  // pequeno por instância e reaproveita a conexão durante picos curtos de tráfego.
-  idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 10000,
+  // O limite de clientes do Layerbase é baixo; liberar a conexão ociosa rápido
+  // evita que instâncias serverless mantenham clientes abertos em paralelo.
+  idleTimeoutMillis: 1000,
+  connectionTimeoutMillis: 15000,
   allowExitOnIdle: true
 });
 
@@ -149,7 +149,7 @@ pool.on("error", (err) => {
 // O pooler rejeita a conexão antes de executar a query, então é seguro repetir
 // somente esse erro; não repetimos escritas em erros genéricos de rede.
 async function queryWithConnectionRetry(text, params) {
-  const delays = [0, 500, 1500, 3000];
+  const delays = [0, 400, 1200];
   for (let attempt = 0; attempt < delays.length; attempt++) {
     if (delays[attempt]) await new Promise(resolve => setTimeout(resolve, delays[attempt]));
     try {
