@@ -1031,8 +1031,7 @@ async function autoImportRss() {
 
           const link = extractLinkFromItem(itemXml);
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
-          const link = extractLinkFromItem(itemXml);
-          if (!link || !/^https?:\\/\\//i.test(link)) continue;
+          if (!link || !/^https?:\/\//i.test(link)) continue;
           const image = extractImageFromItem(itemXml, content);
 
           // Duplicatas continuam sendo detectadas pelo título ou link. Não fazemos
