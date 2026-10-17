@@ -962,7 +962,15 @@ async function autoImportRss() {
     // Se o banco não responder, falhar a execução para o agendador tentar novamente.
     rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
     if (!rssFeeds.length) {
-      console.warn("Importação RSS não executada: nenhuma fonte cadastrada no banco.");
+      // Recupera a configuração padrão se a tabela de fontes estiver vazia.
+      // loadFeeds insere as fontes padrão com ON CONFLICT, sem duplicar fontes
+      // existentes nem tocar nas notícias já publicadas/arquivadas.
+      console.warn("Nenhuma fonte RSS encontrada; tentando restaurar as fontes padrão.");
+      await loadFeeds();
+      rssFeeds = await db.getAll("SELECT * FROM rss_feeds");
+    }
+    if (!rssFeeds.length) {
+      console.error("Importação RSS interrompida: não foi possível carregar ou restaurar as fontes.");
       return { success: false, feeds: 0, failedFeeds: 0, imported: 0, reason: "no_feeds" };
     }
     let failedFeeds = 0;
