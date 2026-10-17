@@ -1051,6 +1051,12 @@ async function autoImportRss() {
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           if (!link || !/^https?:\/\//i.test(link)) continue;
           const image = extractImageFromItem(itemXml, content);
+          // Regra editorial: notícia RSS só entra no site se tiver imagem identificada.
+          // Não importar item sem imagem; tentar o próximo item do feed.
+          if (!image || !String(image).trim()) {
+            console.log(`⏭️ Ignorada (sem imagem): ${title.substring(0, 50)}`);
+            continue;
+          }
 
           // Duplicatas continuam sendo detectadas pelo título ou link. Não fazemos
           // HEAD nem scraping do artigo para não bloquear a importação.
@@ -1098,9 +1104,13 @@ async function autoImportRss() {
       console.warn("Erro ao arquivar notícias antigas:", e.message);
       throw e;
     }
-    // Não apagar notícias automaticamente, mesmo quando a imagem está ausente ou inválida.
-    // O histórico deve ser preservado; imagens podem ser corrigidas separadamente.
-    const summary = { success: failedFeeds < rssFeeds.length, feeds: rssFeeds.length, failedFeeds, imported: importedTotal };
+    // Limpeza editorial solicitada: remover do site notícias sem imagem, inclusive do arquivo.
+    // A importação acima já impede que novas notícias RSS sem imagem sejam gravadas.
+    const cleanup = await db.query("DELETE FROM posts WHERE image IS NULL OR BTRIM(image) = '' RETURNING id");
+    if (cleanup.rowCount > 0) {
+      console.log(`🗑️ Removidas ${cleanup.rowCount} notícia(s) sem imagem.`);
+    }
+    const summary = { success: failedFeeds < rssFeeds.length, feeds: rssFeeds.length, failedFeeds, imported: importedTotal, removedWithoutImage: cleanup.rowCount };
     console.log("Resumo da importação RSS:", JSON.stringify(summary));
     return summary;
   } finally {
