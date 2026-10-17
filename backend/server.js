@@ -143,22 +143,38 @@ pool.on("error", (err) => {
   console.error("Erro inesperado no pool PostgreSQL:", err.message);
 });
 
+// Retry curto e específico para o limite de conexões do Layerbase.
+// O pooler rejeita a conexão antes de executar a query, então é seguro repetir
+// somente esse erro; não repetimos escritas em erros genéricos de rede.
+async function queryWithConnectionRetry(text, params) {
+  const delays = [0, 500, 1500, 3000];
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (delays[attempt]) await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+    try {
+      return await pool.query(text, params);
+    } catch (err) {
+      const message = String(err?.message || "");
+      const isConnectionLimit = /max_client_conn|no more connections allowed|too many clients/i.test(message);
+      if (!isConnectionLimit || attempt === delays.length - 1) throw err;
+      console.warn(`Layerbase atingiu o limite de conexões; nova tentativa ${attempt + 1}/${delays.length - 1}.`);
+    }
+  }
+  throw new Error("Não foi possível obter uma conexão com o banco.");
+}
+
 // Helper para queries
 const db = {
-  query: async (text, params) => {
-    const res = await pool.query(text, params);
-    return res;
-  },
+  query: async (text, params) => queryWithConnectionRetry(text, params),
   getAll: async (text, params) => {
-    const res = await pool.query(text, params);
+    const res = await queryWithConnectionRetry(text, params);
     return res.rows;
   },
   getOne: async (text, params) => {
-    const res = await pool.query(text, params);
+    const res = await queryWithConnectionRetry(text, params);
     return res.rows[0] || null;
   },
   run: async (text, params) => {
-    await pool.query(text, params);
+    await queryWithConnectionRetry(text, params);
   }
 };
 
