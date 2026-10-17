@@ -2453,11 +2453,8 @@ app.post("/api/import-rss", async (req, res) => {
         await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: feedImported, items: feedItems });
       }
     }
-    // Limpar posts sem imagem após import manual
-    // Notícias sem imagem também são preservadas; não apagar registros automaticamente.
-
-    // Limpar posts sem imagem após importação manual, como no comportamento original.
-    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
+    // Excluir registros sem imagem após a importação manual.
+    await pool.query("DELETE FROM posts WHERE image IS NULL OR BTRIM(image) = '' OR image NOT LIKE 'http%'");
 
     res.json({ success: true, imported });
   } catch (err) {
@@ -2487,9 +2484,8 @@ app.post("/api/import-rss-single", async (req, res) => {
         imported++;
       }
     }
-    // Notícias sem imagem também são preservadas; não apagar registros automaticamente.
-
-    await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' OR image NOT LIKE 'http%'").catch(() => {});
+    // Excluir registros sem imagem após a importação manual.
+    await pool.query("DELETE FROM posts WHERE image IS NULL OR BTRIM(image) = '' OR image NOT LIKE 'http%'");
     await saveRssFeedStatus(feed, { status: imported > 0 ? "updated" : "no_new", message: imported > 0 ? `${imported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported, items: items.length });
     res.json({ success: true, imported });
   } catch (err) {
