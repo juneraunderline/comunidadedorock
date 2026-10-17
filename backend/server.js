@@ -979,39 +979,50 @@ async function autoImportRss() {
       let importedForFeed = 0;
       let itemCountForFeed = 0;
       try {
-        // Tentar URL direta primeiro, se falhar tentar via proxy
+        // Cada tentativa externa tem tempo limite próprio para que uma fonte lenta
+        // não mantenha a importação inteira presa.
         let xml = "";
+        let fetchError = "";
         try {
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 10000);
-          const directRes = await fetchFunc(feed.url, { headers: BROWSER_HEADERS, signal: controller.signal });
-          clearTimeout(timeout);
-          if (directRes.status === 200) {
-            xml = await directRes.text();
-          } else {
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
-            const proxyRes = await fetchFunc(proxyUrl);
-            if (proxyRes.status === 200) xml = await proxyRes.text();
-          }
+          const timeout = setTimeout(() => controller.abort(), 7000);
+          try {
+            const response = await fetchFunc(feed.url, { headers: BROWSER_HEADERS, signal: controller.signal });
+            if (response.ok) xml = await response.text();
+            else fetchError = "HTTP " + response.status;
+          } finally { clearTimeout(timeout); }
         } catch (err) {
-          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
-          const proxyRes = await fetchFunc(proxyUrl).catch(() => null);
-          if (proxyRes?.status === 200) xml = await proxyRes.text();
+          fetchError = err.name === "AbortError" ? "tempo limite excedido" : String(err.message || "falha de rede");
         }
-        const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
-        itemCountForFeed = items.length;
+        if (!xml.trim()) {
+          try {
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feed.url)}`;
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 7000);
+            try {
+              const response = await fetchFunc(proxyUrl, { headers: BROWSER_HEADERS, signal: controller.signal });
+              if (response.ok) xml = await response.text();
+              else fetchError += (fetchError ? "; " : "") + "proxy HTTP " + response.status;
+            } finally { clearTimeout(timeout); }
+          } catch (err) {
+            fetchError += (fetchError ? "; " : "") + (err.name === "AbortError" ? "tempo limite do proxy excedido" : String(err.message || "proxy indisponível"));
+          }
+        }
         if (!xml.trim()) {
           failedFeeds++;
-          await saveRssFeedStatus(feed, { status: "error", message: "Não foi possível obter o conteúdo do feed (resposta vazia ou bloqueada).", items: 0 });
+          await saveRssFeedStatus(feed, { status: "error", message: "Não foi possível obter o feed: " + (fetchError || "resposta vazia"), items: 0 });
           continue;
         }
+        const items = xml.match(/<item[\\s\\S]*?<\\/item>|<entry[\\s\\S]*?<\\/entry>/gi) || [];
+        itemCountForFeed = items.length;
         if (items.length === 0) {
-          await saveRssFeedStatus(feed, { status: "no_new", message: "O feed respondeu, mas não contém itens RSS reconhecidos.", items: 0 });
+          failedFeeds++;
+          await saveRssFeedStatus(feed, { status: "error", message: "A resposta não contém itens RSS/Atom reconhecidos.", items: 0 });
           continue;
         }
-        
-        // Examinar até 10 itens por fonte para pular notícias antigas ou sem imagem.
-        // Importar no máximo 3 notícias novas e válidas por fonte em cada execução.
+
+        // A imagem é opcional: não descartar notícia válida nem depender do servidor
+        // de imagens/artigos, que frequentemente bloqueia consultas automatizadas.
         for (const itemXml of items.slice(0, 10)) {
           if (importedForFeed >= 3) break;
           const rawTitle = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
@@ -1020,16 +1031,15 @@ async function autoImportRss() {
 
           const link = extractLinkFromItem(itemXml);
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
-          const rssImage = extractImageFromItem(itemXml, content);
-          const articleImage = await extractImageFromArticlePage(link);
-          const image = articleImage || rssImage;
+          const link = extractLinkFromItem(itemXml);
+          if (!link || !/^https?:\\/\\//i.test(link)) continue;
+          const image = extractImageFromItem(itemXml, content);
 
-          if (!image) continue;
-          if (!(await isValidImage(image))) continue;
-
+          // Duplicatas continuam sendo detectadas pelo título ou link. Não fazemos
+          // HEAD nem scraping do artigo para não bloquear a importação.
           const existing = await db.getOne("SELECT id, image FROM posts WHERE title = $1 OR link = $2 LIMIT 1", [title, link]);
           if (existing) {
-            if (existing.image !== image) {
+            if (image && existing.image !== image) {
               await db.run("UPDATE posts SET image = $1 WHERE id = $2", [image, existing.id]);
               console.log(`🖼️ Imagem corrigida: ${title.substring(0, 30)}`);
             }
@@ -1043,7 +1053,7 @@ async function autoImportRss() {
         }
         await saveRssFeedStatus(feed, {
           status: importedForFeed > 0 ? "updated" : "no_new",
-          message: importedForFeed > 0 ? `${importedForFeed} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.",
+          message: importedForFeed > 0 ? `${importedForFeed} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova encontrada entre os 10 primeiros itens do feed.",
           imported: importedForFeed,
           items: itemCountForFeed
         });
