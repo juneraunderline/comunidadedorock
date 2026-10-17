@@ -1039,8 +1039,8 @@ async function autoImportRss() {
           continue;
         }
 
-        // A imagem é opcional: não descartar notícia válida nem depender do servidor
-        // de imagens/artigos, que frequentemente bloqueia consultas automatizadas.
+        // Só importar notícias com imagem real e acessível. Quando o TMDQA! não
+        // inclui a imagem no RSS, buscar a imagem destacada na página do artigo.
         for (const itemXml of items.slice(0, 10)) {
           if (importedForFeed >= 3) break;
           const rawTitle = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim();
@@ -1050,16 +1050,13 @@ async function autoImportRss() {
           const link = extractLinkFromItem(itemXml);
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           if (!link || !/^https?:\/\//i.test(link)) continue;
-          const image = extractImageFromItem(itemXml, content);
-          // Regra editorial: notícia RSS só entra no site se tiver imagem identificada.
-          // Não importar item sem imagem; tentar o próximo item do feed.
-          if (!image || !String(image).trim()) {
-            console.log(`⏭️ Ignorada (sem imagem): ${title.substring(0, 50)}`);
+          let image = extractImageFromItem(itemXml, content);
+          if (!image && /tmdqa|tenhomaisdiscosqueamigos/i.test(feed.name + " " + feed.url)) image = await extractImageFromArticlePage(link);
+          if (!image || !(await isValidImage(image))) {
+            console.log(`⏭️ Ignorada (sem imagem válida/acessível): ${title.substring(0, 50)}`);
             continue;
           }
 
-          // Duplicatas continuam sendo detectadas pelo título ou link. Não fazemos
-          // HEAD nem scraping do artigo para não bloquear a importação.
           const existing = await db.getOne("SELECT id, image FROM posts WHERE title = $1 OR link = $2 LIMIT 1", [title, link]);
           if (existing) {
             if (image && existing.image !== image) {
@@ -2435,15 +2432,14 @@ app.post("/api/import-rss", async (req, res) => {
       try {
         const items = await getFeedItems(feed.url);
         feedItems = items.length;
-        for (const itemXml of items.slice(0, 3)) {
+        for (const itemXml of items.slice(0, 10)) {
+          if (feedImported >= 3) break;
           const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
-          const rssImage = extractImageFromItem(itemXml, content);
           const link = extractLinkFromItem(itemXml);
-          const articleImage = await extractImageFromArticlePage(link);
-          const image = articleImage || rssImage;
-          if (!title || !image) continue;
-          if (!(await isValidImage(image))) continue;
+          let image = extractImageFromItem(itemXml, content);
+          if (!image && /tmdqa|tenhomaisdiscosqueamigos/i.test(feed.name + " " + feed.url)) image = await extractImageFromArticlePage(link);
+          if (!title || !link || !image || !(await isValidImage(image))) continue;
           if (!(await postAlreadyExists(title, link))) {
             const newPost = await db.getOne("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5) RETURNING id", [title, content, image, link, feed.name]);
             await createFanNotificationsForPost(newPost.id, title, content, link);
@@ -2477,15 +2473,14 @@ app.post("/api/import-rss-single", async (req, res) => {
     if (!feed || !feed.url) return res.status(400).json({ error: "Feed inválido" });
     let imported = 0;
     const items = await getFeedItems(feed.url);
-    for (const itemXml of items.slice(0, 3)) {
-      const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
-      const content = decodeHtmlEntities(extractContentFromItem(itemXml));
-      const rssImage = extractImageFromItem(itemXml, content);
-      const link = extractLinkFromItem(itemXml);
-      const articleImage = await extractImageFromArticlePage(link);
-      const image = articleImage || rssImage;
-      if (!title || !image) continue;
-      if (!(await isValidImage(image))) continue;
+    for (const itemXml of items.slice(0, 10)) {
+          if (imported >= 3) break;
+          const title = decodeHtmlEntities(itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim());
+          const content = decodeHtmlEntities(extractContentFromItem(itemXml));
+          const link = extractLinkFromItem(itemXml);
+          let image = extractImageFromItem(itemXml, content);
+          if (!image && /tmdqa|tenhomaisdiscosqueamigos/i.test(feed.name + " " + feed.url)) image = await extractImageFromArticlePage(link);
+          if (!title || !link || !image || !(await isValidImage(image))) continue;
       if (!(await postAlreadyExists(title, link))) {
         const newPost = await db.getOne("INSERT INTO posts (title, content, image, link, source) VALUES ($1, $2, $3, $4, $5) RETURNING id", [title, content, image, link, feed.name]);
             await createFanNotificationsForPost(newPost.id, title, content, link);
