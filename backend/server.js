@@ -1013,7 +1013,7 @@ async function autoImportRss() {
           await saveRssFeedStatus(feed, { status: "error", message: "Não foi possível obter o feed: " + (fetchError || "resposta vazia"), items: 0 });
           continue;
         }
-        const items = xml.match(/<item[\\s\\S]*?<\\/item>|<entry[\\s\\S]*?<\\/entry>/gi) || [];
+        const items = xml.match(/<item[\s\S]*?<\/item>|<entry[\s\S]*?<\/entry>/gi) || [];
         itemCountForFeed = items.length;
         if (items.length === 0) {
           failedFeeds++;
