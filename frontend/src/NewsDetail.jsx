@@ -57,21 +57,22 @@ function NewsDetail() {
     for (const delay of delays) {
       if (delay) await new Promise(resolve => setTimeout(resolve, delay));
       try {
-        // O endpoint completo é necessário para o conteúdo das matérias próprias.
-        const response = await axios.get(`${API_URL}/api/posts?full=1`, { timeout: 20000 });
-        if (!Array.isArray(response.data)) throw new Error("Resposta inválida da API");
-        const selectedPost = response.data.find(p =>
-          String(p.slug || "") === String(id) || String(p.id) === String(id)
+        // Busca apenas esta notícia por ID/slug, sem descarregar todo o arquivo de notícias.
+        const response = await axios.get(
+          `${API_URL}/api/posts/lookup/${encodeURIComponent(id)}`,
+          { timeout: 20000 }
         );
-        if (selectedPost) {
-          setPost(selectedPost);
-          setLoading(false);
-          return;
+        if (!response.data || typeof response.data !== "object" || Array.isArray(response.data)) {
+          throw new Error("Resposta inválida da API");
         }
-        // Uma resposta válida sem o registro significa que a notícia não existe mais/publicada.
+        setPost(response.data);
         setLoading(false);
         return;
       } catch (error) {
+        if (error?.response?.status === 404) {
+          setLoading(false);
+          return;
+        }
         lastError = error;
       }
     }
