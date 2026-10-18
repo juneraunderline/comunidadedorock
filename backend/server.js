@@ -1688,6 +1688,39 @@ app.get("/api/posts/archive", async (req, res) => {
 });
 
 // Posts
+// Busca uma única notícia por ID ou slug. Evita carregar milhares de matérias completas
+// a cada clique, reduzindo consultas e pressão sobre o limite de conexões do Layerbase.
+app.get("/api/posts/lookup/:identifier", async (req, res) => {
+  try {
+    const identifier = String(req.params.identifier || "").trim().slice(0, 160);
+    const slug = identifier.toLowerCase().slice(0, 80);
+    const post = await db.getOne(`
+      SELECT * FROM posts
+      WHERE archived_at IS NULL AND (
+        id::text = $1 OR
+        BTRIM(
+          REGEXP_REPLACE(
+            REGEXP_REPLACE(
+              TRANSLATE(LOWER(COALESCE(title, '')),
+                'áàãâäéèêëíìîïóòõôöúùûüçñ',
+                'aaaaaeeeeiiiiooooouuuucn'),
+              '[^a-z0-9[:space:]-]', '', 'g'),
+            '[[:space:]-]+', '-', 'g'),
+          '-')
+        ) = $2
+      )
+      ORDER BY id DESC
+      LIMIT 1
+    `, [identifier, slug]);
+    res.set("Cache-Control", "no-store");
+    if (!post) return res.status(404).json({ error: "Notícia não encontrada" });
+    res.json(post);
+  } catch (err) {
+    console.error("Falha ao buscar notícia individual:", err.code || "DB_ERROR");
+    res.status(500).json({ error: "Não foi possível carregar esta notícia." });
+  }
+});
+
 app.get("/api/posts", async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
