@@ -1728,7 +1728,12 @@ app.get("/api/posts", async (req, res) => {
     const posts = await db.getAll(query, params);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
     
-    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    if (full) {
+      res.set("Cache-Control", "no-store");
+    } else {
+      res.set("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=120");
+      res.set("Vercel-CDN-Cache-Control", "max-age=30, stale-while-revalidate=120");
+    }
     res.json(posts.map(p => ({ ...p, slug: mkSlug(p.title) })));
   } catch (err) {
     res.status(500).json({ error: "Não foi possível concluir a solicitação" });
@@ -1834,7 +1839,12 @@ app.get("/api/bands", async (req, res) => {
       image: band.image,
       slug: mkSlug(band.name)
     }));
-    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    if (full) {
+      res.set("Cache-Control", "no-store");
+    } else {
+      res.set("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=120");
+      res.set("Vercel-CDN-Cache-Control", "max-age=30, stale-while-revalidate=120");
+    }
     res.json(responseBands);
   } catch (err) {
     console.error("Erro ao buscar bandas:", err.message);
@@ -1986,11 +1996,12 @@ app.get("/api/interviews", async (req, res) => {
   const fields = full ? "*" : "id, title, artist, image, date, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 300) AS summary";
   const limitSql = limit ? `LIMIT ${limit}` : "";
   const interviews = await db.getAll(`SELECT ${fields} FROM interviews ORDER BY id DESC ${limitSql}`);
-  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-  res.set("CDN-Cache-Control", "no-store");
-  res.set("Vercel-CDN-Cache-Control", "no-store");
-  res.set("Pragma", "no-cache");
-  res.set("Expires", "0");
+  if (full) {
+    res.set("Cache-Control", "no-store");
+  } else {
+    res.set("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=120");
+    res.set("Vercel-CDN-Cache-Control", "max-age=30, stale-while-revalidate=120");
+  }
   res.json(interviews);
 });
 
@@ -2021,11 +2032,12 @@ app.get("/api/releases", async (req, res) => {
     const fields = full ? "*" : "id, title, artist, type, release_date, image, spotify, youtube, LEFT(COALESCE(description, ''), 300) AS description, created_at";
     const limitSql = limit ? `LIMIT ${limit}` : "";
     const releases = await db.getAll(`SELECT ${fields} FROM releases ORDER BY COALESCE(release_date, created_at::date::text) DESC, id DESC ${limitSql}`);
-    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-    res.set("CDN-Cache-Control", "no-store");
-    res.set("Vercel-CDN-Cache-Control", "no-store");
-    res.set("Pragma", "no-cache");
-    res.set("Expires", "0");
+    if (full) {
+      res.set("Cache-Control", "no-store");
+    } else {
+      res.set("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=120");
+      res.set("Vercel-CDN-Cache-Control", "max-age=30, stale-while-revalidate=120");
+    }
     res.json(releases);
   } catch (err) { console.error("Erro ao buscar lançamentos:", err.message); res.status(500).json({ error: "Erro ao carregar lançamentos" }); }
 });
