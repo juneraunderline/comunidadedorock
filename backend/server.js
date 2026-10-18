@@ -1111,7 +1111,7 @@ async function autoImportRss() {
       link ILIKE '%david-draiman-esta-do-lado-de-james-hetfield-sobre-nao-falar-de-politica-durante%'
       OR link ILIKE '%em-1991-escolinha-do-professor-raimundo-criticava-bolsonaro-e-a-ditadura%'
       OR image IS NULL OR BTRIM(image) = '' OR image NOT LIKE 'http%'
-      OR content IS NULL OR LENGTH(REGEXP_REPLACE(content, '<[^>]*>|&nbsp;|[[:space:]]', '', 'gi')) < 80
+      OR (source IS NOT NULL AND (content IS NULL OR LENGTH(REGEXP_REPLACE(content, '<[^>]*>|&nbsp;|[[:space:]]', '', 'gi')) < 80))
       RETURNING id`);
     if (cleanup.rowCount > 0) {
       console.log(`🗑️ Removidas ${cleanup.rowCount} notícia(s) sem imagem.`);
