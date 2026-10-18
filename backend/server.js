@@ -1049,7 +1049,11 @@ async function autoImportRss() {
 
           const link = extractLinkFromItem(itemXml);
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
+          // Bloqueio temporário de matérias conhecidas por terem sido importadas
+          // sem imagem/conteúdo válido. Não republicar até corrigirmos a extração.
+          if (/david-draiman-esta-do-lado-de-james-hetfield-sobre-nao-falar-de-politica-durante|em-1991-escolinha-do-professor-raimundo-criticava-bolsonaro-e-a-ditadura/i.test(link || "")) continue;
           if (!link || !/^https?:\/\//i.test(link)) continue;
+          if (typeof content !== "string" || content.replace(/<[^>]*>/g, " ").replace(/&nbsp;|\s|\u00a0/gi, "").length < 80) continue;
           let image = extractImageFromItem(itemXml, content);
           if (!image && /tmdqa|tenhomaisdiscosqueamigos/i.test(feed.name + " " + feed.url)) image = await extractImageFromArticlePage(link);
           if (!image || !(await isValidImage(image))) {
@@ -2468,8 +2472,12 @@ app.post("/api/import-rss", async (req, res) => {
         await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: feedImported, items: feedItems });
       }
     }
-    // Excluir registros sem imagem após a importação manual.
-    await pool.query("DELETE FROM posts WHERE image IS NULL OR BTRIM(image) = '' OR image NOT LIKE 'http%'");
+    // Remover notícias comprovadamente defeituosas e impedir que voltem a ser importadas.
+    await pool.query(`DELETE FROM posts WHERE
+      link ILIKE '%david-draiman-esta-do-lado-de-james-hetfield-sobre-nao-falar-de-politica-durante%'
+      OR link ILIKE '%em-1991-escolinha-do-professor-raimundo-criticava-bolsonaro-e-a-ditadura%'
+      OR image IS NULL OR BTRIM(image) = '' OR image NOT LIKE 'http%'
+      OR content IS NULL OR LENGTH(REGEXP_REPLACE(content, '<[^>]*>|&nbsp;|[[:space:]]', '', 'gi')) < 80`);
 
     res.json({ success: true, imported });
   } catch (err) {
@@ -2529,7 +2537,9 @@ app.post("/api/reimport-rss", async (req, res) => {
           const content = decodeHtmlEntities(extractContentFromItem(itemXml));
           const image = extractImageFromItem(itemXml, content);
           const link = extractLinkFromItem(itemXml);
-          if (!title || !image) continue;
+          if (/david-draiman-esta-do-lado-de-james-hetfield-sobre-nao-falar-de-politica-durante|em-1991-escolinha-do-professor-raimundo-criticava-bolsonaro-e-a-ditadura/i.test(link || "")) continue;
+          if (!title || !link || !/^https?:\/\//i.test(link) || !image) continue;
+          if (typeof content !== "string" || content.replace(/<[^>]*>/g, " ").replace(/&nbsp;|\s|\u00a0/gi, "").length < 80) continue;
           if (!(await isValidImage(image))) continue;
           const existing = await db.getOne("SELECT id, image FROM posts WHERE title = $1", [title]);
           if (existing) {
@@ -2556,6 +2566,12 @@ app.post("/api/reimport-rss", async (req, res) => {
       }
     }
 
+    // Limpar as duas matérias defeituosas também durante a reimportação.
+    await pool.query(`DELETE FROM posts WHERE
+      link ILIKE '%david-draiman-esta-do-lado-de-james-hetfield-sobre-nao-falar-de-politica-durante%'
+      OR link ILIKE '%em-1991-escolinha-do-professor-raimundo-criticava-bolsonaro-e-a-ditadura%'
+      OR image IS NULL OR BTRIM(image) = '' OR image NOT LIKE 'http%'
+      OR content IS NULL OR LENGTH(REGEXP_REPLACE(content, '<[^>]*>|&nbsp;|[[:space:]]', '', 'gi')) < 80`);
     res.json({ success: true, updated, created });
   } catch (err) {
     res.status(500).json({ error: "Não foi possível concluir a solicitação" });
