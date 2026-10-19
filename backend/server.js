@@ -145,20 +145,25 @@ pool.on("error", (err) => {
   console.error("Erro inesperado no pool PostgreSQL:", err.message);
 });
 
-// Retry curto e específico para o limite de conexões do Layerbase.
-// O pooler rejeita a conexão antes de executar a query, então é seguro repetir
-// somente esse erro; não repetimos escritas em erros genéricos de rede.
+// Recuperação limitada para falhas ao ESTABELECER conexão com o Layerbase.
+// Não repetir erros genéricos de consulta: uma escrita pode ter sido aplicada
+// antes de a conexão cair. Timeouts de conexão e banco em inicialização são
+// seguros para tentar novamente porque a query ainda não começou.
 async function queryWithConnectionRetry(text, params) {
-  const delays = [0, 400, 1200];
+  const delays = [0, 800, 2000];
   for (let attempt = 0; attempt < delays.length; attempt++) {
     if (delays[attempt]) await new Promise(resolve => setTimeout(resolve, delays[attempt]));
     try {
       return await pool.query(text, params);
     } catch (err) {
       const message = String(err?.message || "");
+      const code = String(err?.code || "");
       const isConnectionLimit = /max_client_conn|no more connections allowed|too many clients/i.test(message);
-      if (!isConnectionLimit || attempt === delays.length - 1) throw err;
-      console.warn(`Layerbase atingiu o limite de conexões; nova tentativa ${attempt + 1}/${delays.length - 1}.`);
+      const isConnectTimeout = /connection terminated due to connection timeout|timeout expired|connection timed out|connect etimedout|connect econnrefused|server closed the connection unexpectedly/i.test(message);
+      const isStarting = code === "57P03";
+      const safeToRetry = isConnectionLimit || isConnectTimeout || isStarting;
+      if (!safeToRetry || attempt === delays.length - 1) throw err;
+      console.warn(`Falha temporária ao conectar ao Layerbase (${code || "conexão"}); nova tentativa ${attempt + 1}/${delays.length - 1}.`);
     }
   }
   throw new Error("Não foi possível obter uma conexão com o banco.");
