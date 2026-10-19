@@ -1711,8 +1711,7 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
                 'aaaaaeeeeiiiiooooouuuucn'),
               '[^a-z0-9[:space:]-]', '', 'g'),
             '[[:space:]-]+', '-', 'g'),
-          '-')
-        ) = $2
+          '-') = $2
       )
       ORDER BY id DESC
       LIMIT 1
