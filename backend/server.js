@@ -1721,7 +1721,19 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
     if (!post) return res.status(404).json({ error: "Notícia não encontrada" });
     res.json(post);
   } catch (err) {
-    console.error("Falha ao buscar notícia individual:", err.code || "DB_ERROR");
+    // Diagnóstico seguro: nunca registrar a URL de conexão nem parâmetros da consulta.
+    const rawMessage = String(err?.message || "Erro sem mensagem");
+    const safeMessage = rawMessage
+      .replace(/(?:postgres(?:ql)?:\/\/)[^\s"'<>]+/gi, "[URL_DE_CONEXAO_OCULTA]")
+      .replace(/(password|passwd|token|secret|api[_-]?key)\s*[=:]\s*[^\s,;]+/gi, "$1=[OCULTO]")
+      .slice(0, 500);
+    console.error("Falha ao buscar notícia individual:", JSON.stringify({
+      code: err?.code || null,
+      name: err?.name || null,
+      severity: err?.severity || null,
+      message: safeMessage,
+      vercelRequestId: req.headers["x-vercel-id"] || null
+    }));
     res.status(500).json({ error: "Não foi possível carregar esta notícia." });
   }
 });
