@@ -1708,9 +1708,9 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
     const identifier = String(req.params.identifier || "").trim().slice(0, 160);
     const slug = identifier.toLowerCase().slice(0, 80);
     // IDs usam a chave primária; slugs seguem a busca compatível com links antigos.
-    const post = /^\d+$/.test(identifier)
+    const findPost = async () => /^\d+$/.test(identifier)
       ? await db.getOne("SELECT * FROM posts WHERE id = $1 AND archived_at IS NULL LIMIT 1", [Number(identifier)])
-      : await db.getOne(`
+      : await db.getOne(\`
           SELECT * FROM posts
           WHERE archived_at IS NULL AND
             BTRIM(
@@ -1724,7 +1724,23 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
               '-') = $1
           ORDER BY id DESC
           LIMIT 1
-        `, [slug]);
+        \`, [slug]);
+    let post = null;
+    // Em banco hibernado ou com conexão ociosa descartada, refazer somente
+    // esta leitura pública é seguro: não altera nem duplica dados.
+    const retryDelays = [0, 1000, 2500];
+    for (let attempt = 0; attempt < retryDelays.length; attempt++) {
+      if (retryDelays[attempt]) await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
+      try {
+        post = await findPost();
+        break;
+      } catch (err) {
+        const message = String(err?.message || "");
+        const retryable = /client_idle_timeout|connection terminated|timeout expired|connection timed out|server closed the connection unexpectedly|57P03/i.test(message + " " + String(err?.code || ""));
+        if (!retryable || attempt === retryDelays.length - 1) throw err;
+        console.warn("Falha temporária na leitura de notícia; nova tentativa", attempt + 1);
+      }
+    }
     res.set("Cache-Control", "no-store");
     if (!post) return res.status(404).json({ error: "Notícia não encontrada" });
     res.json(post);
