@@ -192,6 +192,8 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS posts (id SERIAL PRIMARY KEY, title TEXT, content TEXT, image TEXT, link TEXT, source TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ`);
   await db.run(`CREATE INDEX IF NOT EXISTS idx_posts_archive_created ON posts (archived_at, created_at DESC, id DESC)`);
+  // Índice funcional para acelerar a busca de notícias por slug.
+  await db.run(`CREATE INDEX IF NOT EXISTS idx_posts_active_title_slug ON posts ((BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(TRANSLATE(LOWER(COALESCE(title, '')), 'áàãâäéèêëíìîïóòõôöúûüçñ', 'aaaaaeeeeiiiiooooouuuucn'), '[^a-z0-9[:space:]-]', '', 'g'), '[[:space:]-]+', '-', 'g'), '-'))) WHERE archived_at IS NULL`);
   await db.run(`CREATE TABLE IF NOT EXISTS bands (id SERIAL PRIMARY KEY, name TEXT, genre TEXT, city TEXT, state TEXT, year TEXT, members TEXT, biography TEXT, contact TEXT, image TEXT, instagram TEXT, facebook TEXT, youtube TEXT, spotify TEXT, bandcamp TEXT, site TEXT, is_weekly_featured BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW())`);
   // Garante que bancos antigos recebam as colunas adicionadas depois da criação.
   await db.run(`ALTER TABLE bands ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`);
@@ -1699,23 +1701,24 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
   try {
     const identifier = String(req.params.identifier || "").trim().slice(0, 160);
     const slug = identifier.toLowerCase().slice(0, 80);
-    const post = await db.getOne(`
-      SELECT * FROM posts
-      WHERE archived_at IS NULL AND (
-        id::text = $1 OR
-        BTRIM(
-          REGEXP_REPLACE(
-            REGEXP_REPLACE(
-              TRANSLATE(LOWER(COALESCE(title, '')),
-                'áàãâäéèêëíìîïóòõôöúùûüçñ',
-                'aaaaaeeeeiiiiooooouuuucn'),
-              '[^a-z0-9[:space:]-]', '', 'g'),
-            '[[:space:]-]+', '-', 'g'),
-          '-') = $2
-      )
-      ORDER BY id DESC
-      LIMIT 1
-    `, [identifier, slug]);
+    // IDs usam a chave primária; slugs seguem a busca compatível com links antigos.
+    const post = /^\\d+$/.test(identifier)
+      ? await db.getOne("SELECT * FROM posts WHERE id = $1 AND archived_at IS NULL LIMIT 1", [Number(identifier)])
+      : await db.getOne(`
+          SELECT * FROM posts
+          WHERE archived_at IS NULL AND
+            BTRIM(
+              REGEXP_REPLACE(
+                REGEXP_REPLACE(
+                  TRANSLATE(LOWER(COALESCE(title, '')),
+                    'áàãâäéèêëíìîïóòõôöúûüçñ',
+                    'aaaaaeeeeiiiiooooouuuucn'),
+                  '[^a-z0-9[:space:]-]', '', 'g'),
+                '[[:space:]-]+', '-', 'g'),
+              '-') = $1
+          ORDER BY id DESC
+          LIMIT 1
+        `, [slug]);
     res.set("Cache-Control", "no-store");
     if (!post) return res.status(404).json({ error: "Notícia não encontrada" });
     res.json(post);
