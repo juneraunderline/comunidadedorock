@@ -49,9 +49,32 @@ function NewsDetail() {
   };
 
   const loadPost = useCallback(async () => {
-    setLoading(true);
     setLoadError(false);
-    setPost(null);
+
+    // Cada notícia que abriu com sucesso fica guardada neste navegador.
+    // Usamos a cópia imediatamente e tentamos atualizar em segundo plano.
+    const cacheKey = `comunidadedorock:news:${String(id)}`;
+    let cachedPost = null;
+    try {
+      const saved = localStorage.getItem(cacheKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          && parsed.title && parsed.content !== undefined) {
+          cachedPost = parsed;
+          setPost(parsed);
+          setLoading(false);
+        }
+      }
+    } catch (cacheError) {
+      console.warn("Não foi possível ler o cache local da notícia:", cacheError);
+    }
+
+    if (!cachedPost) {
+      setLoading(true);
+      setPost(null);
+    }
+
     const delays = [0, 1800, 3500];
     let lastError;
     for (const delay of delays) {
@@ -67,17 +90,34 @@ function NewsDetail() {
         }
         setPost(response.data);
         setLoading(false);
+        setLoadError(false);
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(response.data));
+        } catch (cacheError) {
+          // Cache é um recurso de contingência; falta de espaço não deve impedir a leitura.
+          console.warn("Não foi possível salvar o cache local da notícia:", cacheError);
+        }
         return;
       } catch (error) {
         if (error?.response?.status === 404) {
-          setLoading(false);
+          if (!cachedPost) {
+            setLoading(false);
+            setPost(null);
+          }
           return;
         }
         lastError = error;
       }
     }
-    console.error("Não foi possível abrir a notícia após novas tentativas:", lastError);
-    setLoadError(true);
+
+    if (cachedPost) {
+      // A API falhou, mas a cópia previamente aberta continua disponível.
+      setPost(cachedPost);
+      setLoadError(false);
+    } else {
+      console.error("Não foi possível abrir a notícia após novas tentativas:", lastError);
+      setLoadError(true);
+    }
     setLoading(false);
   }, [id, attempt]);
 
