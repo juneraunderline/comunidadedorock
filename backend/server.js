@@ -2,6 +2,7 @@
 const cors = require("cors");
 const { rateLimit } = require("express-rate-limit");
 const { Pool } = require("pg");
+const { attachDatabasePool } = require("@vercel/functions");
 
 let fetchFunc;
 if (typeof fetch !== "undefined") {
@@ -136,10 +137,13 @@ const pool = new Pool({
   max: 1,
   // O limite de clientes do Layerbase é baixo; liberar a conexão ociosa rápido
   // evita que instâncias serverless mantenham clientes abertos em paralelo.
-  idleTimeoutMillis: 1000,
-  connectionTimeoutMillis: 15000,
+  idleTimeoutMillis: 5000,
+  // Falhar rápido o bastante para que a recuperação centralizada termine antes do timeout do navegador.
+  connectionTimeoutMillis: 3000,
   allowExitOnIdle: true
 });
+// Em instâncias Vercel compatíveis com Fluid Compute, fecha conexões ociosas antes da suspensão.
+attachDatabasePool(pool);
 
 pool.on("error", (err) => {
   console.error("Erro inesperado no pool PostgreSQL:", err.message);
@@ -1725,25 +1729,18 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
           ORDER BY id DESC
           LIMIT 1
         `, [slug]);
-    let post = null;
-    // Em banco hibernado ou com conexão ociosa descartada, refazer somente
-    // esta leitura pública é seguro: não altera nem duplica dados.
-    const retryDelays = [0, 1000, 2500];
-    for (let attempt = 0; attempt < retryDelays.length; attempt++) {
-      if (retryDelays[attempt]) await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
-      try {
-        post = await findPost();
-        break;
-      } catch (err) {
-        const message = String(err?.message || "");
-        const retryable = /client_idle_timeout|max_client_conn|no more connections allowed|too many clients|connection terminated|timeout expired|connection timed out|server closed the connection unexpectedly|57P03/i.test(message + " " + String(err?.code || "") + " " + String(err?.detail || ""));
-        if (!retryable || attempt === retryDelays.length - 1) throw err;
-        console.warn("Falha temporária na leitura de notícia; nova tentativa", attempt + 1);
-      }
+    // A recuperação fica centralizada em queryWithConnectionRetry. Evitamos
+    // retries aninhados: cada query já pode tentar 3 vezes e o navegador aborta
+    // a requisição após 20 segundos.
+    const post = await findPost();
+    if (!post) {
+      res.set("Cache-Control", "no-store");
+      return res.status(404).json({ error: "Notícia não encontrada" });
     }
-    res.set("Cache-Control", "no-store");
-    if (!post) return res.status(404).json({ error: "Notícia não encontrada" });
-    res.json(post);
+    // Notícias públicas podem ser servidas pelo cache da Vercel. Isso evita
+    // abrir uma conexão PostgreSQL a cada visita; o conteúdo atualiza em até 2 min.
+    res.set("Cache-Control", "public, s-maxage=120, stale-while-revalidate=600");
+    return res.json(post);
   } catch (err) {
     // Diagnóstico seguro: nunca registrar a URL de conexão nem parâmetros da consulta.
     const rawMessage = String(err?.message || "Erro sem mensagem");
