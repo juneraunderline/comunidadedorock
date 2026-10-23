@@ -825,7 +825,13 @@ app.get("/api/health", async (req, res) => {
 });
 
 // Inicializa o banco sob demanda na primeira requisição.
+// A leitura de uma notícia publicada não precisa carregar todos os feeds nem
+// executar dezenas de verificações DDL em cada instância serverless fria.
+// A tabela posts já existe em produção; a rota abaixo faz somente um SELECT.
 app.use(async (req, res, next) => {
+  if (req.method === "GET" && /^\/api\/posts\/lookup\/[^/]+$/.test(req.path)) {
+    return next();
+  }
   try {
     await ensureInitialized();
     next();
