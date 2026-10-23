@@ -162,10 +162,13 @@ async function queryWithConnectionRetry(text, params) {
     } catch (err) {
       const message = String(err?.message || "");
       const code = String(err?.code || "");
+      // max_client_conn é uma recusa explícita do pooler por falta de vagas.
+      // Repetir a tentativa na mesma requisição cria mais pressão e não libera
+      // uma conexão ocupada; retornar o erro imediatamente evita amplificar a saturação.
       const isConnectionLimit = /max_client_conn|no more connections allowed|too many clients/i.test(message);
       const isConnectTimeout = /client_idle_timeout|connection terminated due to connection timeout|timeout expired|connection timed out|connect etimedout|connect econnrefused|server closed the connection unexpectedly/i.test(message + " " + code);
       const isStarting = code === "57P03";
-      const safeToRetry = isConnectionLimit || isConnectTimeout || isStarting;
+      const safeToRetry = !isConnectionLimit && (isConnectTimeout || isStarting);
       if (!safeToRetry || attempt === delays.length - 1) throw err;
       console.warn(`Falha temporária ao conectar ao Layerbase (${code || "conexão"}); nova tentativa ${attempt + 1}/${delays.length - 1}.`);
     }
