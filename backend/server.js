@@ -1710,7 +1710,7 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
     // IDs usam a chave primária; slugs seguem a busca compatível com links antigos.
     const findPost = async () => /^\d+$/.test(identifier)
       ? await db.getOne("SELECT * FROM posts WHERE id = $1 AND archived_at IS NULL LIMIT 1", [Number(identifier)])
-      : await db.getOne(\`
+      : await db.getOne(`
           SELECT * FROM posts
           WHERE archived_at IS NULL AND
             BTRIM(
@@ -1724,7 +1724,7 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
               '-') = $1
           ORDER BY id DESC
           LIMIT 1
-        \`, [slug]);
+        `, [slug]);
     let post = null;
     // Em banco hibernado ou com conexão ociosa descartada, refazer somente
     // esta leitura pública é seguro: não altera nem duplica dados.
