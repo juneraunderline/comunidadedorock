@@ -2338,3 +2338,79 @@ body {
  .cdr-band-dashboard form .btn { width:100%; text-align:center; }
  .cdr-band-dashboard button[style*="min-height: 205px"] { min-height:175px !important; padding:16px !important; }
 }
+
+
+/* Correção responsiva dos cards de feeds RSS no painel administrativo. */
+@media (max-width: 700px) {
+  .admin-card:has(.rss-row) {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 16px !important;
+  }
+
+  .rss-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .rss-row > :first-child {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .rss-row > :first-child > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .rss-row strong {
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+
+  .rss-row > :last-child {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .rss-row > :last-child button {
+    flex: 0 0 auto;
+    min-width: 42px;
+    min-height: 42px;
+  }
+
+  .rss-row [style*="overflow-wrap: anywhere"] {
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+    white-space: normal;
+  }
+
+  .admin-card .btn-outline {
+    max-width: 100%;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-card:has(.rss-row) {
+    padding: 12px !important;
+  }
+
+  .rss-row {
+    padding: 10px !important;
+  }
+
+  .rss-row > :first-child {
+    gap: 8px !important;
+  }
+}
