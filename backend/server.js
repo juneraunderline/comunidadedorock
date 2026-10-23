@@ -1736,7 +1736,7 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
         break;
       } catch (err) {
         const message = String(err?.message || "");
-        const retryable = /client_idle_timeout|connection terminated|timeout expired|connection timed out|server closed the connection unexpectedly|57P03/i.test(message + " " + String(err?.code || ""));
+        const retryable = /client_idle_timeout|max_client_conn|no more connections allowed|too many clients|connection terminated|timeout expired|connection timed out|server closed the connection unexpectedly|57P03/i.test(message + " " + String(err?.code || "") + " " + String(err?.detail || ""));
         if (!retryable || attempt === retryDelays.length - 1) throw err;
         console.warn("Falha temporária na leitura de notícia; nova tentativa", attempt + 1);
       }
