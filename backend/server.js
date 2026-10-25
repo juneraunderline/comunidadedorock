@@ -1225,6 +1225,7 @@ app.use("/api", async (req, res, next) => {
   const isPublicRead = method === "GET" && (
     path === "/votacao" ||
     /^\/(posts|bands|band-genres|interviews|releases|events|rss-feeds|comments\/[^/]+\/\d+)$/.test(path) ||
+    /^\/posts\/lookup\/[^/]+$/.test(path) ||
     path === "/posts/archive" ||
     /^\/posts\/\d+$/.test(path) ||
     /^\/bands\/[^/]+$/.test(path) ||
