@@ -1714,7 +1714,7 @@ app.get("/api/posts/archive", async (req, res) => {
 app.get("/api/posts/lookup/:identifier", async (req, res) => {
   try {
     const identifier = String(req.params.identifier || "").trim().slice(0, 160);
-    const slug = identifier.toLowerCase().slice(0, 80);
+    const slug = identifier.toLowerCase();
     // IDs usam a chave primária; slugs seguem a busca compatível com links antigos.
     const findPost = async () => /^\d+$/.test(identifier)
       ? await db.getOne("SELECT * FROM posts WHERE id = $1 LIMIT 1", [Number(identifier)])
