@@ -192,7 +192,7 @@ function App() {
                     {user.display_name || user.username}
                   </span>
                 </Link>
-                <button onClick={handleLogout} style={{
+                <button onClick={() => { handleLogout(); window.location.href = "/"; }} style={{
                   background: "none", border: "1px solid #444", color: "#999",
                   padding: "5px 12px", borderRadius: "4px", cursor: "pointer", fontSize: "11px",
                   fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px"
