@@ -1729,6 +1729,15 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
                     'aaaaaeeeeiiiiooooouuuucn'),
                   '[^a-z0-9[:space:]-]', '', 'g'),
                 '[[:space:]-]+', '-', 'g'),
+              '-') LIKE $1 || '%'
+            OR BTRIM(
+              REGEXP_REPLACE(
+                REGEXP_REPLACE(
+                  TRANSLATE(LOWER(COALESCE(title, '')),
+                    'áàãâäéèêëíìîïóòõôöúùûüçñ',
+                    'aaaaaeeeeiiiiooooouuuucn'),
+                  '[^a-z0-9[:space:]-]', '', 'g'),
+                '[[:space:]-]+', '-', 'g'),
               '-') = LEFT($1, 80)
           ORDER BY id DESC
           LIMIT 1
