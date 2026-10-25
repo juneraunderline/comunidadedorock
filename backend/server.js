@@ -559,7 +559,7 @@ async function cleanupDuplicatePosts() {
       [group.title]
     );
     for (const row of rows.slice(1)) {
-      await db.run("DELETE FROM posts WHERE id = $1", [row.id]);
+      await db.run("UPDATE posts SET archived_at = COALESCE(archived_at, NOW()) WHERE id = $1", [row.id]);
       total++;
     }
   }
@@ -1125,17 +1125,8 @@ async function autoImportRss() {
       console.warn("Erro ao arquivar notícias antigas:", e.message);
       throw e;
     }
-    // Limpeza editorial solicitada: remover do site notícias sem imagem, inclusive do arquivo.
-    // A importação acima já impede que novas notícias RSS sem imagem sejam gravadas.
-    const cleanup = await db.query(`DELETE FROM posts WHERE
-      link ILIKE '%david-draiman-esta-do-lado-de-james-hetfield-sobre-nao-falar-de-politica-durante%'
-      OR link ILIKE '%em-1991-escolinha-do-professor-raimundo-criticava-bolsonaro-e-a-ditadura%'
-      OR image IS NULL OR BTRIM(image) = '' OR image NOT LIKE 'http%'
-      OR (source IS NOT NULL AND (content IS NULL OR LENGTH(REGEXP_REPLACE(content, '<[^>]*>|&nbsp;|[[:space:]]', '', 'gi')) < 80))
-      RETURNING id`);
-    if (cleanup.rowCount > 0) {
-      console.log(`🗑️ Removidas ${cleanup.rowCount} notícia(s) sem imagem.`);
-    }
+    // Preservação editorial: notícias existentes nunca são apagadas automaticamente.
+    const cleanup = { rowCount: 0 };
     // O TMDQA! já tinha notícias com URLs de imagem quebradas. Verificar a
     // acessibilidade dessas imagens e remover apenas as entradas que falham.
     const tmdqaPosts = await db.getAll(
@@ -1144,7 +1135,7 @@ async function autoImportRss() {
     let removedTmdqaWithoutImage = 0;
     for (const post of tmdqaPosts) {
       if (!(await isValidImage(post.image))) {
-        await db.run("DELETE FROM posts WHERE id = $1", [post.id]);
+        await db.run("UPDATE posts SET archived_at = COALESCE(archived_at, NOW()) WHERE id = $1", [post.id]);
         removedTmdqaWithoutImage++;
       }
     }
@@ -1830,8 +1821,13 @@ app.put("/api/posts/:id", async (req, res) => {
 });
 
 app.delete("/api/posts/:id", async (req, res) => {
-  await db.run("DELETE FROM posts WHERE id = $1", [req.params.id]);
-  res.json({ success: true });
+  try {
+    const result = await db.query("UPDATE posts SET archived_at = COALESCE(archived_at, NOW()) WHERE id = $1 RETURNING id, archived_at", [req.params.id]);
+    if (!result.rowCount) return res.status(404).json({ error: "Notícia não encontrada" });
+    res.json({ success: true, archived: true, post: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível arquivar a notícia" });
+  }
 });
 
 // Bandas
@@ -2564,12 +2560,7 @@ app.post("/api/import-rss", async (req, res) => {
         await saveRssFeedStatus(feed, { status: "error", message: e.message, imported: feedImported, items: feedItems });
       }
     }
-    // Remover notícias comprovadamente defeituosas e impedir que voltem a ser importadas.
-    await pool.query(`DELETE FROM posts WHERE
-      link ILIKE '%david-draiman-esta-do-lado-de-james-hetfield-sobre-nao-falar-de-politica-durante%'
-      OR link ILIKE '%em-1991-escolinha-do-professor-raimundo-criticava-bolsonaro-e-a-ditadura%'
-      OR image IS NULL OR BTRIM(image) = '' OR image NOT LIKE 'http%'
-      OR content IS NULL OR LENGTH(REGEXP_REPLACE(content, '<[^>]*>|&nbsp;|[[:space:]]', '', 'gi')) < 80`);
+    // Notícias existentes são preservadas; a validação se aplica apenas a novas importações.
 
     res.json({ success: true, imported });
   } catch (err) {
@@ -2599,8 +2590,7 @@ app.post("/api/import-rss-single", async (req, res) => {
         imported++;
       }
     }
-    // Excluir registros sem imagem após a importação manual.
-    await pool.query("DELETE FROM posts WHERE image IS NULL OR BTRIM(image) = '' OR image NOT LIKE 'http%'");
+    // Não excluir notícias existentes por falta de imagem.
     await saveRssFeedStatus(feed, { status: imported > 0 ? "updated" : "no_new", message: imported > 0 ? `${imported} notícia(s) nova(s) importada(s).` : "Nenhuma notícia nova com imagem válida entre os 3 primeiros itens do feed.", imported, items: items.length });
     res.json({ success: true, imported });
   } catch (err) {
@@ -2658,12 +2648,7 @@ app.post("/api/reimport-rss", async (req, res) => {
       }
     }
 
-    // Limpar as duas matérias defeituosas também durante a reimportação.
-    await pool.query(`DELETE FROM posts WHERE
-      link ILIKE '%david-draiman-esta-do-lado-de-james-hetfield-sobre-nao-falar-de-politica-durante%'
-      OR link ILIKE '%em-1991-escolinha-do-professor-raimundo-criticava-bolsonaro-e-a-ditadura%'
-      OR image IS NULL OR BTRIM(image) = '' OR image NOT LIKE 'http%'
-      OR content IS NULL OR LENGTH(REGEXP_REPLACE(content, '<[^>]*>|&nbsp;|[[:space:]]', '', 'gi')) < 80`);
+    // Reimportação nunca apaga notícias existentes; apenas cria ou atualiza registros.
     res.json({ success: true, updated, created });
   } catch (err) {
     res.status(500).json({ error: "Não foi possível concluir a solicitação" });
@@ -2832,11 +2817,11 @@ app.get("/og/eventos/:id", async (req, res) => {
   } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
 });
 
-// Deletar todas as notícias sem imagem
+// Arquivar notícias sem imagem sem destruir seu conteúdo.
 app.delete("/api/posts-without-images", async (req, res) => {
   try {
-    const result = await pool.query("DELETE FROM posts WHERE image IS NULL OR image = '' RETURNING id");
-    res.json({ success: true, deleted: result.rowCount });
+    const result = await db.query("UPDATE posts SET archived_at = COALESCE(archived_at, NOW()) WHERE image IS NULL OR BTRIM(image) = '' RETURNING id");
+    res.json({ success: true, archived: result.rowCount, deleted: 0 });
   } catch (err) {
     res.status(500).json({ error: "Não foi possível concluir a solicitação" });
   }
