@@ -1721,8 +1721,15 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
                   '[^a-z0-9[:space:]-]', '', 'g'),
                 '[[:space:]-]+', '-', 'g'),
               '-') = $1
-            OR LOWER(COALESCE(slug, '')) = $1
-            OR LOWER(COALESCE(slug, '')) = LEFT($1, 80)
+            OR BTRIM(
+              REGEXP_REPLACE(
+                REGEXP_REPLACE(
+                  TRANSLATE(LOWER(COALESCE(title, '')),
+                    'áàãâäéèêëíìîïóòõôöúùûüçñ',
+                    'aaaaaeeeeiiiiooooouuuucn'),
+                  '[^a-z0-9[:space:]-]', '', 'g'),
+                '[[:space:]-]+', '-', 'g'),
+              '-') = LEFT($1, 80)
           ORDER BY id DESC
           LIMIT 1
         `, [slug]);
