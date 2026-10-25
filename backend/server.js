@@ -1717,10 +1717,10 @@ app.get("/api/posts/lookup/:identifier", async (req, res) => {
     const slug = identifier.toLowerCase().slice(0, 80);
     // IDs usam a chave primária; slugs seguem a busca compatível com links antigos.
     const findPost = async () => /^\d+$/.test(identifier)
-      ? await db.getOne("SELECT * FROM posts WHERE id = $1 AND archived_at IS NULL LIMIT 1", [Number(identifier)])
+      ? await db.getOne("SELECT * FROM posts WHERE id = $1 LIMIT 1", [Number(identifier)])
       : await db.getOne(`
           SELECT * FROM posts
-          WHERE archived_at IS NULL AND
+          WHERE
             BTRIM(
               REGEXP_REPLACE(
                 REGEXP_REPLACE(
@@ -1772,8 +1772,8 @@ app.get("/api/posts", async (req, res) => {
     
     const full = req.query.full === "1";
     let query = full
-      ? "SELECT * FROM posts WHERE archived_at IS NULL"
-      : "SELECT id, title, image, link, source, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 500) AS summary FROM posts WHERE archived_at IS NULL";
+      ? "SELECT * FROM posts WHERE TRUE"
+      : "SELECT id, title, image, link, source, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 500) AS summary FROM posts WHERE TRUE";
     let params = [];
     let paramIdx = 1;
     
