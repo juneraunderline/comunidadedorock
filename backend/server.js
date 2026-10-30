@@ -1207,9 +1207,9 @@ app.use("/api", async (req, res, next) => {
       path === "/cron/rss") return next();
   // Cadastro de banda exige sessão autenticada; a aprovação pública continua administrativa.
   if (path === "/bands/submit" && method === "POST") return authenticate(req, res, next);
-  if (path === "/fan/data" || /^\/fan\/(favorites|events|vote|notifications)(?:\/\d+(?:\/read)?)?$/.test(path)) return authenticate(req, res, next);
-  if (path === "/logout" && method === "POST") return authenticate(req, res, next);
-  if (path === "/session" && method === "GET") return authenticate(req, res, next);
+  // As rotas de fã, logout e sessão aplicam authenticate diretamente em seus
+  // handlers. Não autenticar também aqui: isso duplicava consultas a auth_sessions
+  // em cada chamada e aumentava a pressão sobre o pool PostgreSQL serverless.
 
   const isUserProfile = isPath(path, /^\/user\/\d+$/);
   const isCommentDelete = isPath(path, /^\/comments\/\d+$/) && method === "DELETE";
