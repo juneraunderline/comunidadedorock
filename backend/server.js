@@ -831,17 +831,16 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Inicializa o banco sob demanda na primeira requisição.
-// A leitura de uma notícia publicada não precisa carregar todos os feeds nem
-// executar dezenas de verificações DDL em cada instância serverless fria.
-// A tabela posts já existe em produção; a rota abaixo faz somente um SELECT.
+// Leituras normais não devem executar migrações DDL em cada instância
+// serverless fria. As tabelas já existem em produção; cada handler de leitura
+// consulta diretamente os dados. A inicialização completa fica reservada ao
+// health check, ao cron RSS e ao modo local, evitando uma rajada de CREATE/ALTER
+// TABLE simultânea quando o frontend solicita várias seções ao mesmo tempo.
 app.use(async (req, res, next) => {
-  if (req.method === "GET" && /^\/api\/posts\/lookup\/[^/]+$/.test(req.path)) {
-    return next();
-  }
+  if (req.method === "GET") return next();
   try {
     await ensureInitialized();
-    next();
+    return next();
   } catch (err) {
     const code = typeof err.code === "string" ? err.code : "UNKNOWN";
     const detail = String(err.message || "Erro sem mensagem").slice(0, 300);
@@ -850,7 +849,6 @@ app.use(async (req, res, next) => {
       code,
       detail
     });
-    // Detalhes técnicos ficam apenas nos logs; a resposta pública é genérica.
     res.status(503).json({
       error: "Serviço temporariamente indisponível"
     });
