@@ -1228,7 +1228,6 @@ app.use("/api", async (req, res, next) => {
       return authenticate(req, res, () => requireRoles("admin")(req, res, next));
     }
     if ((path === "/posts" && req.query.full === "1") ||
-        (path === "/interviews" && req.query.full === "1") ||
         (path === "/releases" && req.query.full === "1")) {
       return authenticate(req, res, () => requireRoles("admin", "editor")(req, res, next));
     }
