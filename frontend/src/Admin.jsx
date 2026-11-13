@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import DOMPurify from "dompurify";
+import { sanitizeRichContent, buildEmbedHtml } from "./utils/richContent";
 import API_URL, { getImageUrl } from "./config/api";
 import logo from "./assets/logo.png";
 
@@ -294,6 +295,9 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
           {tool("⇥", "Alinhar à direita", "justifyRight")}
           {tool("☷", "Justificar texto", "justifyFull")}
         </div>
+        <div style={groupStyle}>
+          {tool("▶ Vídeo", "Inserir vídeo ou player incorporado", "insertEmbed", null, { minWidth: "auto" })}
+        </div>
         <div style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
           <button type="button" title="Inserir ou editar link" aria-label="Inserir ou editar link" onMouseDown={(e) => e.preventDefault()} onClick={() => {
             const selection = window.getSelection();
@@ -433,9 +437,9 @@ export default function Admin({ user: currentUser, onLogout }) {
   useEffect(() => {
     if (activeTab === "entrevistas") {
       if (editingInterview && editingInterviewContentRef.current) {
-        editingInterviewContentRef.current.innerHTML = DOMPurify.sanitize(editingInterview.content || "", { ADD_ATTR: ["target", "rel"] });
+        editingInterviewContentRef.current.innerHTML = sanitizeRichContent(editingInterview.content || "");
       } else if (!editingInterview && newInterviewContentRef.current) {
-        newInterviewContentRef.current.innerHTML = DOMPurify.sanitize(newInterview.content || "", { ADD_ATTR: ["target", "rel"] });
+        newInterviewContentRef.current.innerHTML = sanitizeRichContent(newInterview.content || "");
       }
     }
   }, [activeTab, editingInterview?.id]);
@@ -604,6 +608,17 @@ export default function Admin({ user: currentUser, onLogout }) {
   };
 
   const execFormat = (command, value = null) => {
+    if (command === "insertEmbed") {
+      const input = window.prompt("Cole o link do vídeo ou o código iframe da plataforma:");
+      if (!input) return;
+      try {
+        document.execCommand("insertHTML", false, buildEmbedHtml(input));
+        document.activeElement?.dispatchEvent(new Event("input", { bubbles: true }));
+      } catch (error) {
+        alert(error.message || "Não foi possível inserir essa incorporação.");
+      }
+      return;
+    }
     document.execCommand(command, false, value);
   };
 
@@ -636,7 +651,7 @@ export default function Admin({ user: currentUser, onLogout }) {
 
   const createPost = () => {
     // Ler conteúdo direto do ref para garantir que imagens coladas sejam incluídas
-    const finalContent = DOMPurify.sanitize(newContentRef.current ? newContentRef.current.innerHTML : newPost.content, { ADD_ATTR: ["target", "rel"] });
+    const finalContent = sanitizeRichContent(newContentRef.current ? newContentRef.current.innerHTML : newPost.content);
     
     if (!newPost.title.trim() || !finalContent.trim()) {
       alert("Preencha título e conteúdo");
@@ -673,7 +688,7 @@ export default function Admin({ user: currentUser, onLogout }) {
 
   const saveEditPost = () => {
     // Ler conteúdo direto do ref para garantir que imagens coladas sejam incluídas
-    const finalContent = DOMPurify.sanitize(editingContentRef.current ? editingContentRef.current.innerHTML : editingPost.content, { ADD_ATTR: ["target", "rel"] });
+    const finalContent = sanitizeRichContent(editingContentRef.current ? editingContentRef.current.innerHTML : editingPost.content);
     
     if (!editingPost.title.trim() || !finalContent.trim()) {
       alert("Preencha título e conteúdo");
@@ -787,7 +802,7 @@ export default function Admin({ user: currentUser, onLogout }) {
   };
 
   const createInterview = () => {
-    const content = DOMPurify.sanitize(newInterviewContentRef.current?.innerHTML || newInterview.content || "", { ADD_ATTR: ["target", "rel"] });
+    const content = sanitizeRichContent(newInterviewContentRef.current?.innerHTML || newInterview.content || "");
     if (!newInterview.title.trim() || !newInterview.artist.trim()) {
       alert("Preencha título e artista");
       return;
@@ -808,7 +823,7 @@ export default function Admin({ user: currentUser, onLogout }) {
   };
 
   const saveEditInterview = () => {
-    const content = DOMPurify.sanitize(editingInterviewContentRef.current?.innerHTML || editingInterview.content || "", { ADD_ATTR: ["target", "rel"] });
+    const content = sanitizeRichContent(editingInterviewContentRef.current?.innerHTML || editingInterview.content || "");
     if (!editingInterview.title.trim() || !editingInterview.artist.trim()) {
       alert("Preencha título e artista");
       return;
