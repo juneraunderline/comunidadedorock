@@ -53,7 +53,7 @@ function EntrevistaDetail() {
   };
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/interviews`)
+    axios.get(`${API_URL}/api/interviews?full=1`, { headers: { "Cache-Control": "no-cache" } })
       .then(res => {
         const selectedInterview = res.data.find(i => i.slug === id || String(i.id) === id);
         setInterview(selectedInterview);
