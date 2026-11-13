@@ -179,7 +179,7 @@ function News() {
 
         {(search || sourceFilter) && !loading && (
           <p style={{ color: "#888", marginBottom: "16px", fontSize: "13px" }}>
-            {allPosts.length} notícia{allPosts.length !== 1 ? "s" : ""} encontrada{allPosts.length !== 1 ? "s" : ""}
+            {visiblePosts.length} publicação{visiblePosts.length !== 1 ? "ões" : ""} encontrada{visiblePosts.length !== 1 ? "s" : ""}
             {sourceFilter && sourceFilter !== "__manual__" && <> de <strong>{sourceFilter}</strong></>}
             {sourceFilter === "__manual__" && <> <strong>publicadas manualmente</strong></>}
           </p>
