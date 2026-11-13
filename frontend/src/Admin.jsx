@@ -426,6 +426,19 @@ export default function Admin({ user: currentUser, onLogout }) {
 
   const editingContentRef = useRef(null);
   const newContentRef = useRef(null);
+  const editingInterviewContentRef = useRef(null);
+  const newInterviewContentRef = useRef(null);
+
+  // Sincronizar conteúdo dos editores de entrevistas sem sobrescrever a digitação.
+  useEffect(() => {
+    if (activeTab === "entrevistas") {
+      if (editingInterview && editingInterviewContentRef.current) {
+        editingInterviewContentRef.current.innerHTML = DOMPurify.sanitize(editingInterview.content || "", { ADD_ATTR: ["target", "rel"] });
+      } else if (!editingInterview && newInterviewContentRef.current) {
+        newInterviewContentRef.current.innerHTML = DOMPurify.sanitize(newInterview.content || "", { ADD_ATTR: ["target", "rel"] });
+      }
+    }
+  }, [activeTab, editingInterview?.id]);
 
   // Sincronizar conteúdo do editor quando editingPost muda
   useEffect(() => {
@@ -767,15 +780,23 @@ export default function Admin({ user: currentUser, onLogout }) {
       .then(() => fetchData());
   };
 
+  const handleInterviewContentInput = (e, isEditing = false) => {
+    const content = e.currentTarget.innerHTML;
+    if (isEditing) setEditingInterview(current => current ? { ...current, content } : current);
+    else setNewInterview(current => ({ ...current, content }));
+  };
+
   const createInterview = () => {
+    const content = DOMPurify.sanitize(newInterviewContentRef.current?.innerHTML || newInterview.content || "", { ADD_ATTR: ["target", "rel"] });
     if (!newInterview.title.trim() || !newInterview.artist.trim()) {
       alert("Preencha título e artista");
       return;
     }
 
-    axios.post(`${API_URL}/api/interviews`, newInterview)
+    axios.post(`${API_URL}/api/interviews`, { ...newInterview, content })
       .then(() => {
         setNewInterview({ title: "", artist: "", content: "", image: "", date: "" });
+        if (newInterviewContentRef.current) newInterviewContentRef.current.innerHTML = "";
         fetchData();
         alert("Entrevista adicionada com sucesso!");
       })
@@ -787,6 +808,7 @@ export default function Admin({ user: currentUser, onLogout }) {
   };
 
   const saveEditInterview = () => {
+    const content = DOMPurify.sanitize(editingInterviewContentRef.current?.innerHTML || editingInterview.content || "", { ADD_ATTR: ["target", "rel"] });
     if (!editingInterview.title.trim() || !editingInterview.artist.trim()) {
       alert("Preencha título e artista");
       return;
@@ -795,7 +817,7 @@ export default function Admin({ user: currentUser, onLogout }) {
     axios.put(`${API_URL}/api/interviews/${editingInterview.id}`, {
       title: editingInterview.title,
       artist: editingInterview.artist,
-      content: editingInterview.content,
+      content,
       image: editingInterview.image,
       date: editingInterview.date
     })
@@ -2010,8 +2032,11 @@ export default function Admin({ user: currentUser, onLogout }) {
       )}
 
       {activeTab === "entrevistas" && (
-      <section className="admin-card">
-        <h2>GERENCIAR ENTREVISTAS</h2>
+      <section className="admin-card cdr-interviews-admin">
+        <header className="cdr-interviews-heading">
+          <div><span className="cdr-interviews-kicker">CONTEÚDO EDITORIAL</span><h2>Gerenciar entrevistas</h2><p>Edite entrevistas existentes ou publique uma nova conversa com artistas.</p></div>
+          <span className="cdr-interviews-count">{interviews.length} {interviews.length === 1 ? "entrevista" : "entrevistas"}</span>
+        </header>
 
         {editingInterview && (
           <CollapsibleAdminForm title="Editar entrevista">
@@ -2035,21 +2060,12 @@ export default function Admin({ user: currentUser, onLogout }) {
               />
             </div>
             <div className="form-group">
-              <label>Conteúdo</label>
-              <textarea
-                value={editingInterview.content || ""}
-                onChange={(e) => setEditingInterview({...editingInterview, content: e.target.value})}
-                placeholder="Conteúdo da entrevista"
-                rows="6"
-                style={{
-                  padding: "10px",
-                  border: "1px solid #5a5a6e",
-                  borderRadius: "4px",
-                  backgroundColor: "#1a1a2e",
-                  color: "#fff",
-                  fontFamily: "monospace"
-                }}
-              />
+              <label>Conteúdo da entrevista</label>
+              <div className="cdr-interview-editor">
+                <FormatToolbar onFormat={execFormat} onClearFormatting={clearFormatting} />
+                <div ref={editingInterviewContentRef} className="cdr-interview-editable" contentEditable suppressContentEditableWarning onInput={(e) => handleInterviewContentInput(e, true)} data-placeholder="Escreva a entrevista aqui. Você pode formatar títulos, parágrafos, links e listas..." />
+                <div className="cdr-interview-editor-hint">Dica: use os estilos de título para separar perguntas e respostas.</div>
+              </div>
             </div>
             <div className="form-group">
               <label>URL da Imagem</label>
@@ -2097,21 +2113,12 @@ export default function Admin({ user: currentUser, onLogout }) {
               />
             </div>
             <div className="form-group">
-              <label>Conteúdo</label>
-              <textarea
-                value={newInterview.content}
-                onChange={(e) => setNewInterview({...newInterview, content: e.target.value})}
-                placeholder="Conteúdo da entrevista"
-                rows="6"
-                style={{
-                  padding: "10px",
-                  border: "1px solid #5a5a6e",
-                  borderRadius: "4px",
-                  backgroundColor: "#1a1a2e",
-                  color: "#fff",
-                  fontFamily: "monospace"
-                }}
-              />
+              <label>Conteúdo da entrevista</label>
+              <div className="cdr-interview-editor">
+                <FormatToolbar onFormat={execFormat} onClearFormatting={clearFormatting} />
+                <div ref={newInterviewContentRef} className="cdr-interview-editable" contentEditable suppressContentEditableWarning onInput={(e) => handleInterviewContentInput(e, false)} data-placeholder="Comece a escrever a entrevista..." />
+                <div className="cdr-interview-editor-hint">Dica: use os estilos de título para separar perguntas e respostas.</div>
+              </div>
             </div>
             <div className="form-group">
               <label>URL da Imagem</label>
