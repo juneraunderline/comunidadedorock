@@ -2089,8 +2089,8 @@ app.get("/api/interviews", async (req, res) => {
     res.set("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=120");
     res.set("Vercel-CDN-Cache-Control", "max-age=30, stale-while-revalidate=120");
   }
-  const mkInterviewSlug = (artist, title) => [artist, title].filter(Boolean).join(" ").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9\\s-]/g, "").replace(/\\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").substring(0, 120);
-  res.json(interviews.map(interview => ({ ...interview, slug: mkInterviewSlug(interview.artist, interview.title) })));
+  const mkInterviewSlug = (artist) => String(artist || "").trim().toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9\\s-]/g, "").replace(/\\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").substring(0, 120);
+  res.json(interviews.map(interview => ({ ...interview, slug: mkInterviewSlug(interview.artist) })));
 });
 
 app.post("/api/interviews", async (req, res) => {
@@ -2907,8 +2907,8 @@ app.get("/sitemap.xml", async (req, res) => {
 
   for (const post of posts) urls.push({ loc: base + "/noticias/" + post.id, lastmod: post.created_at });
   for (const band of bands) urls.push({ loc: base + "/bandas/" + band.id, lastmod: band.created_at });
-  const interviewSlug = (artist, title) => [artist, title].filter(Boolean).join(" ").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9\\s-]/g, "").replace(/\\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").substring(0, 120);
-  for (const interview of interviews) urls.push({ loc: base + "/entrevistas/" + interviewSlug(interview.artist, interview.title), lastmod: interview.created_at });
+  const interviewSlug = (artist) => String(artist || "").trim().toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9\\s-]/g, "").replace(/\\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").substring(0, 120);
+  for (const interview of interviews) urls.push({ loc: base + "/entrevistas/" + interviewSlug(interview.artist), lastmod: interview.created_at });
   for (const event of events) urls.push({ loc: base + "/eventos/" + event.id, lastmod: event.created_at });
 
   const escapeXml = (value) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
