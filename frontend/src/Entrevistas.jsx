@@ -37,7 +37,7 @@ function Entrevistas() {
               <div 
                 key={interview.id} 
                 className="card"
-                onClick={() => navigate(`/entrevistas/${interview.id}`)}
+                onClick={() => navigate(`/entrevistas/${interview.slug || interview.id}`)}
                 style={{ cursor: "pointer" }}
               >
                 <div className="card-image">
