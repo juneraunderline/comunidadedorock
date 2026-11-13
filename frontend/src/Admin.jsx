@@ -6,8 +6,8 @@ import logo from "./assets/logo.png";
 
 
 
-function CollapsibleAdminForm({ title, children }) {
-  const [open, setOpen] = useState(false);
+function CollapsibleAdminForm({ title, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <section className="admin-collapsible-form">
       <button type="button" className="admin-collapsible-toggle" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
@@ -2039,7 +2039,7 @@ export default function Admin({ user: currentUser, onLogout }) {
         </header>
 
         {editingInterview && (
-          <CollapsibleAdminForm title="Editar entrevista">
+          <CollapsibleAdminForm title="Editar entrevista" defaultOpen>
             <h3>Editando Entrevista</h3>
             <div className="form-group">
               <label>Título</label>
@@ -2092,7 +2092,7 @@ export default function Admin({ user: currentUser, onLogout }) {
         )}
 
         {!editingInterview && (
-          <CollapsibleAdminForm title="Nova entrevista">
+          <CollapsibleAdminForm title="Nova entrevista" defaultOpen>
             <h3>Nova Entrevista</h3>
             <div className="form-group">
               <label>Título</label>
