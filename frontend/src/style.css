@@ -2462,3 +2462,25 @@ body {
  .cdr-interviews-admin .interviews-list .post-item { align-items:flex-start; flex-direction:column; }
  .cdr-interviews-admin .interviews-list .post-actions { width:100%; display:flex; flex-wrap:wrap; }
 }
+
+
+/* Players incorporados em entrevistas e notícias */
+.interview-detail-text .video-embed,
+.news-detail-content .video-embed,
+.video-embed {
+  position:relative; width:100%; max-width:900px; margin:28px auto;
+  overflow:hidden; border:1px solid #30303a; border-radius:14px;
+  background:#08080b; aspect-ratio:16 / 9;
+  box-shadow:0 12px 32px rgba(0,0,0,.24);
+}
+.interview-detail-text .video-embed iframe,
+.news-detail-content .video-embed iframe,
+.video-embed iframe {
+  display:block; width:100%!important; height:100%!important; min-height:0;
+  border:0; position:absolute; inset:0;
+}
+@media(max-width:640px) {
+  .interview-detail-text .video-embed,.news-detail-content .video-embed,.video-embed {
+    margin:20px auto; border-radius:10px;
+  }
+}
