@@ -295,9 +295,6 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
           {tool("⇥", "Alinhar à direita", "justifyRight")}
           {tool("☷", "Justificar texto", "justifyFull")}
         </div>
-        <div style={groupStyle}>
-          {tool("▶ Vídeo", "Inserir vídeo ou player incorporado", "insertEmbed", null, { minWidth: "auto" })}
-        </div>
         <div style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
           <button type="button" title="Inserir ou editar link" aria-label="Inserir ou editar link" onMouseDown={(e) => e.preventDefault()} onClick={() => {
             const selection = window.getSelection();
@@ -378,6 +375,7 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
       )}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", padding: "7px 10px", background: "rgba(9,10,18,.28)" }}>
         <span style={{ color: "#aeb0c6", fontSize: "11px", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginRight: "4px" }}>Inserir</span>
+        <button type="button" aria-label="Inserir vídeo ou player incorporado" title="Cole o link ou o código de incorporação do vídeo" onMouseDown={(e) => e.preventDefault()} onClick={() => run("insertEmbed")} style={{ ...buttonStyle, background: "#3a2e0e", borderColor: "#9b791b", color: "#ffd34e", fontWeight: 800, padding: "0 14px" }}>▶ Inserir vídeo / player</button>
         {tool("↵ Quebra de linha", "Inserir quebra de linha", "insertLineBreak")}
         {tool("— Linha divisória", "Inserir linha horizontal", "insertHorizontalRule")}
         {tool("❝ Citação", "Formatar como citação", "formatBlock", "blockquote")}
