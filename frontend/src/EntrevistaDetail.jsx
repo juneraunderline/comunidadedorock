@@ -71,9 +71,10 @@ function EntrevistaDetail() {
     if (requestedSlug === "hungrs") aliases.add("hngrs");
     if (requestedSlug === "hngrs") aliases.add("hungrs");
 
+    // Evita headers Cache-Control/Pragma que provocam preflight CORS.
+    // full=1 já retorna no-store e o parâmetro _ evita URL repetida.
     axios.get(`${API_URL}/api/interviews?full=1&_=${Date.now()}`, {
-      timeout: 20000,
-      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" }
+      timeout: 20000
     })
       .then(res => {
         if (!active) return;
