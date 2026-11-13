@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
 import Comentarios from "./Comentarios";
-import DOMPurify from "dompurify";
+import { sanitizeRichContent } from "./utils/richContent";
 
 function safeExternalUrl(value) {
   if (typeof value !== "string" || !value.trim()) return "";
@@ -204,7 +204,7 @@ function NewsDetail() {
               {post.link ? <>
                 <p>{getNewsSummary(post.content)}</p>
                 <p style={{ marginTop: "18px", color: "#888", fontSize: "14px" }}>Este conteúdo é um resumo publicado pela Comunidade do Rock. Para ler a matéria completa, acesse o site da fonte.</p>
-              </> : <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || "", { ADD_ATTR: ["target", "rel"] }) }} />}
+              </> : <div dangerouslySetInnerHTML={{ __html: sanitizeRichContent(post.content || "") }} />}
             </div>
             <div className="news-detail-actions">
               {safeExternalUrl(post.link) && <a href={safeExternalUrl(post.link)} target="_blank" rel="noopener noreferrer" className="btn btn-primary">Leia Mais no Site Original →</a>}
