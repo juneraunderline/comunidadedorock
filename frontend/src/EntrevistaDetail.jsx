@@ -10,6 +10,7 @@ function EntrevistaDetail() {
   const navigate = useNavigate();
   const [interview, setInterview] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const formatContent = (content) => {
     if (!content) return "";
@@ -53,16 +54,47 @@ function EntrevistaDetail() {
   };
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/interviews?full=1`, { headers: { "Cache-Control": "no-cache" } })
+    let active = true;
+    setLoading(true);
+    setLoadError(false);
+    setInterview(null);
+
+    const normalizeSlug = (value) => String(value || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\\u0300-\\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    const requestedSlug = normalizeSlug(id);
+    const aliases = new Set([requestedSlug]);
+    if (requestedSlug === "hungrs") aliases.add("hngrs");
+    if (requestedSlug === "hngrs") aliases.add("hungrs");
+
+    axios.get(`${API_URL}/api/interviews?full=1&_=${Date.now()}`, {
+      timeout: 20000,
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" }
+    })
       .then(res => {
-        const selectedInterview = res.data.find(i => i.slug === id || String(i.id) === id);
-        setInterview(selectedInterview);
-        setLoading(false);
+        if (!active) return;
+        const interviews = Array.isArray(res.data) ? res.data : [];
+        const selectedInterview = interviews.find(i =>
+          aliases.has(normalizeSlug(i.slug)) ||
+          aliases.has(normalizeSlug(i.artist)) ||
+          String(i.id) === id
+        );
+        setInterview(selectedInterview || null);
       })
       .catch(err => {
+        if (!active) return;
         console.error("Erro ao carregar entrevista:", err);
-        setLoading(false);
+        setLoadError(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
+
+    return () => { active = false; };
   }, [id]);
 
   if (loading) {
@@ -76,7 +108,8 @@ function EntrevistaDetail() {
   if (!interview) {
     return (
       <div style={{ padding: "40px", textAlign: "center", marginTop: "80px" }}>
-        <h2>Entrevista não encontrada</h2>
+        <h2>{loadError ? "Não foi possível carregar a entrevista" : "Entrevista não encontrada"}</h2>
+        {loadError && <p>O servidor não respondeu corretamente. Tente novamente em instantes.</p>}
         <button 
           className="btn btn-primary" 
           onClick={() => navigate("/entrevistas")}
