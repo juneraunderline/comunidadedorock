@@ -24,6 +24,7 @@ function SkeletonCard() { return (
 
 function News() {
   const [allPosts, setAllPosts] = useState([]);
+  const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [, setBrokenImages] = useState(new Set());
@@ -60,6 +61,13 @@ function News() {
     
     return `${day}/${month}/${year} às ${hours}:${mins}`;
   };
+
+  // Entrevistas publicadas também aparecem como cards na lista de notícias.
+  useEffect(() => {
+    axios.get(`${API_URL}/api/interviews?_=${Date.now()}`, { timeout: 15000 })
+      .then(res => setInterviews(Array.isArray(res.data) ? res.data : []))
+      .catch(err => console.error("Erro ao carregar entrevistas na lista de notícias:", err));
+  }, []);
 
   // Carregar fontes RSS para o filtro
   useEffect(() => {
@@ -119,7 +127,13 @@ function News() {
       .catch(err => console.error("Erro ao carregar mais posts:", err));
   };
 
-  const visiblePosts = allPosts;
+  const interviewItems = interviews.filter(item => {
+    if (sourceFilter && sourceFilter !== "__manual__") return false;
+    if (!search) return true;
+    const term = search.toLocaleLowerCase("pt-BR");
+    return (String(item.title || "") + " " + String(item.artist || "")).toLocaleLowerCase("pt-BR").includes(term);
+  }).map(item => ({ ...item, isInterview: true, source: "Entrevista: " + (item.artist || "Banda"), created_at: item.created_at || item.date || null }));
+  const visiblePosts = [...allPosts, ...interviewItems].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
   const hasManualPosts = true;
 
   const handleImageError = (id) => {
@@ -190,9 +204,9 @@ function News() {
             <>
               {visiblePosts.map((p, idx) => (
                 <div 
-                  key={p.id} 
+                  key={p.isInterview ? `interview-${p.id}` : `post-${p.id}`} 
                   className="card"
-                  onClick={() => navigate(`/noticias/${p.slug || p.id}`)}
+                  onClick={() => navigate(p.isInterview ? `/entrevistas/${p.slug || p.artist}` : `/noticias/${p.slug || p.id}`)}
                   style={{ 
                     cursor: "pointer",
                     animation: idx >= 8 ? `fadeInUp 0.5s ease-out ${(idx - 8) * 0.1}s both` : "none"
@@ -210,14 +224,17 @@ function News() {
                         Sem imagem
                       </div>
                     )}
-                    <div className="card-source">{p.source || "Comunidade do Rock"}</div>
+                    <div className="card-source">{p.isInterview ? "Entrevista: " + (p.artist || "Banda") : (p.source || "Comunidade do Rock")}</div>
                   </div>
                   <div className="card-content">
                     <small className="card-date">{formatDatePT(p.created_at)}</small>
-                    {p.source && <small className="card-source-label" style={{display: "block", color: "#999", fontSize: "12px", marginBottom: "8px"}}>Fonte: {p.source}</small>}
-                    {!p.source && <small className="card-source-label" style={{display: "block", color: "#e9b61e", fontSize: "12px", marginBottom: "8px"}}>📝 Publicação própria</small>}
+                    {p.isInterview
+                      ? <small className="card-source-label" style={{display: "block", color: "#e9b61e", fontSize: "12px", marginBottom: "8px"}}>🎙️ Entrevista: {p.artist || "Banda"}</small>
+                      : p.source
+                        ? <small className="card-source-label" style={{display: "block", color: "#999", fontSize: "12px", marginBottom: "8px"}}>Fonte: {p.source}</small>
+                        : <small className="card-source-label" style={{display: "block", color: "#e9b61e", fontSize: "12px", marginBottom: "8px"}}>📝 Publicação própria</small>}
                     <h3>{p.title}</h3>
-                    {safeExternalUrl(p.link) && (
+                    {!p.isInterview && safeExternalUrl(p.link) && (
                       <a
                         href={safeExternalUrl(p.link)}
                         target="_blank"
