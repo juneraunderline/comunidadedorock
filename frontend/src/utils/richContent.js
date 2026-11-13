@@ -80,7 +80,7 @@ export function buildEmbedHtml(input = "") {
   const host = url.hostname.toLowerCase().replace(/^www\./, "");
   let src = "";
 
-  if (host === "youtu.be" || host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com")) {
+  if (host === "youtu.be" || host === "youtube.com" || host.endsWith(".youtube.com") || host === "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com")) {
     let id = "";
     if (host === "youtu.be") id = url.pathname.split("/").filter(Boolean)[0] || "";
     else if (url.pathname === "/watch") id = url.searchParams.get("v") || "";
