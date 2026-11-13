@@ -2907,7 +2907,8 @@ app.get("/sitemap.xml", async (req, res) => {
 
   for (const post of posts) urls.push({ loc: base + "/noticias/" + post.id, lastmod: post.created_at });
   for (const band of bands) urls.push({ loc: base + "/bandas/" + band.id, lastmod: band.created_at });
-  for (const interview of interviews) urls.push({ loc: base + "/entrevistas/" + interview.id, lastmod: interview.created_at });
+  const interviewSlug = (artist, title) => [artist, title].filter(Boolean).join(" ").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9\\s-]/g, "").replace(/\\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").substring(0, 120);
+  for (const interview of interviews) urls.push({ loc: base + "/entrevistas/" + interviewSlug(interview.artist, interview.title), lastmod: interview.created_at });
   for (const event of events) urls.push({ loc: base + "/eventos/" + event.id, lastmod: event.created_at });
 
   const escapeXml = (value) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
