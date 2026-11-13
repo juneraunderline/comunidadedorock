@@ -2089,7 +2089,8 @@ app.get("/api/interviews", async (req, res) => {
     res.set("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=120");
     res.set("Vercel-CDN-Cache-Control", "max-age=30, stale-while-revalidate=120");
   }
-  res.json(interviews);
+  const mkInterviewSlug = (artist, title) => [artist, title].filter(Boolean).join(" ").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9\\s-]/g, "").replace(/\\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").substring(0, 120);
+  res.json(interviews.map(interview => ({ ...interview, slug: mkInterviewSlug(interview.artist, interview.title) })));
 });
 
 app.post("/api/interviews", async (req, res) => {
