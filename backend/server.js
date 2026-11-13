@@ -2491,9 +2491,20 @@ app.delete("/api/comments/:id", async (req, res) => {
 });
 
 // Feeds RSS
-app.get("/api/rss-feeds", (req, res) => {
-  res.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=900");
-  res.json(rssFeeds);
+app.get("/api/rss-feeds", async (req, res) => {
+  try {
+    // Vercel pode iniciar uma instância fria que ainda não executou loadFeeds().
+    // Leituras GET não passam pela inicialização do banco; por isso, consultar
+    // a tabela diretamente evita devolver uma lista vazia por estado de memória.
+    const feeds = await db.getAll("SELECT * FROM rss_feeds ORDER BY id ASC");
+    rssFeeds = feeds;
+    res.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+    return res.json(feeds);
+  } catch (err) {
+    console.error("Erro ao carregar portais RSS:", err.code || err.message);
+    res.set("Cache-Control", "no-store");
+    return res.status(503).json({ error: "Portais temporariamente indisponíveis" });
+  }
 });
 
 app.get("/api/rss-status", async (req, res) => {
