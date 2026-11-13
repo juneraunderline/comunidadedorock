@@ -55,7 +55,7 @@ function EntrevistaDetail() {
   useEffect(() => {
     axios.get(`${API_URL}/api/interviews`)
       .then(res => {
-        const selectedInterview = res.data.find(i => i.id === parseInt(id));
+        const selectedInterview = res.data.find(i => i.slug === id || String(i.id) === id);
         setInterview(selectedInterview);
         setLoading(false);
       })
