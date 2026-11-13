@@ -2414,3 +2414,51 @@ body {
     gap: 8px !important;
   }
 }
+
+/* Gerenciamento de entrevistas — visual refinado sem alterar a identidade do site. */
+.cdr-interviews-admin { max-width:1240px; margin:26px auto 42px; padding:clamp(18px,2.4vw,30px)!important; border:1px solid #292933!important; border-radius:18px!important; background:linear-gradient(145deg,#15151c 0%,#101015 72%)!important; box-shadow:0 18px 48px rgba(0,0,0,.28); }
+.cdr-interviews-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; margin:0 0 24px; padding:4px 2px 20px; border-bottom:1px solid #30303a; }
+.cdr-interviews-heading h2 { margin:4px 0 6px!important; text-align:left!important; text-transform:none; font-size:clamp(23px,2.4vw,30px); letter-spacing:-.5px; color:#fff; }
+.cdr-interviews-heading p { margin:0; color:#a5a5b1; font-size:13px; line-height:1.5; }
+.cdr-interviews-kicker { color:#e9b61e; font-size:10px; font-weight:900; letter-spacing:1.7px; }
+.cdr-interviews-count { flex:0 0 auto; padding:9px 13px; border:1px solid #51431c; border-radius:999px; background:#211d12; color:#f1c746; font-size:12px; font-weight:800; }
+.cdr-interviews-admin .admin-collapsible-form { margin:0 0 22px; overflow:hidden; border:1px solid #34343e; border-radius:15px; background:linear-gradient(145deg,#1a1a22,#121218); box-shadow:0 10px 26px rgba(0,0,0,.18); }
+.cdr-interviews-admin .admin-collapsible-toggle { min-height:58px; padding:15px 19px; border:0; background:transparent; color:#fff; font-size:15px; font-weight:800; letter-spacing:.1px; }
+.cdr-interviews-admin .admin-collapsible-toggle:hover { background:rgba(233,182,30,.06); }
+.cdr-interviews-admin .admin-collapsible-icon { display:grid; place-items:center; width:29px; height:29px; border:1px solid #65521d; border-radius:9px; color:#f3c52f; background:#272113; font-size:20px; }
+.cdr-interviews-admin .admin-collapsible-content { padding:22px; border-top:1px solid #30303a; }
+.cdr-interviews-admin .admin-collapsible-content h3 { margin:0 0 20px; color:#f4c32b; font-size:16px; }
+.cdr-interviews-admin .form-group { margin-bottom:19px; }
+.cdr-interviews-admin .form-group label { display:block; margin:0 0 8px; color:#d9d9e1; font-size:12px; font-weight:750; letter-spacing:.2px; }
+.cdr-interviews-admin .form-group input:not([type=file]),.cdr-interviews-admin .form-group input[type=date] { width:100%; min-height:44px; padding:11px 13px; border:1px solid #3a3a46; border-radius:9px; background:#0d0d13; color:#fff; transition:border-color .18s,box-shadow .18s; }
+.cdr-interviews-admin .form-group input:focus { outline:0; border-color:#d6a91e; box-shadow:0 0 0 3px rgba(233,182,30,.12); }
+.cdr-interview-editor { overflow:hidden; border:1px solid #3c3c49; border-radius:12px; background:#101016; box-shadow:inset 0 1px 0 rgba(255,255,255,.025); }
+.cdr-interview-editor > div:first-child { border:0!important; border-bottom:1px solid #383844!important; border-radius:0!important; box-shadow:none!important; }
+.cdr-interview-editable { min-height:320px; max-height:650px; overflow:auto; padding:20px 22px; color:#ededf2; background:linear-gradient(180deg,#15151d,#111117); font:15px/1.8 Inter,system-ui,sans-serif; white-space:normal; overflow-wrap:anywhere; outline:0; }
+.cdr-interview-editable:empty:before { content:attr(data-placeholder); color:#777783; pointer-events:none; }
+.cdr-interview-editable:focus { box-shadow:inset 0 0 0 1px rgba(233,182,30,.22); }
+.cdr-interview-editable h1,.cdr-interview-editable h2,.cdr-interview-editable h3 { color:#f1c12a; line-height:1.25; margin:1.2em 0 .55em; }
+.cdr-interview-editable p { margin:0 0 1em; }
+.cdr-interview-editable a { color:#f1c12a; text-decoration:underline; }
+.cdr-interview-editable blockquote { margin:1em 0; padding:12px 16px; border-left:3px solid #e9b61e; background:#1d1b16; color:#d7d3c8; }
+.cdr-interview-editable img { max-width:100%; height:auto; border-radius:8px; }
+.cdr-interview-editor-hint { padding:9px 13px; border-top:1px solid #2e2e38; color:#858591; background:#121218; font-size:11px; }
+.cdr-interviews-admin .form-actions { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:22px; }
+.cdr-interviews-admin .form-actions .btn { min-height:46px; border-radius:9px; font-weight:850; }
+.cdr-interviews-admin .btn-primary { box-shadow:0 7px 18px rgba(233,182,30,.13); }
+.cdr-interviews-admin .interviews-list { margin-top:26px; }
+.cdr-interviews-admin .interviews-list h3 { margin:0 0 15px; color:#fff; font-size:19px; }
+.cdr-interviews-admin .interviews-list .post-item { margin:0 0 11px; padding:13px; border:1px solid #30303c; border-radius:12px; background:linear-gradient(110deg,#191923,#14141b); transition:border-color .18s,transform .18s; }
+.cdr-interviews-admin .interviews-list .post-item:hover { border-color:#65521d; transform:translateY(-1px); }
+.cdr-interviews-admin .interviews-list .post-preview img { width:82px; height:82px; border-radius:9px; object-fit:cover; }
+.cdr-interviews-admin .interviews-list .post-info h4 { color:#fff; font-size:14px; }
+.cdr-interviews-admin .interviews-list .post-info p { color:#a5a5b2; font-size:12px; line-height:1.5; }
+@media(max-width:700px) {
+ .cdr-interviews-admin { margin:14px 0 28px; padding:15px!important; border-radius:13px!important; }
+ .cdr-interviews-heading { align-items:flex-start; flex-direction:column; gap:10px; margin-bottom:17px; }
+ .cdr-interviews-admin .admin-collapsible-content { padding:15px; }
+ .cdr-interview-editable { min-height:260px; padding:15px; font-size:14px; }
+ .cdr-interviews-admin .form-actions { grid-template-columns:1fr; }
+ .cdr-interviews-admin .interviews-list .post-item { align-items:flex-start; flex-direction:column; }
+ .cdr-interviews-admin .interviews-list .post-actions { width:100%; display:flex; flex-wrap:wrap; }
+}
