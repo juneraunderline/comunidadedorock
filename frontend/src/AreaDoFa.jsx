@@ -82,7 +82,7 @@ function AreaDoFa({ user }) {
       try {
         const normalizeBand = value => String(value || "")
           .normalize("NFD")
-          .replace(/[\\u0300-\\u036f]/g, "")
+          .replace(/[\u0300-\u036f]/g, "")
           .toLowerCase()
           .replace(/[^a-z0-9]/g, "");
         const favoriteNames = [...new Set(
@@ -166,7 +166,7 @@ function AreaDoFa({ user }) {
     if (!favorites.length || !interviews.length) return [];
     const normalize = value => {
       const normalized = String(value || "").normalize("NFD")
-        .replace(/[\\u0300-\\u036f]/g, "")
+        .replace(/[\u0300-\u036f]/g, "")
         .toLocaleLowerCase("pt-BR")
         .replace(/[^a-z0-9]/g, "");
       // HNG(R)S e HUNGRS são grafias usadas para a mesma banda.
