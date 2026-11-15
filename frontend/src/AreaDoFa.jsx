@@ -157,7 +157,7 @@ function AreaDoFa({ user }) {
     if (!favorites.length) return [];
     const normalize = value => {
       const normalized = String(value || "").normalize("NFD")
-        .replace(/[\\u0300-\\u036f]/g, "")
+        .replace(/[\u0300-\u036f]/g, "")
         .toLocaleLowerCase("pt-BR")
         .replace(/[^a-z0-9]/g, "");
       return normalized === "hngrs" ? "hungrs" : normalized;
