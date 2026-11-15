@@ -2282,6 +2282,26 @@ app.get("/api/fan/notifications", authenticate, async (req, res) => {
         [userId, `Lembrete de show: ${eventName}`, `${eventName} ${timing}. Confira os detalhes do evento.`, `/eventos/${event.id}`, `event-reminder:${event.id}:${event.date}`]);
     }
 
+    // Entrevistas de bandas favoritas também geram notificações, com chave única por entrevista.
+    const favoriteBands = await db.getAll(`SELECT b.name FROM fan_favorite_bands f JOIN bands b ON b.id = f.band_id WHERE f.user_id = $1 AND LENGTH(TRIM(b.name)) >= 2`, [userId]);
+    const normalizeBandName = value => {
+      const normalized = String(value || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]/g, "");
+      return normalized === "hngrs" ? "hungrs" : normalized;
+    };
+    const favoriteNames = favoriteBands.map(band => normalizeBandName(band.name)).filter(Boolean);
+    if (favoriteNames.length) {
+      const publishedInterviews = await db.getAll("SELECT id, title, artist FROM interviews ORDER BY id DESC");
+      for (const interview of publishedInterviews) {
+        const artist = normalizeBandName(interview.artist);
+        if (!artist || !favoriteNames.some(name => artist === name || artist.includes(name) || name.includes(artist))) continue;
+        const slug = artist === "hngrs" ? "hungrs" : String(interview.artist || "").trim().toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9\\s-]/g, "").replace(/\\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").substring(0, 120);
+        await db.run(`INSERT INTO fan_notifications (user_id, type, title, message, link, source_key)
+          VALUES ($1, 'interview', $2, $3, $4, $5)
+          ON CONFLICT (user_id, source_key) DO NOTHING`,
+          [userId, `Nova entrevista: ${interview.artist || "Banda favorita"}`, `Uma nova entrevista com ${interview.artist || "uma das suas bandas favoritas"} foi publicada: ${interview.title || "Confira a entrevista"}.`, `/entrevistas/${slug}`, `interview:${interview.id}`]);
+      }
+    }
+
     const notifications = await db.getAll("SELECT id, type, title, message, link, is_read, created_at FROM fan_notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30", [userId]);
     res.set("Cache-Control", "no-store");
     return res.json(notifications);
