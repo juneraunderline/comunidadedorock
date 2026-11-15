@@ -388,6 +388,8 @@ function FormatToolbar({ onFormat, onClearFormatting }) {
 
 export default function Admin({ user: currentUser, onLogout }) {
   const [posts, setPosts] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
   const [archivedPostsCount, setArchivedPostsCount] = useState(0);
   const [bands, setBands] = useState([]);
   const [pendingBands, setPendingBands] = useState([]);
@@ -483,6 +485,29 @@ export default function Admin({ user: currentUser, onLogout }) {
       console.error("Erro ao carregar status RSS:", err);
     } finally {
       setLoadingRssStatuses(false);
+    }
+  };
+
+  const fetchComments = async () => {
+    setLoadingComments(true);
+    try {
+      const response = await axios.get(`${API_URL}/api/comments`);
+      setComments(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Erro ao carregar comentários:", error);
+      alert(error.response?.data?.error || "Não foi possível carregar os comentários.");
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const deleteComment = async (comment) => {
+    if (!window.confirm(`Excluir permanentemente o comentário de ${comment.user_name || "usuário"}? Essa ação não pode ser desfeita.`)) return;
+    try {
+      await axios.delete(`${API_URL}/api/comments/${comment.id}`);
+      setComments(current => current.filter(item => Number(item.id) !== Number(comment.id)));
+    } catch (error) {
+      alert(error.response?.data?.error || "Não foi possível excluir o comentário.");
     }
   };
 
@@ -1243,6 +1268,7 @@ export default function Admin({ user: currentUser, onLogout }) {
           <button className={activeTab === "dashboard" ? "active" : ""} onClick={() => { setActiveTab("dashboard"); setMobileSidebarOpen(false); }}>▦ <span>Dashboard</span></button>
           {isAdmin && <button className={activeTab === "rss" ? "active" : ""} onClick={() => { setActiveTab("rss"); setMobileSidebarOpen(false); }}>◔ <span>RSS / Portais</span></button>}
           <button className={activeTab === "noticias" ? "active" : ""} onClick={() => { setActiveTab("noticias"); setMobileSidebarOpen(false); }}>▤ <span>Notícias</span></button>
+          {isAdmin && <button className={activeTab === "comentarios" ? "active" : ""} onClick={() => { setActiveTab("comentarios"); setMobileSidebarOpen(false); fetchComments(); }}>💬 <span>Comentários</span>{comments.length > 0 && <b>{comments.length}</b>}</button>
           {isAdmin && <button className={activeTab === "bandas" ? "active" : ""} onClick={() => { setActiveTab("bandas"); setMobileSidebarOpen(false); }}>♫ <span>Bandas</span></button>}
           {isAdmin && <button className={activeTab === "entrevistas" ? "active" : ""} onClick={() => { setActiveTab("entrevistas"); setMobileSidebarOpen(false); }}>♩ <span>Entrevistas</span></button>}
           <button className={activeTab === "eventos" ? "active" : ""} onClick={() => { setActiveTab("eventos"); setMobileSidebarOpen(false); }}>▦ <span>Eventos</span></button>
@@ -1283,6 +1309,42 @@ export default function Admin({ user: currentUser, onLogout }) {
         </section>
       )}
 
+
+      {activeTab === "comentarios" && isAdmin && (
+        <section className="admin-card" style={{ maxWidth: "1200px", margin: "0 auto", padding: "22px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "18px" }}>
+            <div>
+              <h2 style={{ margin: 0 }}>💬 MODERAÇÃO DE COMENTÁRIOS</h2>
+              <p style={{ color: "#999", margin: "7px 0 0", fontSize: "13px" }}>Acompanhe os comentários publicados nas notícias e remova conteúdo inadequado.</p>
+            </div>
+            <button type="button" className="btn btn-secondary" onClick={fetchComments} disabled={loadingComments}>{loadingComments ? "Atualizando..." : "↻ Atualizar"}</button>
+          </div>
+          <div style={{ color: "#e9b61e", fontSize: "13px", marginBottom: "14px" }}>{comments.length} comentário(s) carregado(s) · exibindo os 500 mais recentes</div>
+          {loadingComments && comments.length === 0 ? (
+            <p style={{ color: "#aaa" }}>Carregando comentários...</p>
+          ) : comments.length === 0 ? (
+            <p style={{ color: "#888", padding: "24px 0", textAlign: "center" }}>Nenhum comentário publicado ainda.</p>
+          ) : (
+            <div style={{ display: "grid", gap: "12px" }}>
+              {comments.map(comment => (
+                <article key={comment.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: "12px", padding: "15px", background: "#121212", border: "1px solid #303030", borderRadius: "9px" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                      <strong style={{ color: "#f0bd22", fontSize: "14px" }}>{comment.user_name || "Usuário"}</strong>
+                      <small style={{ color: "#888" }}>{comment.created_at ? new Date(comment.created_at).toLocaleString("pt-BR") : "Data desconhecida"}</small>
+                      <span style={{ color: "#888", fontSize: "11px", padding: "3px 7px", border: "1px solid #444", borderRadius: "20px" }}>{comment.page_type || "conteúdo"} · #{comment.page_id}</span>
+                    </div>
+                    <p style={{ color: "#eee", margin: "0 0 8px", whiteSpace: "pre-wrap", overflowWrap: "anywhere", lineHeight: 1.5 }}>{comment.content}</p>
+                    <small style={{ color: "#999" }}>Em: {comment.post_title || (comment.page_type === "fan-area" ? "Área do Fã" : `Conteúdo #${comment.page_id}`)}</small>
+                    {comment.post_title && <div><a href={`/noticias/${comment.post_slug || ""}`} onClick={e => { if (!comment.post_slug) { e.preventDefault(); setActiveTab("noticias"); } }} style={{ color: "#e9b61e", fontSize: "12px" }}>Notícia relacionada</a></div>}
+                  </div>
+                  <button type="button" className="btn btn-outline" onClick={() => deleteComment(comment)} style={{ alignSelf: "start", color: "#ff8b8b", borderColor: "#713b3b", whiteSpace: "nowrap" }}>🗑 Excluir</button>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {activeTab === "rss" && (
       <section className="admin-card">
