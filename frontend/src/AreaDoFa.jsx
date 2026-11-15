@@ -266,17 +266,29 @@ function AreaDoFa({ user }) {
           ) : personalizedInterviews.length === 0 ? (
             <div style={panelStyle}>Ainda não há entrevistas publicadas com suas bandas favoritas. Quando uma entrevista correspondente for publicada, ela aparecerá aqui.</div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: "12px" }}>
+            <div className="grid grid-4">
               {personalizedInterviews.map(interview => (
-                <Link key={interview.id} to={`/entrevistas/${interview.slug || interview.id}`} style={{ ...panelStyle, display: "flex", flexDirection: "column", gap: "8px", color: "inherit", textDecoration: "none" }}>
-                  {interview.image && <img src={getImageUrl(interview.image)} alt="" loading="lazy" style={{ width: "100%", height: "150px", objectFit: "cover", borderRadius: "7px" }} /> }
-                  <span style={{ color: "#e9b61e", fontSize: "12px", fontWeight: 800 }}>ENTREVISTA · {interview.artist}</span>
-                  <h3 style={{ fontSize: "17px", lineHeight: 1.4, margin: 0 }}>{interview.title}</h3>
-                  {interview.summary && <p style={{ color: "#aaa", fontSize: "13px", lineHeight: 1.6, margin: 0 }}>{String(interview.summary).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 180)}</p>}
-                  <span style={{ color: "#e9b61e", fontWeight: 700, fontSize: "13px", marginTop: "auto" }}>Ler entrevista →</span>
+                <Link
+                  key={interview.id}
+                  to={`/entrevistas/${interview.slug || interview.id}`}
+                  className="card"
+                  style={{ cursor: "pointer", color: "inherit", textDecoration: "none" }}
+                >
+                  <div className="card-image">
+                    <img
+                      src={getImageUrl(interview.image) || "https://images.unsplash.com/photo-1516450360452-9312f5ff84d4?w=300&h=300&fit=crop"}
+                      alt={interview.title}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="card-content">
+                    <h3>{interview.title}</h3>
+                    <p><strong>{interview.artist}</strong></p>
+                    <p>{interview.summary ? String(interview.summary).replace(/<[^>]+>/g, "").substring(0, 80) : "Sem descrição"}...</p>
+                    <small>Publicado em {interview.date || (interview.created_at ? new Date(interview.created_at).toLocaleDateString("pt-BR") : "Data não informada")}</small>
+                  </div>
                 </Link>
               ))}
-            </div>
           )}
         </section>
 
