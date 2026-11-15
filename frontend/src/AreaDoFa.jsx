@@ -144,22 +144,12 @@ function AreaDoFa({ user }) {
   const favoriteIds = useMemo(() => new Set(favorites.map(item => Number(item.id))), [favorites]);
   const watchlistIds = useMemo(() => new Set(watchlist.map(item => Number(item.id))), [watchlist]);
   const personalizedPosts = useMemo(() => {
+    // A API já faz a busca por cada banda no título e no conteúdo integral
+    // (ILIKE no PostgreSQL). Não filtrar novamente pelo resumo: ele é truncado
+    // em 500 caracteres e pode não conter a menção que fez a busca encontrar
+    // a notícia.
     if (!favorites.length) return [];
-    const normalize = value => String(value || "")
-      .normalize("NFD")
-      .replace(/[\\u0300-\\u036f]/g, "")
-      .toLocaleLowerCase("pt-BR")
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
-    const favoriteNames = favorites.map(band => normalize(band.name)).filter(name => name.length >= 2);
-    if (!favoriteNames.length) return [];
-    return posts.filter(post => {
-      // /api/posts retorna "summary" (não "content") nas listagens resumidas.
-      // Incluir esse campo evita descartar notícias encontradas pelo backend
-      // cuja menção à banda aparece no corpo do texto.
-      const haystack = normalize([post.title, post.summary, post.content, post.source].join(" "));
-      return favoriteNames.some(name => haystack.includes(name));
-    }).slice(0, 12);
+    return posts.slice(0, 12);
   }, [favorites, posts]);
 
   const personalizedInterviews = useMemo(() => {
