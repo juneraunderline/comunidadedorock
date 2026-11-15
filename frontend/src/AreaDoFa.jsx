@@ -40,6 +40,7 @@ function AreaDoFa({ user }) {
   const [bands, setBands] = useState([]);
   const [events, setEvents] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [interviews, setInterviews] = useState([]);
   const [voteData, setVoteData] = useState({ bands: [], voted_band_id: null, week_start: null });
   const [notifications, setNotifications] = useState([]);
   const [comments, setComments] = useState([]);
@@ -82,6 +83,13 @@ function AreaDoFa({ user }) {
       } catch {
         setPosts([]);
       }
+      // Entrevistas publicadas também fazem parte do feed personalizado.
+      try {
+        const interviewResponse = await axios.get(`${API_URL}/api/interviews`, { params: { limit: 50 }, timeout: 15000 });
+        setInterviews(Array.isArray(interviewResponse.data) ? interviewResponse.data : []);
+      } catch {
+        setInterviews([]);
+      }
       // Recursos da segunda fase são independentes: falhas não bloqueiam a Área do Fã.
       const [voteResult, notificationResult, commentResult] = await Promise.allSettled([
         axios.get(`${API_URL}/api/fan/vote`, { headers: headers(), timeout: 15000 }),
@@ -121,6 +129,16 @@ function AreaDoFa({ user }) {
       return favoriteNames.some(name => haystack.includes(name.toLocaleLowerCase("pt-BR")));
     }).slice(0, 12);
   }, [favorites, posts]);
+
+  const personalizedInterviews = useMemo(() => {
+    if (!favorites.length || !interviews.length) return [];
+    const normalize = value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, " ").trim();
+    const favoriteNames = favorites.map(band => normalize(band.name)).filter(name => name.length >= 2);
+    return interviews.filter(interview => {
+      const artist = normalize(interview.artist);
+      return artist && favoriteNames.some(name => artist === name || artist.includes(name) || name.includes(artist));
+    }).slice(0, 12);
+  }, [favorites, interviews]);
 
   const matchingBands = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("pt-BR");
@@ -239,6 +257,28 @@ function AreaDoFa({ user }) {
           )}
         </section>
 
+
+        <section className="fan-area-section-card" style={{ marginBottom: "32px" }} aria-labelledby="entrevistas-bandas-title">
+          <h2 id="entrevistas-bandas-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>🎙️ Entrevistas das suas bandas</h2>
+          <p style={{ color: "#aaa", lineHeight: 1.6, margin: "0 0 14px" }}>Entrevistas publicadas no Comunidade do Rock com as bandas que você favoritou.</p>
+          {favorites.length === 0 ? (
+            <div style={panelStyle}>Favorite bandas para acompanhar entrevistas relacionadas a elas.</div>
+          ) : personalizedInterviews.length === 0 ? (
+            <div style={panelStyle}>Ainda não há entrevistas publicadas com suas bandas favoritas. Quando uma entrevista correspondente for publicada, ela aparecerá aqui.</div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: "12px" }}>
+              {personalizedInterviews.map(interview => (
+                <Link key={interview.id} to={`/entrevistas/${interview.slug || interview.id}`} style={{ ...panelStyle, display: "flex", flexDirection: "column", gap: "8px", color: "inherit", textDecoration: "none" }}>
+                  {interview.image && <img src={getImageUrl(interview.image)} alt="" loading="lazy" style={{ width: "100%", height: "150px", objectFit: "cover", borderRadius: "7px" }} /> }
+                  <span style={{ color: "#e9b61e", fontSize: "12px", fontWeight: 800 }}>ENTREVISTA · {interview.artist}</span>
+                  <h3 style={{ fontSize: "17px", lineHeight: 1.4, margin: 0 }}>{interview.title}</h3>
+                  {interview.summary && <p style={{ color: "#aaa", fontSize: "13px", lineHeight: 1.6, margin: 0 }}>{String(interview.summary).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 180)}</p>}
+                  <span style={{ color: "#e9b61e", fontWeight: 700, fontSize: "13px", marginTop: "auto" }}>Ler entrevista →</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section className="fan-area-section-card" style={{ marginBottom: "32px" }} aria-labelledby="votacao-fas-title">
           <h2 id="votacao-fas-title" style={{ margin: "0 0 8px", fontSize: "22px" }}>🏆 Votação da Banda da Semana</h2>
