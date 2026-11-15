@@ -76,10 +76,33 @@ function AreaDoFa({ user }) {
       setWatchlist(Array.isArray(personal.data.watchlist) ? personal.data.watchlist : []);
       setBands(Array.isArray(bandResponse.data) ? bandResponse.data : []);
       setEvents(Array.isArray(eventResponse.data) ? eventResponse.data : []);
-      // O feed é complementar: falha nele não impede favoritos e eventos.
+      // Busca notícias e cards de entrevistas publicados no feed de Notícias
+      // usando cada banda favorita. A busca paginada evita perder publicações
+      // que não estejam entre as 100 mais recentes.
       try {
-        const postResponse = await axios.get(`${API_URL}/api/posts`, { params: { limit: 100, offset: 0 }, timeout: 15000 });
-        setPosts(Array.isArray(postResponse.data) ? postResponse.data : []);
+        const favoriteNames = [...new Set(
+          (Array.isArray(personal.data.favorites) ? personal.data.favorites : [])
+            .map(band => String(band.name || "").trim())
+            .filter(name => name.length >= 2)
+        )];
+        const foundPosts = new Map();
+        for (let index = 0; index < favoriteNames.length; index += 3) {
+          const batch = favoriteNames.slice(index, index + 3);
+          const results = await Promise.allSettled(batch.map(name =>
+            axios.get(`${API_URL}/api/posts`, {
+              params: { search: name, limit: 30, offset: 0 },
+              timeout: 15000
+            })
+          ));
+          results.forEach(result => {
+            if (result.status === "fulfilled" && Array.isArray(result.value.data)) {
+              result.value.data.forEach(post => foundPosts.set(String(post.id), post));
+            }
+          });
+        }
+        setPosts([...foundPosts.values()].sort((a, b) =>
+          new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+        ).slice(0, 60));
       } catch {
         setPosts([]);
       }
