@@ -145,11 +145,20 @@ function AreaDoFa({ user }) {
   const watchlistIds = useMemo(() => new Set(watchlist.map(item => Number(item.id))), [watchlist]);
   const personalizedPosts = useMemo(() => {
     if (!favorites.length) return [];
-    const favoriteNames = favorites.map(band => String(band.name || "").trim()).filter(name => name.length >= 2);
+    const normalize = value => String(value || "")
+      .normalize("NFD")
+      .replace(/[\\u0300-\\u036f]/g, "")
+      .toLocaleLowerCase("pt-BR")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+    const favoriteNames = favorites.map(band => normalize(band.name)).filter(name => name.length >= 2);
     if (!favoriteNames.length) return [];
     return posts.filter(post => {
-      const haystack = [post.title, post.content, post.source].map(value => String(value || "")).join(" ").toLocaleLowerCase("pt-BR");
-      return favoriteNames.some(name => haystack.includes(name.toLocaleLowerCase("pt-BR")));
+      // /api/posts retorna "summary" (não "content") nas listagens resumidas.
+      // Incluir esse campo evita descartar notícias encontradas pelo backend
+      // cuja menção à banda aparece no corpo do texto.
+      const haystack = normalize([post.title, post.summary, post.content, post.source].join(" "));
+      return favoriteNames.some(name => haystack.includes(name));
     }).slice(0, 12);
   }, [favorites, posts]);
 
