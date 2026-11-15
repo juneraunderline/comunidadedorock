@@ -2444,6 +2444,23 @@ app.delete("/api/events/:id", async (req, res) => {
 });
 
 // Comentários
+// Listagem administrativa: a rota exata /api/comments não é pública e passa pelo middleware de admin.
+app.get("/api/comments", async (req, res) => {
+  try {
+    const comments = await db.getAll(
+      `SELECT c.*, p.title AS post_title
+       FROM comments c
+       LEFT JOIN posts p ON p.id = c.page_id AND c.page_type IN ('post', 'posts')
+       ORDER BY c.created_at DESC, c.id DESC
+       LIMIT 500`
+    );
+    res.set("Cache-Control", "no-store");
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ error: "Não foi possível carregar os comentários" });
+  }
+});
+
 app.get("/api/comments/:pageType/:pageId", async (req, res) => {
   try {
     const { pageType, pageId } = req.params;
