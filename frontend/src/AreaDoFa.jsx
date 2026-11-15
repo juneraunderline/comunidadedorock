@@ -154,7 +154,16 @@ function AreaDoFa({ user }) {
 
   const personalizedInterviews = useMemo(() => {
     if (!favorites.length || !interviews.length) return [];
-    const normalize = value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, " ").trim();
+    const normalize = value => {
+      const normalized = String(value || "").normalize("NFD")
+        .replace(/[\\u0300-\\u036f]/g, "")
+        .toLocaleLowerCase("pt-BR")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+      // O cadastro legado usa HNG(R)S; nos favoritos e no slug público,
+      // a mesma banda é identificada como HUNGRS.
+      return normalized === "hng rs" || normalized === "hngrs" ? "hungrs" : normalized;
+    };
     const favoriteNames = favorites.map(band => normalize(band.name)).filter(name => name.length >= 2);
     return interviews.filter(interview => {
       const artist = normalize(interview.artist);
