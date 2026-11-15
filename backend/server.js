@@ -2285,7 +2285,7 @@ app.get("/api/fan/notifications", authenticate, async (req, res) => {
     // Entrevistas de bandas favoritas também geram notificações, com chave única por entrevista.
     const favoriteBands = await db.getAll(`SELECT b.name FROM fan_favorite_bands f JOIN bands b ON b.id = f.band_id WHERE f.user_id = $1 AND LENGTH(TRIM(b.name)) >= 2`, [userId]);
     const normalizeBandName = value => {
-      const normalized = String(value || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]/g, "");
+      const normalized = String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]/g, "");
       return normalized === "hngrs" ? "hungrs" : normalized;
     };
     const favoriteNames = favoriteBands.map(band => normalizeBandName(band.name)).filter(Boolean);
@@ -2294,7 +2294,8 @@ app.get("/api/fan/notifications", authenticate, async (req, res) => {
       for (const interview of publishedInterviews) {
         const artist = normalizeBandName(interview.artist);
         if (!artist || !favoriteNames.some(name => artist === name || artist.includes(name) || name.includes(artist))) continue;
-        const slug = artist === "hngrs" ? "hungrs" : String(interview.artist || "").trim().toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9\\s-]/g, "").replace(/\\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").substring(0, 120);
+        const rawSlug = String(interview.artist || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").substring(0, 120);
+        const slug = rawSlug === "hngrs" ? "hungrs" : rawSlug;
         await db.run(`INSERT INTO fan_notifications (user_id, type, title, message, link, source_key)
           VALUES ($1, 'interview', $2, $3, $4, $5)
           ON CONFLICT (user_id, source_key) DO NOTHING`,
