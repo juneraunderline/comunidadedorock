@@ -295,19 +295,31 @@ function AreaDoFa({ user }) {
           ) : personalizedPosts.length === 0 ? (
             <div style={panelStyle}><p style={{ margin: 0, color: "#bbb" }}>Ainda não encontramos notícias recentes que mencionem suas bandas favoritas. Quando uma notícia ou entrevista sobre uma delas for publicada, ela aparecerá aqui.</p><Link to="/noticias" style={{ color: "#e9b61e", display: "inline-block", marginTop: "10px" }}>Ver todas as notícias →</Link></div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: "12px" }}>
+            <div className="grid grid-4">
               {personalizedPosts.map((post, index) => {
                 const url = safePostUrl(post.link);
                 const excerpt = String(post.content || post.summary || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/gi, " ").replace(/\\s+/g, " ").trim();
                 const interviewPath = post.isInterview ? `/entrevistas/${post.slug || post.id}` : "";
-                return <article key={post.isInterview ? `interview-${post.id}` : `post-${post.id || index}`} style={{ ...panelStyle, display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {post.image && <img src={getImageUrl(post.image)} alt="" loading="lazy" style={{ width: "100%", height: "150px", objectFit: "cover", borderRadius: "7px" }} />}
-                  <p style={{ color: "#e9b61e", fontSize: "12px", fontWeight: 800, margin: 0 }}>{post.isInterview ? post.source : (post.source || "Comunidade do Rock")}</p>
-                  <h3 style={{ fontSize: "17px", lineHeight: 1.4, margin: 0 }}>{post.title || "Notícia"}</h3>
-                  {excerpt && <p style={{ color: "#aaa", fontSize: "13px", lineHeight: 1.6, margin: 0 }}>{excerpt.slice(0, 180)}{excerpt.length > 180 ? "…" : ""}</p>}
-                  {post.isInterview
-                    ? <Link to={interviewPath} style={{ color: "#e9b61e", fontWeight: 700, fontSize: "13px", marginTop: "auto" }}>Ler entrevista →</Link>
-                    : url ? <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: "#e9b61e", fontWeight: 700, fontSize: "13px", marginTop: "auto" }}>Ler no portal original ↗</a> : <span style={{ color: "#777", fontSize: "12px" }}>Link original indisponível</span>}
+                return <article
+                  key={post.isInterview ? `interview-${post.id}` : `post-${post.id || index}`}
+                  className="card"
+                  onClick={() => post.isInterview && navigate(interviewPath)}
+                  style={{ cursor: post.isInterview ? "pointer" : "default" }}
+                >
+                  <div className="card-image">
+                    {post.image
+                      ? <img src={getImageUrl(post.image)} alt={post.title || ""} loading="lazy" />
+                      : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", color: "#999" }}>Sem imagem</div>}
+                    <div className="card-source">{post.isInterview ? post.source : (post.source || "Comunidade do Rock")}</div>
+                  </div>
+                  <div className="card-content">
+                    <small className="card-date">{post.created_at ? new Date(post.created_at).toLocaleDateString("pt-BR") : "Data desconhecida"}</small>
+                    <h3>{post.title || "Notícia"}</h3>
+                    {excerpt && <p>{excerpt.slice(0, 100)}{excerpt.length > 100 ? "…" : ""}</p>}
+                    {post.isInterview
+                      ? <Link to={interviewPath} onClick={event => event.stopPropagation()} style={{ color: "#e9b61e", fontWeight: 700, fontSize: "13px" }}>Ler entrevista →</Link>
+                      : url ? <a href={url} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()} style={{ color: "#e9b61e", fontWeight: 700, fontSize: "13px" }}>Leia mais ↗</a> : null}
+                  </div>
                 </article>;
               })}
             </div>
