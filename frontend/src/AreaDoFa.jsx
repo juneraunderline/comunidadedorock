@@ -289,6 +289,7 @@ function AreaDoFa({ user }) {
                   </div>
                 </Link>
               ))}
+            </div>
           )}
         </section>
 
