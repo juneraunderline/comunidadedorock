@@ -80,10 +80,20 @@ function AreaDoFa({ user }) {
       // usando cada banda favorita. A busca paginada evita perder publicações
       // que não estejam entre as 100 mais recentes.
       try {
+        const normalizeBand = value => String(value || "")
+          .normalize("NFD")
+          .replace(/[\\u0300-\\u036f]/g, "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
         const favoriteNames = [...new Set(
           (Array.isArray(personal.data.favorites) ? personal.data.favorites : [])
-            .map(band => String(band.name || "").trim())
-            .filter(name => name.length >= 2)
+            .flatMap(band => {
+              const name = String(band.name || "").trim();
+              if (normalizeBand(name) === "hungrs" || normalizeBand(name) === "hngrs") {
+                return ["HUNGRS", "HNG(R)S", "HNGRS"];
+              }
+              return name.length >= 2 ? [name] : [];
+            })
         )];
         const foundPosts = new Map();
         for (let index = 0; index < favoriteNames.length; index += 3) {
@@ -158,11 +168,9 @@ function AreaDoFa({ user }) {
       const normalized = String(value || "").normalize("NFD")
         .replace(/[\\u0300-\\u036f]/g, "")
         .toLocaleLowerCase("pt-BR")
-        .replace(/[^a-z0-9]+/g, " ")
-        .trim();
-      // O cadastro legado usa HNG(R)S; nos favoritos e no slug público,
-      // a mesma banda é identificada como HUNGRS.
-      return normalized === "hng rs" || normalized === "hngrs" ? "hungrs" : normalized;
+        .replace(/[^a-z0-9]/g, "");
+      // HNG(R)S e HUNGRS são grafias usadas para a mesma banda.
+      return normalized === "hngrs" ? "hungrs" : normalized;
     };
     const favoriteNames = favorites.map(band => normalize(band.name)).filter(name => name.length >= 2);
     return interviews.filter(interview => {
