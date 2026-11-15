@@ -384,7 +384,7 @@ function AreaDoFa({ user }) {
             <div style={{ display: "grid", gap: "10px" }}>
               {notifications.map(item => {
                 const link = safeNotificationLink(item.link);
-                const linkLabel = item.type === "news" ? "Abrir notícia ↗" : item.type === "event" ? "Ver evento ↗" : "Participar ↗";
+                const linkLabel = item.type === "news" ? "Abrir notícia ↗" : item.type === "interview" ? "Ler entrevista ↗" : item.type === "event" ? "Ver evento ↗" : "Participar ↗";
                 return <article key={item.id} style={{ ...panelStyle, borderColor: item.is_read ? "#292936" : "#8d741b" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                     <div><h3 style={{ margin: "0 0 5px", fontSize: "16px" }}>{item.title}</h3><p style={{ color: "#aaa", margin: 0, lineHeight: 1.5 }}>{item.message}</p></div>
