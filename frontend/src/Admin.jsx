@@ -1336,7 +1336,7 @@ export default function Admin({ user: currentUser, onLogout }) {
                     </div>
                     <p style={{ color: "#eee", margin: "0 0 8px", whiteSpace: "pre-wrap", overflowWrap: "anywhere", lineHeight: 1.5 }}>{comment.content}</p>
                     <small style={{ color: "#999" }}>Em: {comment.post_title || (comment.page_type === "fan-area" ? "Área do Fã" : `Conteúdo #${comment.page_id}`)}</small>
-                    {comment.post_title && <div><a href={`/noticias/${comment.post_slug || ""}`} onClick={e => { if (!comment.post_slug) { e.preventDefault(); setActiveTab("noticias"); } }} style={{ color: "#e9b61e", fontSize: "12px" }}>Notícia relacionada</a></div>}
+                    {comment.post_title && <div style={{ color: "#e9b61e", fontSize: "12px" }}>Notícia: {comment.post_title}</div>}
                   </div>
                   <button type="button" className="btn btn-outline" onClick={() => deleteComment(comment)} style={{ alignSelf: "start", color: "#ff8b8b", borderColor: "#713b3b", whiteSpace: "nowrap" }}>🗑 Excluir</button>
                 </article>
