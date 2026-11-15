@@ -1268,7 +1268,7 @@ export default function Admin({ user: currentUser, onLogout }) {
           <button className={activeTab === "dashboard" ? "active" : ""} onClick={() => { setActiveTab("dashboard"); setMobileSidebarOpen(false); }}>▦ <span>Dashboard</span></button>
           {isAdmin && <button className={activeTab === "rss" ? "active" : ""} onClick={() => { setActiveTab("rss"); setMobileSidebarOpen(false); }}>◔ <span>RSS / Portais</span></button>}
           <button className={activeTab === "noticias" ? "active" : ""} onClick={() => { setActiveTab("noticias"); setMobileSidebarOpen(false); }}>▤ <span>Notícias</span></button>
-          {isAdmin && <button className={activeTab === "comentarios" ? "active" : ""} onClick={() => { setActiveTab("comentarios"); setMobileSidebarOpen(false); fetchComments(); }}>💬 <span>Comentários</span>{comments.length > 0 && <b>{comments.length}</b>}</button>
+          {isAdmin && <button className={activeTab === "comentarios" ? "active" : ""} onClick={() => { setActiveTab("comentarios"); setMobileSidebarOpen(false); fetchComments(); }}>💬 <span>Comentários</span>{comments.length > 0 && <b>{comments.length}</b>}</button>}
           {isAdmin && <button className={activeTab === "bandas" ? "active" : ""} onClick={() => { setActiveTab("bandas"); setMobileSidebarOpen(false); }}>♫ <span>Bandas</span></button>}
           {isAdmin && <button className={activeTab === "entrevistas" ? "active" : ""} onClick={() => { setActiveTab("entrevistas"); setMobileSidebarOpen(false); }}>♩ <span>Entrevistas</span></button>}
           <button className={activeTab === "eventos" ? "active" : ""} onClick={() => { setActiveTab("eventos"); setMobileSidebarOpen(false); }}>▦ <span>Eventos</span></button>
