@@ -708,6 +708,12 @@ body {
   box-shadow: 0 4px 12px rgba(233, 182, 30, 0.3) !important;
 }
 
+.btn-event-free {
+  background: #e9b61e !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+}
+
 .btn-buy-tickets:hover:not(:disabled) {
   background: linear-gradient(135deg, #f5c007 0%, #e9b61e 100%) !important;
   box-shadow: 0 8px 20px rgba(233, 182, 30, 0.5) !important;
