@@ -2474,7 +2474,7 @@ app.post("/api/event-instagram-import", async (req, res) => {
     if (imageUrl) {
       try {
         const imageHost = new URL(imageUrl).hostname.toLowerCase();
-        if (imageHost.endsWith("cdninstagram.com") || imageHost.endsWith("fbcdn.net")) {
+        if (new URL(imageUrl).protocol === "https:" && (imageHost === "cdninstagram.com" || imageHost.endsWith(".cdninstagram.com") || imageHost === "fbcdn.net" || imageHost.endsWith(".fbcdn.net"))) {
           const uploaded = await cloudinary.uploader.upload(imageUrl, { folder: "comunidadedorock/eventos", resource_type: "image" });
           importedImage = uploaded.secure_url || imageUrl;
         }
