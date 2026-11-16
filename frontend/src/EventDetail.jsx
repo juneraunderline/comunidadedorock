@@ -61,7 +61,7 @@ function EventDetail() {
       <div className="section-header">
         <h2>{event.title}</h2>
       </div>
-      <div className="event-card" style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
+      <div className="event-card event-detail-card" style={{ maxWidth: '900px', width: '100%', height: 'auto', minHeight: 0, overflow: 'visible', margin: '0 auto', padding: '20px' }}>
         {event.image && (
           <div style={{ width: '100%', maxWidth: '760px', margin: '0 auto 20px', borderRadius: '8px', background: '#0b0b0f', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <img
@@ -79,7 +79,11 @@ function EventDetail() {
           {event.city && event.state && <p style={{ color: '#fff', marginBottom: '8px' }}>Cidade: {event.city} - {event.state}</p>}
           {event.artist && <p style={{ color: '#fff', marginBottom: '8px' }}>Bandas / artistas: <strong style={{ whiteSpace: 'pre-line' }}>{event.artist}</strong></p>}
           {event.ticket_location && <p style={{ color: '#fff', marginBottom: '12px' }}>Ponto físico de venda: <strong>{event.ticket_location}</strong></p>}
-          {event.description && <p style={{ color: '#ccc', marginBottom: '16px', whiteSpace: 'pre-line' }}>{event.description}</p>}
+          {event.description && (
+            <div className="event-description-full" style={{ color: '#ccc', marginBottom: '16px', whiteSpace: 'pre-wrap', overflow: 'visible', overflowWrap: 'anywhere', wordBreak: 'normal', maxHeight: 'none', height: 'auto', lineHeight: 1.7 }}>
+              {event.description}
+            </div>
+          )}
           {safeExternalUrl(event.ticket_link) ? (
             <a href={safeExternalUrl(event.ticket_link)} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
               Comprar ingresso online
