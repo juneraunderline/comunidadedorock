@@ -86,7 +86,6 @@ app.use("/api/upload-image", uploadLimiter);
 app.use("/api/event-upload-image", uploadLimiter);
 app.use("/api/comments", interactionLimiter);
 app.use("/api/event-submissions", interactionLimiter);
-app.use("/api/event-instagram-import", interactionLimiter);
 app.use("/api/bands/submit", bandSubmissionLimiter);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "1mb", extended: true }));
@@ -1269,9 +1268,6 @@ app.use("/api", async (req, res, next) => {
   if (method === "POST" && path === "/event-submissions") {
     return authenticate(req, res, next);
   }
-  if (method === "POST" && path === "/event-instagram-import") {
-    return authenticate(req, res, next);
-  }
   if (method === "POST" && path === "/event-upload-image") {
     return authenticate(req, res, next);
   }
@@ -2407,103 +2403,6 @@ app.delete("/api/fan/events/:id", authenticate, async (req, res) => {
   } catch (err) {
     console.error("Erro ao remover evento salvo:", err.code || "DB_ERROR");
     return res.status(500).json({ error: "Não foi possível remover este evento." });
-  }
-});
-
-// Importa dados básicos de uma publicação pública do Instagram para o formulário de eventos.
-// O Instagram pode bloquear consultas automatizadas; nesse caso, a API informa como continuar manualmente.
-app.post("/api/event-instagram-import", async (req, res) => {
-  try {
-    const rawUrl = String(req.body?.url || "").trim();
-    let postUrl;
-    try { postUrl = new URL(rawUrl); } catch { return res.status(400).json({ error: "Cole um link válido de uma publicação do Instagram." }); }
-    if (!["instagram.com", "www.instagram.com"].includes(postUrl.hostname.toLowerCase()) ||
-        !/^\/(p|reel|tv)\/[A-Za-z0-9_-]+\/?$/.test(postUrl.pathname)) {
-      return res.status(400).json({ error: "Use o link de uma publicação, Reel ou vídeo público do Instagram." });
-    }
-    postUrl.search = "";
-    postUrl.hash = "";
-    const response = await fetchFunc(postUrl.toString(), {
-      method: "GET",
-      redirect: "follow",
-      signal: AbortSignal.timeout(12000),
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
-      }
-    });
-    const finalUrl = new URL(response.url || postUrl.toString());
-    if (!["instagram.com", "www.instagram.com"].includes(finalUrl.hostname.toLowerCase())) {
-      return res.status(422).json({ error: "O Instagram redirecionou a consulta. Tente enviar o cartaz manualmente." });
-    }
-    if (!response.ok) return res.status(422).json({ error: "O Instagram não liberou essa publicação para leitura automática. Você ainda pode enviar o cartaz e colar a legenda manualmente." });
-    const html = (await response.text()).slice(0, 5 * 1024 * 1024);
-    const getMeta = (key) => {
-      const tags = html.match(/<meta\b[^>]*>/gi) || [];
-      for (const tag of tags) {
-        const attrs = {};
-        const attrPattern = /([\w:-]+)\s*=\s*(["'])(.*?)\2/gs;
-        let attr;
-        while ((attr = attrPattern.exec(tag))) attrs[attr[1].toLowerCase()] = attr[3];
-        if ((attrs.property || attrs.name || "").toLowerCase() === key.toLowerCase() && attrs.content) return attrs.content;
-      }
-      return "";
-    };
-    const decode = (value) => String(value || "")
-      .replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
-      .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
-      .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)));
-    let caption = decode(getMeta("og:description") || getMeta("description"));
-    caption = caption.replace(/^\s*\d+\s+likes?,\s*\d+\s+comments?\s*-\s*/i, "").trim();
-    caption = caption.replace(/^.*? on Instagram:\s*/i, "").replace(/^["“]|["”]$/g, "").trim();
-    const imageUrl = decode(getMeta("og:image"));
-    const titleMeta = decode(getMeta("og:title"));
-    if (!caption && !imageUrl) {
-      return res.status(422).json({ error: "Não foi possível ler a legenda nem o cartaz. O Instagram pode exigir login. Envie a imagem pelo botão de cartaz e cole a legenda no campo descrição." });
-    }
-    const lines = caption.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-    const firstLine = (lines[0] || titleMeta || "").replace(/^["“]|["”]$/g, "").trim();
-    const dateMatch = caption.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})\b/);
-    const monthNames = { janeiro: "01", fevereiro: "02", marco: "03", março: "03", abril: "04", maio: "05", junho: "06", julho: "07", agosto: "08", setembro: "09", outubro: "10", novembro: "11", dezembro: "12" };
-    const namedDateMatch = caption.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").match(/\b(\d{1,2})\s+de\s+(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)(?:\s+de\s+(20\d{2}))?\b/);
-    let date = "";
-    if (dateMatch) date = dateMatch[3] + "-" + dateMatch[2].padStart(2, "0") + "-" + dateMatch[1].padStart(2, "0");
-    else if (namedDateMatch) date = (namedDateMatch[3] || String(new Date().getFullYear())) + "-" + monthNames[namedDateMatch[2]] + "-" + namedDateMatch[1].padStart(2, "0");
-    const timeMatch = caption.match(/\b(?:às|as|a partir das|início às|começa às|horário:?\s*)\s*(\d{1,2})(?:h|:)(\d{2})?\b/i);
-    const time = timeMatch ? timeMatch[1].padStart(2, "0") + ":" + (timeMatch[2] || "00") : "";
-    const locationMatch = caption.match(/(?:local|onde|endereço|casa de shows)\s*:?\s*([^\n]+)/i);
-    let importedImage = imageUrl;
-    if (imageUrl) {
-      try {
-        const imageHost = new URL(imageUrl).hostname.toLowerCase();
-        if (new URL(imageUrl).protocol === "https:" && (imageHost === "cdninstagram.com" || imageHost.endsWith(".cdninstagram.com") || imageHost === "fbcdn.net" || imageHost.endsWith(".fbcdn.net"))) {
-          const uploaded = await cloudinary.uploader.upload(imageUrl, { folder: "comunidadedorock/eventos", resource_type: "image" });
-          importedImage = uploaded.secure_url || imageUrl;
-        }
-      } catch (imageError) {
-        console.warn("Não foi possível copiar o cartaz do Instagram para o Cloudinary:", imageError.message);
-      }
-    }
-    return res.json({
-      success: true,
-      title: firstLine.slice(0, 180),
-      artist: firstLine.slice(0, 500),
-      date,
-      time,
-      location: locationMatch ? locationMatch[1].trim().slice(0, 240) : "",
-      city: "",
-      state: "",
-      image: importedImage,
-      description: caption.slice(0, 3000),
-      imported: { caption: Boolean(caption), image: Boolean(importedImage), date: Boolean(date), time: Boolean(time), location: Boolean(locationMatch) }
-    });
-  } catch (err) {
-    const timeout = err?.name === "TimeoutError" || err?.name === "AbortError";
-    console.warn("Falha ao importar publicação do Instagram:", err.message);
-    return res.status(422).json({ error: timeout
-      ? "O Instagram demorou para responder. Tente novamente ou envie o cartaz manualmente."
-      : "Não foi possível acessar essa publicação. Se ela for privada ou exigir login, envie o cartaz e cole a legenda manualmente." });
   }
 });
 
