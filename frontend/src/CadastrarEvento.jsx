@@ -12,8 +12,6 @@ function CadastrarEvento({ user }) {
   const [imagePreview, setImagePreview] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
   const [importingInstagram, setImportingInstagram] = useState(false);
-  const [importingFlyer, setImportingFlyer] = useState(false);
-  const [ocrProgress, setOcrProgress] = useState(0);
 
   const handlePosterUpload = async (file) => {
     if (!file) return;
@@ -62,70 +60,6 @@ function CadastrarEvento({ user }) {
     } finally { setImportingInstagram(false); }
   };
 
-  const handleFlyerImport = async (file) => {
-    if (!file) return;
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowed.includes(file.type)) { setSubmitMessage("Para reconhecer o texto, envie um print ou cartaz JPG, PNG ou WebP."); return; }
-    if (file.size > 3 * 1024 * 1024) { setSubmitMessage("A imagem deve ter no máximo 3 MB."); return; }
-    setImportingFlyer(true); setOcrProgress(0); setSubmitMessage("Preparando o reconhecimento do cartaz...");
-    let worker;
-    try {
-      const { createWorker } = await import("tesseract.js");
-      worker = await createWorker("por", 1, {
-        logger: (info) => {
-          if (info.status === "recognizing text" && Number.isFinite(info.progress)) {
-            setOcrProgress(Math.round(info.progress * 100));
-          }
-        }
-      });
-      const result = await worker.recognize(file);
-      const recognized = String(result.data?.text || "").replace(/\r/g, "").trim();
-      if (recognized.length < 8) throw new Error("Não conseguimos ler texto suficiente. Tente uma imagem mais nítida e com o texto maior.");
-
-      const lines = recognized.split(/\n+/).map(line => line.replace(/[|_]+/g, " ").replace(/\s+/g, " ").trim()).filter(line => line.length > 2);
-      const normalized = recognized.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const months = { janeiro: "01", fevereiro: "02", marco: "03", abril: "04", maio: "05", junho: "06", julho: "07", agosto: "08", setembro: "09", outubro: "10", novembro: "11", dezembro: "12" };
-      let date = "";
-      const numericDate = recognized.match(/\b(\d{1,2})[/. -](\d{1,2})[/. -](20\d{2})\b/);
-      const namedDate = normalized.match(/\b(\d{1,2})\s+de\s+(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)(?:\s+de\s+(20\d{2}))?\b/);
-      if (numericDate) date = numericDate[3] + "-" + numericDate[2].padStart(2, "0") + "-" + numericDate[1].padStart(2, "0");
-      else if (namedDate) date = (namedDate[3] || String(new Date().getFullYear())) + "-" + months[namedDate[2]] + "-" + namedDate[1].padStart(2, "0");
-
-      const timeMatch = normalized.match(/\b(?:as|a partir das|inicio as|comeca as|horario:?\s*)?(\d{1,2})\s*(?:h|:)(\d{2})?\b/);
-      const time = timeMatch ? timeMatch[1].padStart(2, "0") + ":" + (timeMatch[2] || "00") : "";
-      const findLine = (pattern) => lines.find(line => pattern.test(line)) || "";
-      const labeledArtist = findLine(/^(?:bandas?|artistas?|atracoes?|line\s*up)\s*:/i).replace(/^(?:bandas?|artistas?|atrações?|line\s*up)\s*:/i, "").trim();
-      const labeledLocation = findLine(/^(?:local|endereco|endereço|onde|casa de shows|venue)\s*:/i).replace(/^(?:local|endereço|endereco|onde|casa de shows|venue)\s*:/i, "").trim();
-      const cityLine = findLine(/\b[A-Z]{2}\b/);
-      const cityMatch = cityLine.match(/([A-Za-zÀ-ÿ .'-]{2,})\s*[-/]\s*([A-Z]{2})\b/);
-      const ignored = /^(?:ingressos?|entrada|classificacao|classificação|informacoes?|informações|realizacao|realização|apoio|patrocinio|patrocínio|reservas?|www\.|https?:)/i;
-      const title = lines.find(line => !ignored.test(line) && !/\d{1,2}[/. -]\d{1,2}/.test(line) && line.length >= 4) || "";
-      const details = {
-        title: title.slice(0, 180), artist: labeledArtist.slice(0, 500), date, time,
-        location: labeledLocation.slice(0, 240),
-        city: cityMatch ? cityMatch[1].trim() : "",
-        state: cityMatch ? cityMatch[2].trim() : "",
-        description: recognized.slice(0, 3000)
-      };
-      setSubmission(prev => {
-        const next = { ...prev };
-        Object.entries(details).forEach(([key, value]) => {
-          if (value && !String(prev[key] || "").trim()) next[key] = value;
-        });
-        return next;
-      });
-      await handlePosterUpload(file);
-      const labels = { title: "nome", artist: "bandas/artistas", date: "data", time: "horário", location: "local", city: "cidade", state: "estado" };
-      const found = Object.entries(details).filter(([key, value]) => value && key !== "description").map(([key]) => labels[key]);
-      setSubmitMessage("Leitura concluída! " + (found.length ? "Identificamos: " + found.join(", ") + ". " : "") + "O texto reconhecido foi colocado na descrição. Confira e corrija os campos antes de enviar.");
-    } catch (error) {
-      setSubmitMessage(error.message || "Não foi possível reconhecer o texto desta imagem. Tente outra imagem ou preencha os dados manualmente.");
-    } finally {
-      if (worker) await worker.terminate().catch(() => {});
-      setImportingFlyer(false); setOcrProgress(0);
-    }
-  };
-
   const fields = [
     ["title", "Nome do evento (opcional)", "Ex.: Festival Rock Independente", "text", false],
     ["artist", "Bandas / artistas *", "Digite uma banda por linha. Pode incluir quantas bandas quiser.", "textarea", true],
@@ -153,19 +87,10 @@ function CadastrarEvento({ user }) {
               IMPORTAR DE UMA PUBLICAÇÃO DO INSTAGRAM
               <input type="url" value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} placeholder="Cole aqui o link do post ou Reel" style={{ ...inputStyle, marginTop: "5px", fontWeight: 400 }} />
             </label>
-            <button type="button" onClick={handleInstagramImport} disabled={importingInstagram || importingFlyer || uploadingImage} className="btn btn-primary" style={{ marginTop: "10px", opacity: importingInstagram ? 0.7 : 1 }}>
+            <button type="button" onClick={handleInstagramImport} disabled={importingInstagram || uploadingImage} className="btn btn-primary" style={{ marginTop: "10px", opacity: importingInstagram ? 0.7 : 1 }}>
               {importingInstagram ? "BUSCANDO PUBLICAÇÃO..." : "📥 IMPORTAR INFORMAÇÕES E CARTAZ"}
             </button>
             <small style={{ display: "block", marginTop: "8px", color: "#aaa", lineHeight: 1.5 }}>A publicação precisa ser pública. O Instagram pode limitar a leitura automática; se isso acontecer, você ainda poderá enviar o cartaz pelo celular e preencher os dados manualmente.</small>
-          </div>
-          <div style={{ margin: "0 0 22px", padding: "16px", border: "1px solid #454552", borderRadius: "8px", background: "#191923" }}>
-            <label style={{ ...labelStyle, fontWeight: 700, color: "#e9b61e" }}>
-              OU IMPORTAR DE UM PRINT / CARTAZ
-              <span style={{ color: "#bbb", fontWeight: 400, lineHeight: 1.5 }}>Envie uma captura de tela da publicação ou a imagem do flyer. O reconhecimento tenta ler os textos e preencher os campos para você revisar.</span>
-              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={importingFlyer || uploadingImage} onChange={e => { handleFlyerImport(e.target.files?.[0]); e.target.value = ""; }} style={{ ...inputStyle, marginTop: "8px" }} />
-            </label>
-            {importingFlyer && <div role="status" style={{ marginTop: "10px", color: "#e9b61e", fontSize: "13px" }}>Lendo o cartaz... {ocrProgress}%</div>}
-            <small style={{ display: "block", marginTop: "8px", color: "#999", lineHeight: 1.5 }}>JPG, PNG ou WebP · até 3 MB. Imagens nítidas dão melhores resultados. Informações que não estiverem visíveis não serão inventadas.</small>
           </div>
           <form onSubmit={async (e) => {
             e.preventDefault(); setSending(true); setSubmitMessage("");
@@ -228,7 +153,7 @@ function CadastrarEvento({ user }) {
             <label style={{ ...labelStyle, marginTop: "14px" }}>Descrição do evento
               <textarea rows={4} maxLength={3000} value={submission.description} placeholder="Conte um pouco sobre o show, atrações e informações importantes..." onChange={e => setSubmission({ ...submission, description: e.target.value })} style={{ ...inputStyle, resize: "vertical" }} />
             </label>
-            <button type="submit" disabled={sending || importingFlyer || uploadingImage} className="btn btn-primary" style={{ marginTop: "16px", opacity: sending ? 0.7 : 1 }}>{uploadingImage ? "AGUARDE O ENVIO DO CARTAZ..." : sending ? "ENVIANDO..." : "ENVIAR PARA APROVAÇÃO"}</button>
+            <button type="submit" disabled={sending || uploadingImage} className="btn btn-primary" style={{ marginTop: "16px", opacity: sending ? 0.7 : 1 }}>{uploadingImage ? "AGUARDE O ENVIO DO CARTAZ..." : sending ? "ENVIANDO..." : "ENVIAR PARA APROVAÇÃO"}</button>
             {submitMessage && <p role="status" style={{ color: submitMessage.toLowerCase().includes("não foi") || submitMessage.toLowerCase().includes("válido") || submitMessage.toLowerCase().includes("preencha") ? "#ff8b8b" : "#9fda9f" }}>{submitMessage}</p>}
           </form>
         </> : <div style={{ textAlign: "center", padding: "8px 4px" }}>
