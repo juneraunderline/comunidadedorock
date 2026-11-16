@@ -138,13 +138,18 @@ function BandaDetail() {
         if (!active) return;
         setBand(res.data);
         setLoadingRelatedPosts(true);
-        axios.get(`${API_URL}/api/posts`, { params: { search: res.data.name, limit: 8, full: 1 }, timeout: 15000 })
-          .then(postsResponse => {
-            if (!active) return;
-            const posts = Array.isArray(postsResponse.data) ? postsResponse.data : [];
-            setRelatedPosts(posts.filter(post => !post.archived_at));
-          })
-          .catch(err => console.error("Erro ao carregar notícias relacionadas à banda:", err))
+        Promise.allSettled([
+          axios.get(`${API_URL}/api/posts`, { params: { search: res.data.name, limit: 8, full: 1 }, timeout: 15000 }),
+          axios.get(`${API_URL}/api/interviews?full=1`, { timeout: 15000 })
+        ]).then(([postsResult, interviewsResult]) => {
+          if (!active) return;
+          const posts = postsResult.status === "fulfilled" && Array.isArray(postsResult.value.data) ? postsResult.value.data.filter(post => !post.archived_at) : [];
+          const bandName = String(res.data.name || "").trim().toLocaleLowerCase("pt-BR");
+          const interviews = interviewsResult.status === "fulfilled" && Array.isArray(interviewsResult.value.data)
+            ? interviewsResult.value.data.filter(item => String(item.artist || "").trim().toLocaleLowerCase("pt-BR") === bandName).map(item => ({ ...item, isInterview: true, source: "Entrevista: " + item.artist, created_at: item.created_at || item.date || null }))
+            : [];
+          setRelatedPosts([...posts, ...interviews].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 12));
+        }).catch(err => console.error("Erro ao carregar notícias relacionadas à banda:", err))
           .finally(() => { if (active) setLoadingRelatedPosts(false); });
         Promise.allSettled([axios.get(`${API_URL}/api/releases`), axios.get(`${API_URL}/api/events`)]).then(([rr, er]) => { if (!active) return; if (rr.status === "fulfilled") setReleases(rr.value.data.filter(item => String(item.artist || "").trim().toLowerCase() === String(res.data.name || "").trim().toLowerCase())); if (er.status === "fulfilled") setEvents(er.value.data.filter(item => String(item.artist || "").toLowerCase().includes(String(res.data.name || "").toLowerCase()))); });
         setLoading(false);
@@ -252,7 +257,7 @@ function BandaDetail() {
               ) : relatedPosts.length > 0 ? (
                 <div className="grid grid-2">
                   {relatedPosts.map(post => (
-                    <article className="card" key={post.id} onClick={() => navigate(`/noticias/${post.slug || post.id}`)} style={{ cursor: "pointer", minWidth: 0 }}>
+                    <article className="card" key={post.id} onClick={() => navigate(post.isInterview ? `/entrevistas/${post.slug || post.artist}` : `/noticias/${post.slug || post.id}`)} style={{ cursor: "pointer", minWidth: 0 }}>
                       <div className="card-image">
                         {post.image ? <img src={getImageUrl(post.image)} alt={post.title} loading="lazy" /> : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", color: "#999" }}>Sem imagem</div>}
                         <div className="card-source">{post.source || "Comunidade do Rock"}</div>
@@ -260,8 +265,8 @@ function BandaDetail() {
                       <div className="card-content">
                         <small className="card-date">{post.created_at ? new Date(post.created_at).toLocaleDateString("pt-BR") : "Data não informada"}</small>
                         {post.source && <small className="card-source-label" style={{ display: "block", color: "#999", fontSize: "12px", marginBottom: "8px" }}>Fonte: {post.source}</small>}
-                        <h3>{post.title}</h3>
-                        {post.summary && <p style={{ color: "#aaa", fontSize: "13px", lineHeight: 1.5 }}>{post.summary}</p>}
+                        <h3>{post.isInterview ? `Entrevista: ${post.artist || band.name}` : post.title}</h3>
+                        {!post.isInterview && post.summary && <p style={{ color: "#aaa", fontSize: "13px", lineHeight: 1.5 }}>{post.summary}</p>}
                       </div>
                     </article>
                   ))}
