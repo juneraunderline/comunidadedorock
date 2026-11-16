@@ -50,7 +50,7 @@ function CadastrarEvento({ user }) {
         });
         return next;
       });
-      if (imported.image) setImagePreview(imported.image);
+      if (imported.image && !submission.image.trim()) setImagePreview(imported.image);
       const found = [imported.imported?.caption && "legenda", imported.imported?.image && "cartaz", imported.imported?.date && "data", imported.imported?.time && "horário", imported.imported?.location && "local"].filter(Boolean);
       setSubmitMessage(found.length
         ? "Importação concluída! Encontramos: " + found.join(", ") + ". Confira e complete os campos que ficaram vazios."
@@ -126,7 +126,7 @@ function CadastrarEvento({ user }) {
                 console.error("[Notificação de evento] Falha ao enviar e-mail pelo navegador:", emailError);
               }
               setSubmitMessage(response.data.message || "Evento enviado para análise da administração!");
-              setSubmission(emptySubmission); setImagePreview("");
+              setSubmission(emptySubmission); setImagePreview(""); setInstagramUrl("");
             } catch (error) {
               setSubmitMessage(error.response?.data?.error || "Não foi possível enviar agora. Tente novamente.");
             } finally { setSending(false); }
