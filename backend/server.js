@@ -83,6 +83,7 @@ app.use("/api", apiLimiter);
 app.use("/api/login", authLimiter);
 app.use("/api/register", authLimiter);
 app.use("/api/upload-image", uploadLimiter);
+app.use("/api/event-upload-image", uploadLimiter);
 app.use("/api/comments", interactionLimiter);
 app.use("/api/event-submissions", interactionLimiter);
 app.use("/api/bands/submit", bandSubmissionLimiter);
