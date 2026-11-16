@@ -138,7 +138,7 @@ function BandaDetail() {
         if (!active) return;
         setBand(res.data);
         setLoadingRelatedPosts(true);
-        axios.get(`${API_URL}/api/posts`, { params: { search: res.data.name, limit: 8 }, timeout: 15000 })
+        axios.get(`${API_URL}/api/posts`, { params: { search: res.data.name, limit: 8, full: 1 }, timeout: 15000 })
           .then(postsResponse => {
             if (!active) return;
             const posts = Array.isArray(postsResponse.data) ? postsResponse.data : [];
