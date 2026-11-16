@@ -14,8 +14,7 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.2",
-    "dompurify": "^3.3.1",
-    "tesseract.js": "^6.0.1"
+    "dompurify": "^3.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
