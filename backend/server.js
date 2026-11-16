@@ -1267,6 +1267,9 @@ app.use("/api", async (req, res, next) => {
   if (method === "POST" && path === "/event-submissions") {
     return authenticate(req, res, next);
   }
+  if (method === "POST" && path === "/event-upload-image") {
+    return authenticate(req, res, next);
+  }
   if (method === "POST" && path === "/comments") {
     return authenticate(req, res, next);
   }
@@ -1328,6 +1331,34 @@ app.post("/api/upload-image", async (req, res) => {
   } catch (err) {
     console.error("Erro no upload de imagem:", err.message);
     return res.status(500).json({ error: "Não foi possível enviar a imagem" });
+  }
+});
+
+// Upload de cartaz para inscrições de eventos: qualquer conta autenticada pode enviar.
+app.post("/api/event-upload-image", authenticate, async (req, res) => {
+  try {
+    const { image } = req.body || {};
+    if (typeof image !== "string" || image.length > 8 * 1024 * 1024) {
+      return res.status(image?.length > 8 * 1024 * 1024 ? 413 : 400).json({ error: "Envie uma imagem válida de até 6 MB." });
+    }
+    const match = /^data:image\/(png|jpe?g|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/i.exec(image);
+    if (!match) return res.status(400).json({ error: "Formato de imagem não permitido." });
+    const imageBuffer = Buffer.from(match[2], "base64");
+    if (!imageBuffer.length || imageBuffer.toString("base64").replace(/=+$/, "") !== match[2].replace(/=+$/, "")) {
+      return res.status(400).json({ error: "Conteúdo de imagem inválido." });
+    }
+    let metadata;
+    try { metadata = await sharp(imageBuffer, { limitInputPixels: 40000000 }).metadata(); }
+    catch { return res.status(400).json({ error: "Arquivo de imagem inválido." }); }
+    const declaredFormat = match[1].toLowerCase().replace("jpg", "jpeg");
+    if (!["jpeg", "png", "webp", "gif"].includes(metadata.format) || metadata.format !== declaredFormat) {
+      return res.status(400).json({ error: "O conteúdo não corresponde ao formato declarado." });
+    }
+    const result = await cloudinary.uploader.upload(image, { folder: "comunidadedorock/eventos", resource_type: "image" });
+    return res.json({ success: true, path: result.secure_url });
+  } catch (err) {
+    console.error("Erro no upload de cartaz de evento:", err.message);
+    return res.status(500).json({ error: "Não foi possível enviar o cartaz agora." });
   }
 });
 
