@@ -2440,10 +2440,10 @@ app.post("/api/event-instagram-import", async (req, res) => {
     if (!response.ok) return res.status(422).json({ error: "O Instagram não liberou essa publicação para leitura automática. Você ainda pode enviar o cartaz e colar a legenda manualmente." });
     const html = (await response.text()).slice(0, 5 * 1024 * 1024);
     const getMeta = (key) => {
-      const tags = html.match(/<meta\\b[^>]*>/gi) || [];
+      const tags = html.match(/<meta\b[^>]*>/gi) || [];
       for (const tag of tags) {
         const attrs = {};
-        const attrPattern = /([\\w:-]+)\\s*=\\s*(["'])(.*?)\\2/gs;
+        const attrPattern = /([\w:-]+)\s*=\s*(["'])(.*?)\2/gs;
         let attr;
         while ((attr = attrPattern.exec(tag))) attrs[attr[1].toLowerCase()] = attr[3];
         if ((attrs.property || attrs.name || "").toLowerCase() === key.toLowerCase() && attrs.content) return attrs.content;
