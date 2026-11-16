@@ -118,7 +118,7 @@ function CadastrarEvento({ user }) {
             <label style={{ ...labelStyle, marginTop: "14px" }}>Descrição do evento
               <textarea rows={4} maxLength={3000} value={submission.description} placeholder="Conte um pouco sobre o show, atrações e informações importantes..." onChange={e => setSubmission({ ...submission, description: e.target.value })} style={{ ...inputStyle, resize: "vertical" }} />
             </label>
-            <button type="submit" disabled={sending} className="btn btn-primary" style={{ marginTop: "16px", opacity: sending ? 0.7 : 1 }}>{sending ? "ENVIANDO..." : "ENVIAR PARA APROVAÇÃO"}</button>
+            <button type="submit" disabled={sending || uploadingImage} className="btn btn-primary" style={{ marginTop: "16px", opacity: sending ? 0.7 : 1 }}>{uploadingImage ? "AGUARDE O ENVIO DO CARTAZ..." : sending ? "ENVIANDO..." : "ENVIAR PARA APROVAÇÃO"}</button>
             {submitMessage && <p role="status" style={{ color: submitMessage.toLowerCase().includes("não foi") || submitMessage.toLowerCase().includes("válido") || submitMessage.toLowerCase().includes("preencha") ? "#ff8b8b" : "#9fda9f" }}>{submitMessage}</p>}
           </form>
         </> : <div style={{ textAlign: "center", padding: "8px 4px" }}>
