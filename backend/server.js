@@ -1303,7 +1303,7 @@ app.post("/api/upload-image", async (req, res) => {
     if (typeof image !== "string") {
       return res.status(400).json({ error: "Envie uma imagem válida" });
     }
-    if (image.length > 8 * 1024 * 1024) {
+    if (image.length > 4.2 * 1024 * 1024) {
       return res.status(413).json({ error: "A imagem excede o limite permitido" });
     }
     const match = /^data:image\/(png|jpe?g|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/i.exec(image);
@@ -1339,8 +1339,8 @@ app.post("/api/upload-image", async (req, res) => {
 app.post("/api/event-upload-image", authenticate, async (req, res) => {
   try {
     const { image } = req.body || {};
-    if (typeof image !== "string" || image.length > 8 * 1024 * 1024) {
-      return res.status(image?.length > 8 * 1024 * 1024 ? 413 : 400).json({ error: "Envie uma imagem válida de até 6 MB." });
+    if (typeof image !== "string" || image.length > 4.2 * 1024 * 1024) {
+      return res.status(image?.length > 4.2 * 1024 * 1024 ? 413 : 400).json({ error: "Envie uma imagem válida de até 3 MB." });
     }
     const match = /^data:image\/(png|jpe?g|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/i.exec(image);
     if (!match) return res.status(400).json({ error: "Formato de imagem não permitido." });
