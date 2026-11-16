@@ -465,86 +465,87 @@ function Home({ posts }) {
       ); })()}
 
       {/* PRÓXIMOS EVENTOS */}
-      <section className="section">
+      <section className="section home-events-section">
         <div className="section-header">
           <h2>PRÓXIMOS <span className="highlight">EVENTOS</span></h2>
           <button onClick={() => navigate("/eventos")} className="view-all" style={{border: "none", background: "none", cursor: "pointer", fontSize: "inherit", color: "inherit", textDecoration: "none"}}>Ver tudo →</button>
         </div>
+        <style>{`
+          .home-events-list { display: flex; flex-direction: column; gap: 12px; }
+          .home-event-row { display: grid; grid-template-columns: 76px 112px minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 14px; background: #151515; border: 1px solid #303030; border-radius: 12px; text-align: left; transition: border-color .2s, background .2s; }
+          .home-event-row:hover { border-color: #d6a817; background: #1b1b1b; }
+          .home-event-date { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 76px; border-right: 1px solid #383838; padding-right: 14px; color: #f2bd22; line-height: 1; }
+          .home-event-date-day { font-size: 32px; font-weight: 900; }
+          .home-event-date-month { margin-top: 6px; font-size: 12px; font-weight: 800; letter-spacing: 1px; }
+          .home-event-poster { width: 112px; height: 88px; overflow: hidden; border-radius: 8px; background: #242424; display: flex; align-items: center; justify-content: center; }
+          .home-event-poster img { width: 100%; height: 100%; object-fit: cover; }
+          .home-event-poster-placeholder { font-size: 30px; }
+          .home-event-info { min-width: 0; }
+          .home-event-title { color: #fff; font-size: 17px; font-weight: 800; line-height: 1.3; margin: 0 0 8px; overflow-wrap: anywhere; }
+          .home-event-meta { display: flex; flex-wrap: wrap; gap: 5px 14px; color: #bdbdbd; font-size: 13px; line-height: 1.45; }
+          .home-event-meta span { min-width: 0; }
+          .home-event-artists { white-space: pre-line; }
+          .home-event-button { white-space: nowrap; padding: 10px 16px !important; min-width: 124px; text-align: center; font-size: 12px !important; font-weight: 800 !important; }
+          @media (max-width: 640px) {
+            .home-events-list { gap: 10px; }
+            .home-event-row { grid-template-columns: 54px minmax(0, 1fr); gap: 8px 12px; padding: 11px; }
+            .home-event-date { grid-row: 1 / span 2; min-height: 68px; padding-right: 10px; }
+            .home-event-date-day { font-size: 27px; }
+            .home-event-date-month { font-size: 10px; }
+            .home-event-poster { grid-column: 2; grid-row: 1; width: 100%; height: 112px; }
+            .home-event-info { grid-column: 2; grid-row: 2; }
+            .home-event-title { font-size: 15px; margin-bottom: 6px; }
+            .home-event-meta { font-size: 12px; gap: 4px 10px; }
+            .home-event-button { grid-column: 2; grid-row: 3; width: 100%; min-width: 0; padding: 10px 12px !important; }
+          }
+        `}</style>
         {loadingEvents ? (
-	          <div className="grid grid-2">
-	            <SkeletonCard />
-	            <SkeletonCard />
-	          </div>
-	        ) : events.filter(ev => new Date(ev.date + "T23:59:59") >= new Date()).length > 0 ? (
-	          <div className="grid grid-2">
-            {events.filter(ev => new Date(ev.date + "T23:59:59") >= new Date()).slice(0, 3).map(event => (
-              <div
-                key={event.id}
-                className="event-card"
-                style={{ cursor: 'pointer' }}
-                onClick={() => navigate(`/eventos/${event.slug || event.id}`)}
-              >
-                <div className="event-image-wrapper">
-                  {event.image ? (
-                    <img src={getImageUrl(event.image)} alt={event.title} className="event-image" />
-                  ) : (
-                    <div className="event-image-placeholder">🎸</div>
-                  )}
-                  {event.date && (
-                    <div className="event-date-badge">
-                      <span className="date-day">{new Date(event.date + "T00:00:00").getDate()}</span>
-                      <span className="date-month">{new Date(event.date + "T00:00:00").toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase()}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="event-content">
-                  <h3 className="event-title">{event.title}</h3>
-                  {event.artist && (
-                    <p className="event-artist" style={{ whiteSpace: "pre-line" }}>
-                      <span className="event-icon">🎤</span>
-                      {event.artist}
-                    </p>
-                  )}
-                  {event.time && (
-                    <p className="event-time">
-                      <span className="event-icon">🕐</span>
-                      {event.time}
-                    </p>
-                  )}
-                  {event.location && (
-                    <p className="event-location">
-                      <span className="event-icon">📍</span>
-                      <strong>{event.location}</strong>
-                      {event.city && `, ${event.city}`}
-                      {event.state && ` - ${event.state}`}
-                    </p>
-                  )}
-                  {(() => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const eventDay = new Date(event.date + "T00:00:00");
-                    const diffDays = Math.round((eventDay - today) / 86400000);
-                    const isPast = diffDays < 0;
-                    if (isPast) {
-                      return (
-                        <button className="btn btn-buy-tickets" disabled style={{ opacity: 0.6, cursor: "not-allowed", background: "#666" }} onClick={e => e.stopPropagation()}>
-                          Evento realizado em {new Date(event.date + "T00:00:00").toLocaleDateString("pt-BR")}
-                        </button>
-                      );
-                    }
-                    return event.ticket_link ? (
-                      <a href={event.ticket_link} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-buy-tickets" onClick={e => e.stopPropagation()}>
-                        {diffDays === 0 ? "🔥 É HOJE! - Comprar Ingresso" : diffDays === 1 ? "Comprar Ingresso - Falta 1 dia" : "Comprar Ingresso - Faltam " + diffDays + " dias"}
-                      </a>
+          <div className="home-events-list">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        ) : events.filter(ev => new Date(ev.date + "T23:59:59") >= new Date()).length > 0 ? (
+          <div className="home-events-list">
+            {events.filter(ev => new Date(ev.date + "T23:59:59") >= new Date()).slice(0, 3).map(event => {
+              const eventDate = event.date ? new Date(event.date + "T00:00:00") : null;
+              return (
+                <article
+                  key={event.id}
+                  className="home-event-row"
+                  onClick={() => navigate(`/eventos/${event.slug || event.id}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <div className="home-event-date">
+                    <span className="home-event-date-day">{eventDate ? eventDate.getDate() : "—"}</span>
+                    <span className="home-event-date-month">{eventDate ? eventDate.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "").toUpperCase() : "DATA"}</span>
+                  </div>
+                  <div className="home-event-poster">
+                    {event.image ? (
+                      <img src={getImageUrl(event.image)} alt={event.title} loading="lazy" />
                     ) : (
-                      <button className="btn btn-primary btn-buy-tickets btn-event-free" disabled style={{ opacity: 1, cursor: "not-allowed" }} onClick={e => e.stopPropagation()}>
-                        {diffDays === 0 ? "🔥 É HOJE! - Evento Gratuito" : diffDays === 1 ? "Evento Gratuito - Falta 1 dia" : "Evento Gratuito - Faltam " + diffDays + " dias"}
-                      </button>
-                    );
-                  })()}
-                </div>
-              </div>
-            ))}
+                      <span className="home-event-poster-placeholder">🎸</span>
+                    )}
+                  </div>
+                  <div className="home-event-info">
+                    <h3 className="home-event-title">{event.title}</h3>
+                    <div className="home-event-meta">
+                      {event.artist && <span className="home-event-artists">🎤 {event.artist}</span>}
+                      {event.time && <span>🕒 {event.time}</span>}
+                      {(event.location || event.city || event.state) && (
+                        <span>📍 {[event.location, event.city, event.state].filter(Boolean).join(", ")}</span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary home-event-button"
+                    onClick={e => { e.stopPropagation(); navigate(`/eventos/${event.slug || event.id}`); }}
+                  >
+                    VER EVENTO →
+                  </button>
+                </article>
+              );
+            })}
           </div>
         ) : (
           <div style={{textAlign: "center", color: "#888", padding: "40px"}}>
