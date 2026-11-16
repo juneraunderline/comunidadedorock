@@ -15,7 +15,7 @@ function CadastrarEvento({ user }) {
     if (!file) return;
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!allowed.includes(file.type)) { setSubmitMessage("Use uma imagem JPG, PNG, WebP ou GIF."); return; }
-    if (file.size > 6 * 1024 * 1024) { setSubmitMessage("O cartaz deve ter no máximo 6 MB."); return; }
+    if (file.size > 3 * 1024 * 1024) { setSubmitMessage("O cartaz deve ter no máximo 3 MB."); return; }
     setUploadingImage(true); setSubmitMessage("");
     try {
       const dataUrl = await new Promise((resolve, reject) => {
@@ -112,7 +112,7 @@ function CadastrarEvento({ user }) {
                 {uploadingImage ? "ENVIANDO CARTAZ..." : "📤 ESCOLHER CARTAZ DO CELULAR OU PC"}
                 <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={uploadingImage} onChange={e => { handlePosterUpload(e.target.files?.[0]); e.target.value = ""; }} style={{ display: "none" }} />
               </label>
-              <small style={{ color: "#999" }}>JPG, PNG, WebP ou GIF · até 6 MB.</small>
+              <small style={{ color: "#999" }}>JPG, PNG, WebP ou GIF · até 3 MB.</small>
               {imagePreview && <img src={imagePreview} alt="Prévia do cartaz do evento" style={{ display: "block", width: "100%", maxWidth: "320px", maxHeight: "420px", objectFit: "contain", objectPosition: "center", marginTop: "8px", borderRadius: "8px", background: "#0b0b0f" }} onError={() => setImagePreview("")} />}
             </div>
             <label style={{ ...labelStyle, marginTop: "14px" }}>Descrição do evento
