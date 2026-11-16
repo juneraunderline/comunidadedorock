@@ -8,6 +8,32 @@ function CadastrarEvento({ user }) {
   const [submission, setSubmission] = useState(emptySubmission);
   const [sending, setSending] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState("");
+
+  const handlePosterUpload = async (file) => {
+    if (!file) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) { setSubmitMessage("Use uma imagem JPG, PNG, WebP ou GIF."); return; }
+    if (file.size > 6 * 1024 * 1024) { setSubmitMessage("O cartaz deve ter no máximo 6 MB."); return; }
+    setUploadingImage(true); setSubmitMessage("");
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Não foi possível ler o arquivo."));
+        reader.readAsDataURL(file);
+      });
+      const response = await axios.post(API_URL + "/api/event-upload-image", { image: dataUrl });
+      const imageUrl = response.data?.path;
+      if (!imageUrl) throw new Error("O servidor não retornou o endereço da imagem.");
+      setSubmission(prev => ({ ...prev, image: imageUrl }));
+      setImagePreview(imageUrl);
+      setSubmitMessage("Cartaz enviado! A imagem será anexada ao evento quando você enviar o cadastro.");
+    } catch (error) {
+      setSubmitMessage(error.response?.data?.error || error.message || "Não foi possível enviar o cartaz.");
+    } finally { setUploadingImage(false); }
+  };
 
   const fields = [
     ["title", "Nome do evento (opcional)", "Ex.: Festival Rock Independente", "text", false],
@@ -20,7 +46,6 @@ function CadastrarEvento({ user }) {
     ["ticket_location", "Ponto físico de venda de ingressos (opcional)", "Ex.: loja, bar ou endereço de venda", "text", false],
     ["ticket_link", "Link para comprar ingressos (opcional)", "https://...", "url", false],
     ["contact_email", "E-mail para contato *", "email@exemplo.com", "email", true],
-    ["image", "Link do cartaz (opcional)", "https://...", "url", false]
   ];
 
   const inputStyle = { boxSizing: "border-box", width: "100%", padding: "11px", border: "1px solid #454552", borderRadius: "5px", background: "#20202b", color: "#fff" };
@@ -66,7 +91,7 @@ function CadastrarEvento({ user }) {
                 console.error("[Notificação de evento] Falha ao enviar e-mail pelo navegador:", emailError);
               }
               setSubmitMessage(response.data.message || "Evento enviado para análise da administração!");
-              setSubmission(emptySubmission);
+              setSubmission(emptySubmission); setImagePreview("");
             } catch (error) {
               setSubmitMessage(error.response?.data?.error || "Não foi possível enviar agora. Tente novamente.");
             } finally { setSending(false); }
@@ -79,6 +104,16 @@ function CadastrarEvento({ user }) {
                   <small style={{ color: "#999" }}>Informe uma banda por linha. Se houver várias, todas serão exibidas no evento.</small>
                 </> : <input type={type} required={required} value={submission[field]} placeholder={placeholder} onChange={e => setSubmission({ ...submission, [field]: e.target.value })} style={inputStyle} />}
               </label>)}
+            </div>
+            <div style={{ ...labelStyle, marginTop: "14px" }}>
+              Cartaz do evento (opcional)
+              <input type="url" value={submission.image.startsWith("https://") || submission.image.startsWith("http://") ? submission.image : ""} onChange={e => { setSubmission(prev => ({ ...prev, image: e.target.value })); setImagePreview(e.target.value); }} placeholder="Cole o link do cartaz, se preferir" style={inputStyle} />
+              <label style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "11px 14px", border: "1px solid #e9b61e", borderRadius: "6px", color: "#e9b61e", cursor: uploadingImage ? "wait" : "pointer", fontWeight: 700, opacity: uploadingImage ? 0.65 : 1 }}>
+                {uploadingImage ? "ENVIANDO CARTAZ..." : "📤 ESCOLHER CARTAZ DO CELULAR OU PC"}
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={uploadingImage} onChange={e => { handlePosterUpload(e.target.files?.[0]); e.target.value = ""; }} style={{ display: "none" }} />
+              </label>
+              <small style={{ color: "#999" }}>JPG, PNG, WebP ou GIF · até 6 MB.</small>
+              {imagePreview && <img src={imagePreview} alt="Prévia do cartaz do evento" style={{ display: "block", width: "100%", maxWidth: "320px", maxHeight: "420px", objectFit: "contain", objectPosition: "center", marginTop: "8px", borderRadius: "8px", background: "#0b0b0f" }} onError={() => setImagePreview("")} />}
             </div>
             <label style={{ ...labelStyle, marginTop: "14px" }}>Descrição do evento
               <textarea rows={4} maxLength={3000} value={submission.description} placeholder="Conte um pouco sobre o show, atrações e informações importantes..." onChange={e => setSubmission({ ...submission, description: e.target.value })} style={{ ...inputStyle, resize: "vertical" }} />
