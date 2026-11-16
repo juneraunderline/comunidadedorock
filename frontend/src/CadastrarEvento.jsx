@@ -10,6 +10,8 @@ function CadastrarEvento({ user }) {
   const [submitMessage, setSubmitMessage] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [importingInstagram, setImportingInstagram] = useState(false);
 
   const handlePosterUpload = async (file) => {
     if (!file) return;
@@ -35,6 +37,29 @@ function CadastrarEvento({ user }) {
     } finally { setUploadingImage(false); }
   };
 
+  const handleInstagramImport = async () => {
+    if (!instagramUrl.trim()) { setSubmitMessage("Cole o link da publicação do Instagram."); return; }
+    setImportingInstagram(true); setSubmitMessage("");
+    try {
+      const response = await axios.post(API_URL + "/api/event-instagram-import", { url: instagramUrl.trim() });
+      const imported = response.data || {};
+      setSubmission(prev => {
+        const next = { ...prev };
+        ["title", "artist", "date", "time", "location", "city", "state", "image", "description"].forEach(key => {
+          if (imported[key] && !String(prev[key] || "").trim()) next[key] = imported[key];
+        });
+        return next;
+      });
+      if (imported.image) setImagePreview(imported.image);
+      const found = [imported.imported?.caption && "legenda", imported.imported?.image && "cartaz", imported.imported?.date && "data", imported.imported?.time && "horário", imported.imported?.location && "local"].filter(Boolean);
+      setSubmitMessage(found.length
+        ? "Importação concluída! Encontramos: " + found.join(", ") + ". Confira e complete os campos que ficaram vazios."
+        : "A publicação foi acessada, mas não encontramos informações suficientes. Confira a legenda e complete os campos manualmente.");
+    } catch (error) {
+      setSubmitMessage(error.response?.data?.error || "Não foi possível importar. Você pode preencher os dados e enviar o cartaz manualmente.");
+    } finally { setImportingInstagram(false); }
+  };
+
   const fields = [
     ["title", "Nome do evento (opcional)", "Ex.: Festival Rock Independente", "text", false],
     ["artist", "Bandas / artistas *", "Digite uma banda por linha. Pode incluir quantas bandas quiser.", "textarea", true],
@@ -57,6 +82,16 @@ function CadastrarEvento({ user }) {
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "24px", background: "#15151f", border: "1px solid #343442", borderRadius: "10px" }}>
         {user ? <>
           <p style={{ color: "#aaa", lineHeight: 1.6 }}>Cadastre seu show gratuitamente. Nossa equipe revisará as informações antes da publicação.</p>
+          <div style={{ margin: "18px 0 22px", padding: "16px", border: "1px solid #55451b", borderRadius: "8px", background: "#1d1b16" }}>
+            <label style={{ ...labelStyle, fontWeight: 700, color: "#e9b61e" }}>
+              IMPORTAR DE UMA PUBLICAÇÃO DO INSTAGRAM
+              <input type="url" value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} placeholder="Cole aqui o link do post ou Reel" style={{ ...inputStyle, marginTop: "5px", fontWeight: 400 }} />
+            </label>
+            <button type="button" onClick={handleInstagramImport} disabled={importingInstagram || uploadingImage} className="btn btn-primary" style={{ marginTop: "10px", opacity: importingInstagram ? 0.7 : 1 }}>
+              {importingInstagram ? "BUSCANDO PUBLICAÇÃO..." : "📥 IMPORTAR INFORMAÇÕES E CARTAZ"}
+            </button>
+            <small style={{ display: "block", marginTop: "8px", color: "#aaa", lineHeight: 1.5 }}>A publicação precisa ser pública. O Instagram pode limitar a leitura automática; se isso acontecer, você ainda poderá enviar o cartaz pelo celular e preencher os dados manualmente.</small>
+          </div>
           <form onSubmit={async (e) => {
             e.preventDefault(); setSending(true); setSubmitMessage("");
             try {
