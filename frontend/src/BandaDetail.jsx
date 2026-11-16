@@ -126,6 +126,8 @@ function BandaDetail() {
   const [loading, setLoading] = useState(true);
   const [releases, setReleases] = useState([]);
   const [events, setEvents] = useState([]);
+  const [relatedPosts, setRelatedPosts] = useState([]);
+  const [loadingRelatedPosts, setLoadingRelatedPosts] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -135,6 +137,15 @@ function BandaDetail() {
       .then(res => {
         if (!active) return;
         setBand(res.data);
+        setLoadingRelatedPosts(true);
+        axios.get(`${API_URL}/api/posts`, { params: { search: res.data.name, limit: 8 }, timeout: 15000 })
+          .then(postsResponse => {
+            if (!active) return;
+            const posts = Array.isArray(postsResponse.data) ? postsResponse.data : [];
+            setRelatedPosts(posts.filter(post => !post.archived_at));
+          })
+          .catch(err => console.error("Erro ao carregar notícias relacionadas à banda:", err))
+          .finally(() => { if (active) setLoadingRelatedPosts(false); });
         Promise.allSettled([axios.get(`${API_URL}/api/releases`), axios.get(`${API_URL}/api/events`)]).then(([rr, er]) => { if (!active) return; if (rr.status === "fulfilled") setReleases(rr.value.data.filter(item => String(item.artist || "").trim().toLowerCase() === String(res.data.name || "").trim().toLowerCase())); if (er.status === "fulfilled") setEvents(er.value.data.filter(item => String(item.artist || "").toLowerCase().includes(String(res.data.name || "").toLowerCase()))); });
         setLoading(false);
       })
@@ -231,6 +242,35 @@ function BandaDetail() {
               </div>
             )}
 
+            <div className="band-detail-section-box band-related-news">
+              <div className="band-detail-box-title">
+                <h3>📰 Notícias relacionadas a {band.name}</h3>
+                <span>{relatedPosts.length}</span>
+              </div>
+              {loadingRelatedPosts ? (
+                <p style={{ color: "#999", margin: 0 }}>Carregando notícias relacionadas...</p>
+              ) : relatedPosts.length > 0 ? (
+                <div className="grid grid-2">
+                  {relatedPosts.map(post => (
+                    <article className="card" key={post.id} onClick={() => navigate(`/noticias/${post.slug || post.id}`)} style={{ cursor: "pointer", minWidth: 0 }}>
+                      <div className="card-image">
+                        {post.image ? <img src={getImageUrl(post.image)} alt={post.title} loading="lazy" /> : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", color: "#999" }}>Sem imagem</div>}
+                        <div className="card-source">{post.source || "Comunidade do Rock"}</div>
+                      </div>
+                      <div className="card-content">
+                        <small className="card-date">{post.created_at ? new Date(post.created_at).toLocaleDateString("pt-BR") : "Data não informada"}</small>
+                        {post.source && <small className="card-source-label" style={{ display: "block", color: "#999", fontSize: "12px", marginBottom: "8px" }}>Fonte: {post.source}</small>}
+                        <h3>{post.title}</h3>
+                        {post.summary && <p style={{ color: "#aaa", fontSize: "13px", lineHeight: 1.5 }}>{post.summary}</p>}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: "#999", margin: 0 }}>Ainda não encontramos notícias publicadas sobre esta banda.</p>
+              )}
+              <button className="btn btn-outline" onClick={() => navigate("/noticias")} style={{ marginTop: "16px" }}>Ver todas as notícias</button>
+            </div>
             {(releases.length > 0 || events.length > 0) && (
               <div className="band-detail-discovery">
                 {releases.length > 0 && (
