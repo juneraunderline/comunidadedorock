@@ -2557,3 +2557,26 @@ body {
   .event-admin-preview > img { flex-basis: 76px; width: 76px !important; height: 96px !important; }
   .event-admin-actions { grid-template-columns: minmax(0, 1fr); }
 }
+
+
+/* Evita que o rótulo de publicidade fique encoberto/cortado na home mobile. */
+.home-ad-section {
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+  margin-top: 0 !important;
+  padding-top: 18px !important;
+  padding-bottom: 18px !important;
+  line-height: normal;
+}
+
+.home-ad-section .home-ad-label {
+  display: block;
+  position: relative;
+  z-index: 1;
+  height: auto;
+  min-height: 18px;
+  line-height: 1.5;
+  overflow: visible;
+  margin: 0 0 8px !important;
+}
