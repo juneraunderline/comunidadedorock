@@ -2465,8 +2465,11 @@ app.post("/api/event-instagram-import", async (req, res) => {
     const lines = caption.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
     const firstLine = (lines[0] || titleMeta || "").replace(/^["“]|["”]$/g, "").trim();
     const dateMatch = caption.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})\b/);
+    const monthNames = { janeiro: "01", fevereiro: "02", marco: "03", março: "03", abril: "04", maio: "05", junho: "06", julho: "07", agosto: "08", setembro: "09", outubro: "10", novembro: "11", dezembro: "12" };
+    const namedDateMatch = caption.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").match(/\b(\d{1,2})\s+de\s+(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)(?:\s+de\s+(20\d{2}))?\b/);
     let date = "";
     if (dateMatch) date = dateMatch[3] + "-" + dateMatch[2].padStart(2, "0") + "-" + dateMatch[1].padStart(2, "0");
+    else if (namedDateMatch) date = (namedDateMatch[3] || String(new Date().getFullYear())) + "-" + monthNames[namedDateMatch[2]] + "-" + namedDateMatch[1].padStart(2, "0");
     const timeMatch = caption.match(/\b(?:às|as|a partir das|início às|começa às|horário:?\s*)\s*(\d{1,2})(?:h|:)(\d{2})?\b/i);
     const time = timeMatch ? timeMatch[1].padStart(2, "0") + ":" + (timeMatch[2] || "00") : "";
     const locationMatch = caption.match(/(?:local|onde|endereço|casa de shows)\s*:?\s*([^\n]+)/i);
