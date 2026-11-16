@@ -2484,3 +2484,76 @@ body {
     margin:20px auto; border-radius:10px;
   }
 }
+
+
+/* Aprovação de eventos: cards e ações alinhados em telas pequenas. */
+.event-admin-item { min-width: 0; box-sizing: border-box; }
+.event-admin-preview { min-width: 0; }
+.event-admin-preview .post-info { min-width: 0; overflow-wrap: anywhere; }
+.event-admin-actions { flex: 0 0 auto; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.event-admin-actions .btn { box-sizing: border-box; }
+@media (max-width: 700px) {
+  .event-admin-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    width: 100%;
+    padding: 14px !important;
+    overflow: hidden;
+  }
+  .event-admin-preview {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    width: 100%;
+  }
+  .event-admin-preview > img {
+    flex: 0 0 88px;
+    width: 88px !important;
+    height: 110px !important;
+    object-fit: cover;
+  }
+  .event-admin-preview .post-info {
+    flex: 1 1 0;
+    width: 0;
+    min-width: 0;
+    text-align: left;
+  }
+  .event-admin-preview .post-info h4 {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .event-admin-preview .post-info p {
+    margin: 5px 0;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .event-admin-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px !important;
+    width: 100%;
+    min-width: 0;
+  }
+  .event-admin-actions .btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100% !important;
+    min-width: 0;
+    min-height: 42px;
+    padding: 9px 7px !important;
+    font-size: 11px !important;
+    line-height: 1.25;
+    letter-spacing: 0;
+    white-space: normal;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+}
+@media (max-width: 380px) {
+  .event-admin-preview > img { flex-basis: 76px; width: 76px !important; height: 96px !important; }
+  .event-admin-actions { grid-template-columns: minmax(0, 1fr); }
+}
