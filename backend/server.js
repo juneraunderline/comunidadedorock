@@ -2410,7 +2410,7 @@ app.delete("/api/fan/events/:id", authenticate, async (req, res) => {
 app.get("/api/events", async (req, res) => {
   const full = req.query.full === "1";
   const limit = req.query.limit ? Math.max(1, Math.min(parseInt(req.query.limit) || 0, 100)) : null;
-  const fields = full ? "*" : "id, title, artist, date, time, location, city, state, image, ticket_link, ticket_location, LEFT(COALESCE(description, ''), 300) AS description, created_at";
+  const fields = full ? "*" : "id, title, artist, date, time, location, city, state, image, ticket_link, ticket_location, description, created_at";
   const limitSql = limit ? `LIMIT ${limit}` : "";
   const events = await db.getAll(`SELECT ${fields} FROM events ${full ? "" : "WHERE status = 'approved'"} ORDER BY date ASC ${limitSql}`);
   const slugifyEventTitle = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
