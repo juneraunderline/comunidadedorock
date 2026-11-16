@@ -35,6 +35,8 @@ function EventDetail() {
       });
   }, [id]);
 
+  const descriptionIndicatesFreeEntry = /entrada\\s+(?:é\\s+)?(?:gratuita|grátis|franca|livre)/i.test(event?.description || "");
+
   const formatWeekdayFull = (dateStr) => {
     if (!dateStr) return "";
     const date = new Date(dateStr + "T00:00:00");
@@ -88,7 +90,7 @@ function EventDetail() {
             <a href={safeExternalUrl(event.ticket_link)} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
               Comprar ingresso online
             </a>
-          ) : !event.ticket_location ? (
+          ) : !event.ticket_location && !descriptionIndicatesFreeEntry ? (
             <span style={{ color: '#999' }}>Informações de venda de ingressos não disponíveis</span>
           ) : null}
         </div>
