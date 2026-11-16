@@ -2413,9 +2413,9 @@ app.get("/api/events", async (req, res) => {
   const fields = full ? "*" : "id, title, artist, date, time, location, city, state, image, ticket_link, ticket_location, LEFT(COALESCE(description, ''), 300) AS description, created_at";
   const limitSql = limit ? `LIMIT ${limit}` : "";
   const events = await db.getAll(`SELECT ${fields} FROM events ${full ? "" : "WHERE status = 'approved'"} ORDER BY date ASC ${limitSql}`);
-  const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+  const slugifyEventTitle = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
   res.set("Cache-Control", full ? "no-store" : "public, s-maxage=300, stale-while-revalidate=900");
-  res.json(events.map(e => ({ ...e, slug: mkSlug(e.title) })));
+  res.json(events.map(e => ({ ...e, slug: slugifyEventTitle(e.title) })));
 });
 
 app.post("/api/event-submissions", async (req, res) => {
@@ -2901,16 +2901,25 @@ app.get("/og/entrevistas/:id", async (req, res) => {
   } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
 });
 
-// OG - Eventos
-app.get("/og/eventos/:id", async (req, res) => {
+// OG - Eventos: aceita os IDs antigos e os novos slugs amigáveis.
+app.get("/og/eventos/:slug", async (req, res) => {
   try {
-    const item = await db.getOne("SELECT * FROM events WHERE id = $1", [req.params.id]);
+    const slugParam = String(req.params.slug || "");
+    let item = /^\d+$/.test(slugParam)
+      ? await db.getOne("SELECT * FROM events WHERE id = $1 AND status = 'approved'", [slugParam])
+      : null;
+    const slugifyEventTitle = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
+    if (!item) {
+      const approvedEvents = await db.getAll("SELECT * FROM events WHERE status = 'approved' ORDER BY id DESC");
+      item = approvedEvents.find(event => slugifyEventTitle(event.title) === slugParam);
+    }
     if (!item) return res.redirect("https://comunidadedorock.com.br/eventos");
+    const slug = slugifyEventTitle(item.title);
     const title = (item.title || "Evento").replace(/"/g, "&quot;").replace(/</g, "&lt;");
     const dateBR = item.date ? item.date.split("-").reverse().join("/") : "";
     const desc = [item.artist, dateBR, item.location, item.city].filter(Boolean).join(" · ");
     const description = (desc || "Confira este evento no Comunidade do Rock").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-    sendOg(res, title, description, resolveImage(item.image), `https://comunidadedorock.com.br/og/eventos/${item.id}`, "event", `https://comunidadedorock.com.br/eventos/${item.id}`, req.headers["user-agent"]);
+    sendOg(res, title, description, resolveImage(item.image), `https://comunidadedorock.com.br/og/eventos/${slug}`, "event", `https://comunidadedorock.com.br/eventos/${slug}`, req.headers["user-agent"]);
   } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
 });
 
