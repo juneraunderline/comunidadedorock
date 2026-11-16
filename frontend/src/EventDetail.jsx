@@ -24,6 +24,9 @@ function EventDetail() {
       .then(res => {
         const selected = res.data.find(it => it.slug === id || String(it.id) === String(id));
         setEvent(selected);
+        if (selected?.slug && String(selected.slug) !== String(id)) {
+          navigate(`/eventos/${selected.slug}`, { replace: true });
+        }
         setLoading(false);
       })
       .catch(err => {
@@ -89,10 +92,10 @@ function EventDetail() {
       <div style={{ maxWidth: '900px', margin: '20px auto 0' }}>
         <div className="news-detail-share">
           <span>Compartilhe:</span>
-          <button className="share-btn whatsapp" onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(event.title + " | Comunidade do Rock https://comunidadedorock.com.br/og/eventos/" + event.id)}`, '_blank')}>💬 WhatsApp</button>
-          <button className="share-btn facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://comunidadedorock.com.br/og/eventos/" + event.id)}`, '_blank')}>f Facebook</button>
-          <button className="share-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(event.title)}&url=${encodeURIComponent("https://comunidadedorock.com.br/og/eventos/" + event.id)}`, '_blank')}>𝕏 Twitter</button>
-          <button className="share-btn telegram" onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent("https://comunidadedorock.com.br/og/eventos/" + event.id)}&text=${encodeURIComponent(event.title)}`, '_blank')}>✈ Telegram</button>
+          <button className="share-btn whatsapp" onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(event.title + " | Comunidade do Rock https://comunidadedorock.com.br/og/eventos/" + event.slug)}`, '_blank')}>💬 WhatsApp</button>
+          <button className="share-btn facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://comunidadedorock.com.br/og/eventos/" + event.slug)}`, '_blank')}>f Facebook</button>
+          <button className="share-btn twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(event.title)}&url=${encodeURIComponent("https://comunidadedorock.com.br/og/eventos/" + event.slug)}`, '_blank')}>𝕏 Twitter</button>
+          <button className="share-btn telegram" onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent("https://comunidadedorock.com.br/og/eventos/" + event.slug)}&text=${encodeURIComponent(event.title)}`, '_blank')}>✈ Telegram</button>
           <button className="share-btn" style={{ background: "linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)" }} onClick={() => { navigator.clipboard.writeText(event.title + " | Comunidade do Rock https://comunidadedorock.com.br/og/eventos/" + event.id); alert("Link copiado! Cole no Instagram Direct 📷"); }}>📷 Instagram</button>
         </div>
       </div>
