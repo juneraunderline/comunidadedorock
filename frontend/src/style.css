@@ -1320,6 +1320,19 @@ body {
   margin-bottom: 32px;
 }
 
+/* Links inseridos no texto das notícias seguem o amarelo da identidade visual. */
+.news-detail-text a,
+.news-detail-text a:visited {
+  color: #e9b61e;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.news-detail-text a:hover,
+.news-detail-text a:focus-visible {
+  color: #ffd34d;
+}
+
 /* Editor Visual com Suporte a Imagens */
 [contenteditable] {
   outline: none;
