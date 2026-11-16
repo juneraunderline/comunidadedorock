@@ -201,8 +201,8 @@ function Home({ posts }) {
 
 
       {/* BANNER LOCO PUB */}
-      <section className="section" style={{ paddingTop: "10px", paddingBottom: "10px" }}>
-        <p style={{ textAlign: "center", fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Publicidade</p>
+      <section className="section home-ad-section" style={{ paddingTop: "18px", paddingBottom: "18px" }}>
+        <p className="home-ad-label" style={{ textAlign: "center", fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Publicidade</p>
         <a href="https://www.instagram.com/loco_pub/" target="_blank" rel="noopener noreferrer">
           <img src="https://res.cloudinary.com/dazqhi4ov/image/upload/c_scale,w_800,f_auto,q_auto/e_trim:20/v1776636678/824d6e4e-b0ab-4e0c-808d-0bb53065189d_bjukjn.png" alt="Loco Pub" style={{ width: "100%", maxWidth: "500px", display: "block", margin: "0 auto", borderRadius: "12px", cursor: "pointer" }} />
         </a>
