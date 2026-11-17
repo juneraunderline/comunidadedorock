@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/cenabr2027",
+      "destination": "https://comunidadedorock.com.br/noticias/cenabr-festival-2027-reune-grandes-nomes-do-rock-independente-em-sao-paulo",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/sitemap.xml/",
