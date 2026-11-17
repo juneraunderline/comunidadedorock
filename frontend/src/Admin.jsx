@@ -1292,8 +1292,8 @@ export default function Admin({ user: currentUser, onLogout }) {
           <div className="cdr-admin-overview-grid">
             <section className="cdr-admin-panel"><h2>⚡ Atividade e pendências</h2>
               <button onClick={() => setActiveTab("noticias")}>▤ <span>Gerenciar notícias</span><b>{posts.length}</b><small>Abrir lista</small></button>
-              {isAdmin && <button onClick={() => setActiveTab("bandas")}>♫ <span>Bandas</span><b>{pendingBands.length}</b><small>Moderação</small></button>}
-              <button onClick={() => setActiveTab("eventos")}>▦ <span>Eventos</span><b>{events.filter(event => event.status === "pending").length}</b><small>Revisar eventos</small></button>
+              {isAdmin && <button onClick={() => setActiveTab("bandas")}>♫ <span>Bandas pendentes</span><b>{pendingBands.length}</b><small>Moderação</small></button>}
+              <button onClick={() => setActiveTab("eventos")}>▦ <span>Eventos pendentes</span><b>{events.filter(event => event.status === "pending").length}</b><small>Revisar eventos</small></button>
               {isAdmin && <button onClick={() => setActiveTab("lancamentos-banda")}>★ <span>Lançamentos pendentes</span><b>{bandReleaseSubmissions.filter(item => item.status === "pending").length}</b><small>Ver envios</small></button>}
             </section>
             <section className="cdr-admin-panel"><h2>🚀 Atalhos rápidos</h2><div className="cdr-admin-shortcuts">
