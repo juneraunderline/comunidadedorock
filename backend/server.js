@@ -1209,6 +1209,7 @@ app.use("/api", async (req, res, next) => {
   // As rotas de fã, logout e sessão aplicam authenticate diretamente em seus
   // handlers. Não autenticar também aqui: isso duplicava consultas a auth_sessions
   // em cada chamada e aumentava a pressão sobre o pool PostgreSQL serverless.
+  if (path.startsWith("/fan/") || path === "/logout" || path === "/session") return next();
 
   const isUserProfile = isPath(path, /^\/user\/\d+$/);
   const isCommentDelete = isPath(path, /^\/comments\/\d+$/) && method === "DELETE";
@@ -2141,6 +2142,50 @@ app.put("/api/interviews/:id", async (req, res) => {
 app.delete("/api/interviews/:id", async (req, res) => {
   await db.run("DELETE FROM interviews WHERE id = $1", [req.params.id]);
   res.json({ success: true });
+});
+
+// Prévia de capa para links públicos do Spotify e YouTube. Os destinos são fixos
+// e os hosts são validados para não transformar esta rota em um proxy aberto.
+app.get("/api/releases/preview-image", async (req, res) => {
+  try {
+    const rawUrl = String(req.query.url || "").trim();
+    if (!rawUrl || rawUrl.length > 2048) return res.status(400).json({ error: "Informe um link válido do Spotify ou YouTube." });
+
+    let source;
+    try { source = new URL(rawUrl); } catch { return res.status(400).json({ error: "Link inválido." }); }
+    if (source.protocol !== "https:") return res.status(400).json({ error: "Use um link HTTPS." });
+
+    let oembedUrl;
+    if (source.hostname === "open.spotify.com" && /^\/track\/[A-Za-z0-9]+/.test(source.pathname)) {
+      oembedUrl = "https://open.spotify.com/oembed?url=" + encodeURIComponent(source.toString());
+    } else if (["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"].includes(source.hostname)) {
+      const videoId = source.hostname === "youtu.be"
+        ? source.pathname.split("/").filter(Boolean)[0]
+        : source.pathname === "/watch" ? source.searchParams.get("v")
+        : source.pathname.match(/^\/(?:embed|shorts)\/([A-Za-z0-9_-]{11})/)?.[1];
+      if (!videoId || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) return res.status(400).json({ error: "Link de vídeo do YouTube inválido." });
+      oembedUrl = "https://www.youtube.com/oembed?url=" + encodeURIComponent("https://www.youtube.com/watch?v=" + videoId) + "&format=json";
+    } else {
+      return res.status(400).json({ error: "Use um link de faixa do Spotify ou vídeo do YouTube." });
+    }
+
+    const upstream = await fetchFunc(oembedUrl, { headers: { Accept: "application/json" } });
+    if (!upstream.ok) return res.status(404).json({ error: "O serviço não disponibilizou a imagem deste conteúdo." });
+    const metadata = await upstream.json();
+    const image = String(metadata.thumbnail_url || "");
+    let imageUrl;
+    try { imageUrl = new URL(image); } catch { return res.status(404).json({ error: "Imagem não encontrada." }); }
+    const allowedImageHost = source.hostname.includes("spotify")
+      ? (imageUrl.hostname === "i.scdn.co" || imageUrl.hostname.endsWith(".scdn.co") || imageUrl.hostname.endsWith(".spotifycdn.com"))
+      : imageUrl.hostname === "i.ytimg.com";
+    if (imageUrl.protocol !== "https:" || !allowedImageHost) return res.status(404).json({ error: "Imagem não encontrada." });
+
+    res.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
+    return res.json({ image: imageUrl.toString() });
+  } catch (err) {
+    console.error("Erro ao buscar imagem do lançamento:", err.message);
+    return res.status(502).json({ error: "Não foi possível consultar a imagem deste link." });
+  }
 });
 
 // Lançamentos

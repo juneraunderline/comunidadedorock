@@ -49,6 +49,10 @@ jobs:
         working-directory: backend
         run: npm audit
 
+      - name: Instalar dependências do frontend
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
       - name: Testar autenticação e autorização em PostgreSQL descartável
         working-directory: backend
         env:
@@ -56,10 +60,6 @@ jobs:
           PGSSLMODE: disable
           CRON_SECRET: test-only-cron-secret
         run: node tests/security.integration.test.js
-
-      - name: Instalar dependências do frontend
-        working-directory: frontend
-        run: npm install --no-audit --no-fund
 
       - name: Auditar dependências de produção do frontend
         working-directory: frontend
