@@ -139,7 +139,7 @@ function BandaDetail() {
         setBand(res.data);
         setLoadingRelatedPosts(true);
         Promise.allSettled([
-          axios.get(`${API_URL}/api/posts`, { params: { search: res.data.name, limit: 8, full: 1 }, timeout: 15000 }),
+          axios.get(`${API_URL}/api/posts`, { params: { search: res.data.name, full: 1 }, timeout: 20000 }),
           axios.get(`${API_URL}/api/interviews?full=1`, { timeout: 15000 })
         ]).then(([postsResult, interviewsResult]) => {
           if (!active) return;
