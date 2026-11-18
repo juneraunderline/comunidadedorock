@@ -1294,7 +1294,7 @@ export default function Admin({ user: currentUser, onLogout }) {
           <div className="cdr-admin-welcome"><div><p>Bem-vindo(a) ao painel do</p><h1>Comunidade do Rock</h1><span>Aqui você gerencia o conteúdo do nosso portal de rock.</span></div></div>
           <div className="cdr-admin-metrics">
             <article><span className="metric-icon">▤</span><div><small>Notícias publicadas</small><strong>{posts.length}</strong><em>Conteúdo do portal</em></div></article>
-            <article><span className="metric-icon">▣</span><div><small>Notícias arquivadas</small><strong>{archivedPostsCount}</strong><em>Preservadas no arquivo histórico</em></div></article>
+            <article><span className="metric-icon">★</span><div><small>Lançamentos cadastrados</small><strong>{releases.length}</strong><em>Singles e videoclipes publicados</em></div></article>
             <article><span className="metric-icon">♫</span><div><small>Bandas cadastradas</small><strong>{bands.length}</strong><em>{pendingBands.length} aguardando moderação</em></div></article>
             <article><span className="metric-icon">▦</span><div><small>Eventos</small><strong>{events.length}</strong><em>{events.filter(event => event.status === "pending").length} aguardando aprovação</em></div></article>
             <article><span className="metric-icon">♩</span><div><small>Entrevistas</small><strong>{interviews.length}</strong><em>Conteúdo editorial</em></div></article>
