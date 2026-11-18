@@ -139,11 +139,19 @@ function BandaDetail() {
         setBand(res.data);
         setLoadingRelatedPosts(true);
         Promise.allSettled([
-          axios.get(`${API_URL}/api/posts`, { params: { search: res.data.name, full: 1 }, timeout: 20000 }),
+          axios.get(`${API_URL}/api/posts`, { params: { full: 1 }, timeout: 20000 }),
           axios.get(`${API_URL}/api/interviews?full=1`, { timeout: 15000 })
         ]).then(([postsResult, interviewsResult]) => {
           if (!active) return;
-          const posts = postsResult.status === "fulfilled" && Array.isArray(postsResult.value.data) ? postsResult.value.data.filter(post => !post.archived_at) : [];
+          const normalizeSearchText = (value) => String(value || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;|&#160;/gi, " ").replace(/&amp;/gi, "&").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR");
+          const normalizedBandName = normalizeSearchText(res.data.name).trim();
+          const posts = postsResult.status === "fulfilled" && Array.isArray(postsResult.value.data)
+            ? postsResult.value.data.filter(post => {
+                if (post.archived_at) return false;
+                const searchableText = normalizeSearchText([post.title, post.summary, post.content].filter(Boolean).join(" "));
+                return normalizedBandName && searchableText.includes(normalizedBandName);
+              })
+            : [];
           const bandName = String(res.data.name || "").trim().toLocaleLowerCase("pt-BR");
           const interviews = interviewsResult.status === "fulfilled" && Array.isArray(interviewsResult.value.data)
             ? interviewsResult.value.data.filter(item => String(item.artist || "").trim().toLocaleLowerCase("pt-BR") === bandName).map(item => ({ ...item, isInterview: true, source: "Entrevista: " + item.artist, created_at: item.created_at || item.date || null }))
