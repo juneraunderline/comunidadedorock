@@ -1824,7 +1824,8 @@ app.get("/api/posts", async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const offset = req.query.offset ? parseInt(req.query.offset) : 0;
-    const search = req.query.search || null;
+    const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 120) : "";
+    const band = typeof req.query.band === "string" ? req.query.band.trim().slice(0, 120) : "";
     const source = req.query.source || null;
     
     const full = req.query.full === "1";
@@ -1835,18 +1836,17 @@ app.get("/api/posts", async (req, res) => {
     let paramIdx = 1;
     
     if (search) {
-      query += ` AND (title ILIKE ${paramIdx} OR content ILIKE ${paramIdx})`;
-      params.push(`%${search}%`);
+      query += " AND (COALESCE(title, '') ILIKE $" + paramIdx + " OR COALESCE(content, '') ILIKE $" + paramIdx + ")";
+      params.push("%" + search + "%");
       paramIdx++;
     }
 
     if (band) {
-      query += ` AND archived_at IS NULL AND (COALESCE(title, '') ILIKE ${paramIdx} OR COALESCE(content, '') ILIKE ${paramIdx})`;
-      params.push(`%${band}%`);
+      query += " AND archived_at IS NULL AND (COALESCE(title, '') ILIKE $" + paramIdx + " OR COALESCE(content, '') ILIKE $" + paramIdx + ")";
+      params.push("%" + band + "%");
       paramIdx++;
     }
-    
-    if (source) {
+        if (source) {
       if (source === "__manual__") {
         query += " AND (source IS NULL OR source = '')";
       } else {
