@@ -1242,7 +1242,7 @@ export default function Admin({ user: currentUser, onLogout }) {
         .cdr-admin-metrics em { color: #8b8b8b; font-size: 10px; font-style: normal; }
         .cdr-admin-overview-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; }
         .cdr-admin-panel { padding: 18px; border: 1px solid #292929; border-radius: 9px; background: linear-gradient(145deg,#121212,#0c0c0c); }
-        .cdr-admin-panel h2 { font-size: 17px; margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid #292929; }
+        .cdr-admin-panel h2 { color: #ffffff !important; font-size: 17px; margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid #292929; }
         /* Garante contraste dos textos dos cartões do painel, mesmo com estilos globais de botões. */
         .cdr-admin-panel > button,
         .cdr-admin-shortcuts button { color: #ffffff !important; }
