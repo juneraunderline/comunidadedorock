@@ -1306,13 +1306,13 @@ export default function Admin({ user: currentUser, onLogout }) {
               <button onClick={() => setActiveTab("eventos")}>▦ <span>Eventos pendentes</span><b>{events.filter(event => event.status === "pending").length}</b><small>Revisar eventos</small></button>
               {isAdmin && <button onClick={() => setActiveTab("lancamentos-banda")}>★ <span>Lançamentos pendentes</span><b>{bandReleaseSubmissions.filter(item => item.status === "pending").length}</b><small>Ver envios</small></button>}
             </section>
-            <section className="cdr-admin-panel"><h2>🚀 Atalhos rápidos</h2><div className="cdr-admin-shortcuts">
-              <button onClick={() => setActiveTab("noticias")}>▤<span>Publicar notícia</span></button>
-              {isAdmin && <button onClick={() => setActiveTab("bandas")}>♫<span>Cadastrar banda</span></button>}
-              <button onClick={() => setActiveTab("eventos")}>▦<span>Gerenciar eventos</span></button>
-              {isAdmin && <button onClick={() => setActiveTab("rss")}>◔<span>Importar RSS</span></button>}
-              {isAdmin && <button onClick={() => setActiveTab("entrevistas")}>♩<span>Entrevistas</span></button>}
-              {isAdmin && <button onClick={() => setActiveTab("usuarios")}>⚙<span>Usuários</span></button>}
+            <section className="cdr-admin-panel"><h2>🚀 Atalhos rápidos</h2><div className="cdr-admin-shortcuts" style={{ gap: "10px" }}>
+              <button style={{ background: "#242424", color: "#ffffff", border: "1px solid #555555", borderRadius: "8px", padding: "12px", fontWeight: 600 }} onClick={() => setActiveTab("noticias")}>▤<span style={{ color: "#ffffff" }}>Publicar notícia</span></button>
+              {isAdmin && <button style={{ background: "#242424", color: "#ffffff", border: "1px solid #555555", borderRadius: "8px", padding: "12px", fontWeight: 600 }} onClick={() => setActiveTab("bandas")}>♫<span style={{ color: "#ffffff" }}>Cadastrar banda</span></button>}
+              <button style={{ background: "#242424", color: "#ffffff", border: "1px solid #555555", borderRadius: "8px", padding: "12px", fontWeight: 600 }} onClick={() => setActiveTab("eventos")}>▦<span style={{ color: "#ffffff" }}>Gerenciar eventos</span></button>
+              {isAdmin && <button style={{ background: "#242424", color: "#ffffff", border: "1px solid #555555", borderRadius: "8px", padding: "12px", fontWeight: 600 }} onClick={() => setActiveTab("rss")}>◔<span style={{ color: "#ffffff" }}>Importar RSS</span></button>}
+              {isAdmin && <button style={{ background: "#242424", color: "#ffffff", border: "1px solid #555555", borderRadius: "8px", padding: "12px", fontWeight: 600 }} onClick={() => setActiveTab("entrevistas")}>♩<span style={{ color: "#ffffff" }}>Entrevistas</span></button>}
+              {isAdmin && <button style={{ background: "#242424", color: "#ffffff", border: "1px solid #555555", borderRadius: "8px", padding: "12px", fontWeight: 600 }} onClick={() => setActiveTab("usuarios")}>⚙<span style={{ color: "#ffffff" }}>Usuários</span></button>}
             </div></section>
           </div>
           <div className="cdr-admin-system-note"><span className="cdr-admin-status-dot"></span><div><strong>Comunidade do Rock</strong><p>Área administrativa · mantenha o portal atualizado e acompanhe as pendências de moderação.</p></div><span className="cdr-admin-since">Desde 2004</span></div>
