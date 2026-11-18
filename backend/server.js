@@ -218,6 +218,7 @@ const initDb = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS interviews (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, content TEXT, image TEXT, date TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS releases (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, type TEXT DEFAULT 'Single', release_date TEXT, image TEXT, spotify TEXT, youtube TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run("CREATE TABLE IF NOT EXISTS featured_release_settings (id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), release_id INTEGER REFERENCES releases(id) ON DELETE SET NULL)");
+  await db.run("INSERT INTO featured_release_settings (id, release_id) SELECT 1, id FROM releases WHERE youtube IS NOT NULL ORDER BY COALESCE(release_date, created_at::date::text) DESC, id DESC LIMIT 1 ON CONFLICT (id) DO NOTHING");
   await db.run(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, display_name TEXT, avatar TEXT, role TEXT DEFAULT 'user', created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_band BOOLEAN NOT NULL DEFAULT FALSE`);
   await db.run(`ALTER TABLE pending_bands ADD COLUMN IF NOT EXISTS created_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
@@ -2157,7 +2158,7 @@ app.put("/api/featured-release", authenticate, async (req, res) => {
     if (!req.authUser || !["admin", "editor"].includes(req.authUser.role)) return res.status(403).json({ error: "Apenas administradores e editores podem alterar o destaque." });
     const id = Number(req.body && req.body.release_id);
     if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: "Selecione um videoclipe válido." });
-    const item = await db.getOne("SELECT id FROM releases WHERE id = $1 AND LOWER(COALESCE(type, '')) = 'videoclipe' AND youtube IS NOT NULL AND BTRIM(youtube) <> ''", [id]);
+    const item = await db.getOne("SELECT id FROM releases WHERE id = $1 AND youtube IS NOT NULL AND BTRIM(youtube) <> ''", [id]);
     if (!item) return res.status(400).json({ error: "Escolha um videoclipe com link do YouTube." });
     await db.run("INSERT INTO featured_release_settings (id, release_id) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET release_id = EXCLUDED.release_id", [id]);
     res.set("Cache-Control", "no-store");
