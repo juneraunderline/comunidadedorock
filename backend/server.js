@@ -1711,6 +1711,7 @@ app.get("/api/posts/archive", async (req, res) => {
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 8));
     const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
     const search = req.query.search || null;
+    const band = typeof req.query.band === "string" ? req.query.band.trim().slice(0, 120) : "";
     const source = req.query.source || null;
     let query = "SELECT id, title, image, link, source, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 500) AS summary FROM posts WHERE archived_at IS NOT NULL";
     const params = [];
@@ -1818,8 +1819,14 @@ app.get("/api/posts", async (req, res) => {
     let paramIdx = 1;
     
     if (search) {
-      query += ` AND (title ILIKE $${paramIdx} OR content ILIKE $${paramIdx})`;
+      query += ` AND (title ILIKE ${paramIdx} OR content ILIKE ${paramIdx})`;
       params.push(`%${search}%`);
+      paramIdx++;
+    }
+
+    if (band) {
+      query += ` AND archived_at IS NULL AND (COALESCE(title, '') ILIKE ${paramIdx} OR COALESCE(content, '') ILIKE ${paramIdx})`;
+      params.push(`%${band}%`);
       paramIdx++;
     }
     
@@ -1843,7 +1850,7 @@ app.get("/api/posts", async (req, res) => {
     const posts = await db.getAll(query, params);
     const mkSlug = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").substring(0,80) : "";
     
-    if (full) {
+    if (full || band) {
       res.set("Cache-Control", "no-store");
     } else {
       res.set("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=120");
