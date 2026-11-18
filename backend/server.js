@@ -1699,7 +1699,7 @@ app.get("/api/posts/archive", async (req, res) => {
     }
 
     if (band) {
-      query += " AND archived_at IS NULL AND (COALESCE(title, '') ILIKE $" + paramIdx + " OR COALESCE(content, '') ILIKE $" + paramIdx + ")";
+      query += " AND (COALESCE(title, '') ILIKE $" + paramIdx + " OR COALESCE(content, '') ILIKE $" + paramIdx + ")";
       params.push("%" + band + "%");
       paramIdx++;
     }
