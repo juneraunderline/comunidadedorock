@@ -139,18 +139,12 @@ function BandaDetail() {
         setBand(res.data);
         setLoadingRelatedPosts(true);
         Promise.allSettled([
-          axios.get(`${API_URL}/api/posts`, { params: { full: 1 }, timeout: 20000 }),
+          axios.get(`${API_URL}/api/posts`, { params: { band: res.data.name, limit: 50 }, timeout: 20000 }),
           axios.get(`${API_URL}/api/interviews?full=1`, { timeout: 15000 })
         ]).then(([postsResult, interviewsResult]) => {
           if (!active) return;
-          const normalizeSearchText = (value) => String(value || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;|&#160;/gi, " ").replace(/&amp;/gi, "&").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR");
-          const normalizedBandName = normalizeSearchText(res.data.name).trim();
           const posts = postsResult.status === "fulfilled" && Array.isArray(postsResult.value.data)
-            ? postsResult.value.data.filter(post => {
-                if (post.archived_at) return false;
-                const searchableText = normalizeSearchText([post.title, post.summary, post.content].filter(Boolean).join(" "));
-                return normalizedBandName && searchableText.includes(normalizedBandName);
-              })
+            ? postsResult.value.data
             : [];
           const bandName = String(res.data.name || "").trim().toLocaleLowerCase("pt-BR");
           const interviews = interviewsResult.status === "fulfilled" && Array.isArray(interviewsResult.value.data)
