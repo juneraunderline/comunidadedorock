@@ -1243,6 +1243,13 @@ export default function Admin({ user: currentUser, onLogout }) {
         .cdr-admin-overview-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; }
         .cdr-admin-panel { padding: 18px; border: 1px solid #292929; border-radius: 9px; background: linear-gradient(145deg,#121212,#0c0c0c); }
         .cdr-admin-panel h2 { font-size: 17px; margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid #292929; }
+        /* Garante contraste dos textos dos cartões do painel, mesmo com estilos globais de botões. */
+        .cdr-admin-panel > button,
+        .cdr-admin-shortcuts button { color: #ffffff !important; }
+        .cdr-admin-panel > button span,
+        .cdr-admin-shortcuts button span { color: #ffffff !important; }
+        .cdr-admin-panel > button small { color: #dddddd !important; }
+        .cdr-admin-panel > button b { color: #f0bd22 !important; }
         .cdr-admin-panel > button { display: grid; grid-template-columns: 25px minmax(0,1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 13px 3px; border: 0; border-bottom: 1px solid #242424; background: transparent; color: #ccc; text-align: left; cursor: pointer; }
         .cdr-admin-panel > button:last-child { border-bottom: 0; }
         .cdr-admin-panel > button:first-letter { color: var(--cdr-accent-bright); }
