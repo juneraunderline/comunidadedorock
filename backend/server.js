@@ -217,6 +217,7 @@ const initDb = async () => {
   await db.run(`ALTER TABLE events ADD COLUMN IF NOT EXISTS contact_email TEXT`);
   await db.run(`CREATE TABLE IF NOT EXISTS interviews (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, content TEXT, image TEXT, date TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`CREATE TABLE IF NOT EXISTS releases (id SERIAL PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL, type TEXT DEFAULT 'Single', release_date TEXT, image TEXT, spotify TEXT, youtube TEXT, description TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await db.run("CREATE TABLE IF NOT EXISTS featured_release_settings (id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), release_id INTEGER REFERENCES releases(id) ON DELETE SET NULL)");
   await db.run(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, display_name TEXT, avatar TEXT, role TEXT DEFAULT 'user', created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_band BOOLEAN NOT NULL DEFAULT FALSE`);
   await db.run(`ALTER TABLE pending_bands ADD COLUMN IF NOT EXISTS created_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
@@ -2143,6 +2144,26 @@ app.delete("/api/interviews/:id", async (req, res) => {
   res.json({ success: true });
 });
 
+// Clipe da Semana selecionado manualmente no painel administrativo.
+app.get("/api/featured-release", async (req, res) => {
+  try {
+    const item = await db.getOne("SELECT r.id, r.title, r.artist, r.youtube FROM featured_release_settings s JOIN releases r ON r.id = s.release_id WHERE s.id = 1 AND r.youtube IS NOT NULL AND BTRIM(r.youtube) <> ''");
+    res.set("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=120");
+    res.json(item || null);
+  } catch (err) { res.status(500).json({ error: "Erro ao carregar o Clipe da Semana" }); }
+});
+app.put("/api/featured-release", authenticate, async (req, res) => {
+  try {
+    if (!req.authUser || !["admin", "editor"].includes(req.authUser.role)) return res.status(403).json({ error: "Apenas administradores e editores podem alterar o destaque." });
+    const id = Number(req.body && req.body.release_id);
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: "Selecione um videoclipe válido." });
+    const item = await db.getOne("SELECT id FROM releases WHERE id = $1 AND LOWER(COALESCE(type, '')) = 'videoclipe' AND youtube IS NOT NULL AND BTRIM(youtube) <> ''", [id]);
+    if (!item) return res.status(400).json({ error: "Escolha um videoclipe com link do YouTube." });
+    await db.run("INSERT INTO featured_release_settings (id, release_id) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET release_id = EXCLUDED.release_id", [id]);
+    res.set("Cache-Control", "no-store");
+    res.json({ success: true, release_id: id });
+  } catch (err) { res.status(500).json({ error: "Não foi possível definir o Clipe da Semana." }); }
+});
 // Lançamentos
 app.get("/api/releases", async (req, res) => {
   try {
