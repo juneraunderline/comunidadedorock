@@ -470,6 +470,7 @@ export default function Admin({ user: currentUser, onLogout }) {
     }
 
     let cancelled = false;
+    setNewRelease(current => ({ ...current, image: "" }));
     setReleaseArtworkStatus("Buscando imagem automaticamente...");
     const timer = setTimeout(async () => {
       try {
