@@ -199,6 +199,8 @@ const initDb = async () => {
   await db.run(`CREATE INDEX IF NOT EXISTS idx_api_rate_limit_expiry ON api_rate_limit_buckets (expires_at)`);
   await db.run(`CREATE TABLE IF NOT EXISTS posts (id SERIAL PRIMARY KEY, title TEXT, content TEXT, image TEXT, link TEXT, source TEXT, created_at TIMESTAMPTZ DEFAULT NOW())`);
   await db.run(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ`);
+  // Recupera todo o arquivo histórico: o PostgreSQL atual comporta o acervo completo.
+  await db.run("UPDATE posts SET archived_at = NULL WHERE archived_at IS NOT NULL");
   await db.run(`CREATE INDEX IF NOT EXISTS idx_posts_archive_created ON posts (archived_at, created_at DESC, id DESC)`);
   // Índice funcional para acelerar a busca de notícias por slug.
   await db.run(`CREATE INDEX IF NOT EXISTS idx_posts_active_title_slug ON posts ((BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(TRANSLATE(LOWER(COALESCE(title, '')), 'áàãâäéèêëíìîïóòõôöúùûüçñ', 'aaaaaeeeeiiiiooooouuuucn'), '[^a-z0-9[:space:]-]', '', 'g'), '[[:space:]-]+', '-', 'g'), '-'))) WHERE archived_at IS NULL`);
@@ -1109,40 +1111,9 @@ async function autoImportRss() {
       }
       importedTotal += importedForFeed;
     }
-    // Mantém 3 notícias recentes por portal e arquiva as anteriores sem apagá-las.
-    try {
-      await pool.query(`
-        WITH ranked AS (
-          SELECT id, ROW_NUMBER() OVER (
-            PARTITION BY source ORDER BY created_at DESC NULLS LAST, id DESC
-          ) AS position
-          FROM posts WHERE source IS NOT NULL AND TRIM(source) <> ''
-        )
-        UPDATE posts
-        SET archived_at = CASE WHEN ranked.position > 3 THEN COALESCE(posts.archived_at, NOW()) ELSE NULL END
-        FROM ranked WHERE posts.id = ranked.id
-      `);
-    } catch (e) {
-      console.warn("Erro ao arquivar notícias antigas:", e.message);
-      throw e;
-    }
-    // Preservação editorial: notícias existentes nunca são apagadas automaticamente.
+    // Não arquivar notícias automaticamente: todo o acervo permanece publicado.
     const cleanup = { rowCount: 0 };
-    // O TMDQA! já tinha notícias com URLs de imagem quebradas. Verificar a
-    // acessibilidade dessas imagens e remover apenas as entradas que falham.
-    const tmdqaPosts = await db.getAll(
-      "SELECT id, image FROM posts WHERE source ILIKE '%TMDQA%' AND image IS NOT NULL AND BTRIM(image) <> ''"
-    );
-    let removedTmdqaWithoutImage = 0;
-    for (const post of tmdqaPosts) {
-      if (!(await isValidImage(post.image))) {
-        await db.run("UPDATE posts SET archived_at = COALESCE(archived_at, NOW()) WHERE id = $1", [post.id]);
-        removedTmdqaWithoutImage++;
-      }
-    }
-    if (removedTmdqaWithoutImage > 0) {
-      console.log(`🗑️ Removidas ${removedTmdqaWithoutImage} notícia(s) do TMDQA! com imagem inválida/inacessível.`);
-    }
+    const removedTmdqaWithoutImage = 0;
     const summary = { success: failedFeeds < rssFeeds.length, feeds: rssFeeds.length, failedFeeds, imported: importedTotal, removedWithoutImage: cleanup.rowCount, removedTmdqaWithoutImage };
     console.log("Resumo da importação RSS:", JSON.stringify(summary));
     return summary;
@@ -2968,14 +2939,9 @@ app.get("/og/eventos/:slug", async (req, res) => {
   } catch (err) { res.redirect("https://comunidadedorock.com.br"); }
 });
 
-// Arquivar notícias sem imagem sem destruir seu conteúdo.
+// Arquivamento automático desativado: notícias sem imagem também permanecem no acervo.
 app.delete("/api/posts-without-images", async (req, res) => {
-  try {
-    const result = await db.query("UPDATE posts SET archived_at = COALESCE(archived_at, NOW()) WHERE image IS NULL OR BTRIM(image) = '' RETURNING id");
-    res.json({ success: true, archived: result.rowCount, deleted: 0 });
-  } catch (err) {
-    res.status(500).json({ error: "Não foi possível concluir a solicitação" });
-  }
+  res.status(410).json({ success: false, archived: 0, deleted: 0, message: "O arquivamento automático de notícias foi desativado." });
 });
 
 // Debug RSS feed - ver o que está vindo
