@@ -2155,13 +2155,13 @@ app.get("/api/releases/preview-image", async (req, res) => {
     if (source.protocol !== "https:") return res.status(400).json({ error: "Use um link HTTPS." });
 
     let oembedUrl;
-    if (source.hostname === "open.spotify.com" && /^\\/track\\/[A-Za-z0-9]+/.test(source.pathname)) {
+    if (source.hostname === "open.spotify.com" && /^\/track\/[A-Za-z0-9]+/.test(source.pathname)) {
       oembedUrl = "https://open.spotify.com/oembed?url=" + encodeURIComponent(source.toString());
     } else if (["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"].includes(source.hostname)) {
       const videoId = source.hostname === "youtu.be"
         ? source.pathname.split("/").filter(Boolean)[0]
         : source.pathname === "/watch" ? source.searchParams.get("v")
-        : source.pathname.match(/^\\/(?:embed|shorts)\\/([A-Za-z0-9_-]{11})/)?.[1];
+        : source.pathname.match(/^\/(?:embed|shorts)\/([A-Za-z0-9_-]{11})/)?.[1];
       if (!videoId || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) return res.status(400).json({ error: "Link de vídeo do YouTube inválido." });
       oembedUrl = "https://www.youtube.com/oembed?url=" + encodeURIComponent("https://www.youtube.com/watch?v=" + videoId) + "&format=json";
     } else {
