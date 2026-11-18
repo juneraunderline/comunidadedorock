@@ -45,6 +45,7 @@ function Home({ posts }) {
 	  const [interviews, setInterviews] = useState(() => getHomeCache("cdr_home_interviews_v1", []));
 	  const [events, setEvents] = useState(() => getHomeCache("cdr_home_events_v1", []));
   const [releases, setReleases] = useState(() => getHomeCache("cdr_home_releases_v1", []));
+  const [weeklyClip, setWeeklyClip] = useState(null);
   const [loadingReleases, setLoadingReleases] = useState(() => !hasHomeCache("cdr_home_releases_v1"));
 	  const [loadingBands, setLoadingBands] = useState(() => !hasHomeCache("cdr_home_bands_v1"));
 	  const [loadingInterviews, setLoadingInterviews] = useState(() => !hasHomeCache("cdr_home_interviews_v1"));
@@ -156,6 +157,7 @@ function Home({ posts }) {
         (data) => { setInterviews(data); saveHomeCache("cdr_home_interviews_v1", data); setLoadingInterviews(false); },
         () => setLoadingInterviews(false)
       );
+      fetchWithRetry(`${API_URL}/api/featured-release`, data => setWeeklyClip(data || null), () => setWeeklyClip(null));
       // Buscar lançamentos (com retry)
       fetchWithRetry(
         `${API_URL}/api/releases?limit=4`,
@@ -430,39 +432,16 @@ function Home({ posts }) {
         </div>
       </section>
 
-      {/* CLIPE DA SEMANA */}
-      {!loadingReleases && releases.find(r => r.youtube) && (() => { const clip = releases.find(r => r.youtube); return (
+      {/* Clipe da Semana escolhido manualmente no painel */}
+      {weeklyClip && weeklyClip.youtube && (
       <section className="section">
         <div className="section-header"><h2>CLIPE <span className="highlight">EM DESTAQUE</span></h2></div>
         <div className="clip-feature">
-          <div className="clip-info">
-            <span className="band-cta-kicker">CLIPE DA SEMANA</span>
-            <h3>{clip.title}</h3>
-            <p>{clip.artist}</p>
-            <a className="btn btn-primary" href={clip.youtube} target="_blank" rel="noopener noreferrer">ASSISTIR NO YOUTUBE →</a>
-          </div>
-          <div className="clip-player">
-            <iframe
-              src={(() => {
-                try {
-                  const url = new URL(clip.youtube);
-                  let videoId = url.searchParams.get("v");
-                  if (!videoId && url.hostname.includes("youtu.be")) videoId = url.pathname.slice(1).split("/")[0];
-                  if (!videoId && url.pathname.includes("/shorts/")) videoId = url.pathname.split("/shorts/")[1].split("/")[0];
-                  return videoId ? `https://www.youtube.com/embed/${videoId}` : clip.youtube;
-                } catch {
-                  return clip.youtube;
-                }
-              })()}
-              title={clip.title}
-              loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-            />
-          </div>
+          <div className="clip-info"><span className="band-cta-kicker">CLIPE DA SEMANA</span><h3>{weeklyClip.title}</h3><p>{weeklyClip.artist}</p><a className="btn btn-primary" href={weeklyClip.youtube} target="_blank" rel="noopener noreferrer">ASSISTIR NO YOUTUBE →</a></div>
+          <div className="clip-player"><iframe src={(() => { try { const url = new URL(weeklyClip.youtube); let id = url.searchParams.get("v"); if (!id && url.hostname.includes("youtu.be")) id = url.pathname.slice(1).split("/")[0]; if (!id && url.pathname.includes("/shorts/")) id = url.pathname.split("/shorts/")[1].split("/")[0]; return id ? "https://www.youtube.com/embed/" + id : weeklyClip.youtube; } catch (e) { return weeklyClip.youtube; } })()} title={weeklyClip.title} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>
         </div>
       </section>
-      ); })()}
+      )}
 
       {/* PRÓXIMOS EVENTOS */}
       <section className="section home-events-section">

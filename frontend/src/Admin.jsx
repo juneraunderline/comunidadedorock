@@ -411,6 +411,8 @@ export default function Admin({ user: currentUser, onLogout }) {
   const [releases, setReleases] = useState([]);
   const [newRelease, setNewRelease] = useState({ title: "", artist: "", type: "Single", release_date: "", image: "", spotify: "", youtube: "", description: "" });
   const [editingRelease, setEditingRelease] = useState(null);
+  const [weeklyClipId, setWeeklyClipId] = useState("");
+  const [savingWeeklyClip, setSavingWeeklyClip] = useState(false);
 
   const [rssFeeds, setRssFeeds] = useState([]);
   const [rssStatuses, setRssStatuses] = useState([]);
@@ -520,6 +522,7 @@ export default function Admin({ user: currentUser, onLogout }) {
     axios.get(`${API_URL}/api/interviews?full=1`).then(res => setInterviews(res.data));
     axios.get(`${API_URL}/api/events?full=1`).then(res => setEvents(res.data));
     axios.get(`${API_URL}/api/releases?full=1`).then(res => setReleases(res.data));
+    axios.get(`${API_URL}/api/featured-release`).then(res => setWeeklyClipId(res.data && res.data.id ? String(res.data.id) : "")).catch(() => setWeeklyClipId(""));
     axios.get(`${API_URL}/api/rss-feeds`).then(res => setRssFeeds(res.data));
     fetchRssStatuses();
     axios.get(`${API_URL}/api/users`).then(res => setAllUsers(res.data)).catch(() => {});
@@ -884,6 +887,13 @@ export default function Admin({ user: currentUser, onLogout }) {
   const createRelease = () => {
     if (!newRelease.title.trim() || !newRelease.artist.trim()) return alert("Preencha título e banda/artista");
     axios.post(API_URL + "/api/releases", newRelease).then(() => { setNewRelease({ title:"", artist:"", type:"Single", release_date:"", image:"", spotify:"", youtube:"", description:"" }); fetchData(); alert("Lançamento publicado!"); }).catch(err => alert(err.response?.data?.error || "Erro ao publicar lançamento"));
+  };
+  const saveWeeklyClip = async () => {
+    if (!weeklyClipId) return alert("Escolha um videoclipe.");
+    setSavingWeeklyClip(true);
+    try { await axios.put(API_URL + "/api/featured-release", { release_id: Number(weeklyClipId) }); alert("Clipe da Semana atualizado!"); }
+    catch (err) { alert(err.response && err.response.data && err.response.data.error ? err.response.data.error : "Erro ao atualizar Clipe da Semana."); }
+    finally { setSavingWeeklyClip(false); }
   };
   const saveEditRelease = () => {
     if (!editingRelease.title.trim() || !editingRelease.artist.trim()) return alert("Preencha título e banda/artista");
@@ -2245,6 +2255,7 @@ export default function Admin({ user: currentUser, onLogout }) {
       {activeTab === "lancamentos" && isAdmin && (
       <section className="admin-card">
         <h2>GERENCIAR LANÇAMENTOS</h2>
+        <div className="admin-card" style={{ marginBottom: "20px" }}><h3>CLIPE DA SEMANA</h3><p>Escolha qual videoclipe publicado será exibido na página inicial. Cadastrar novos lançamentos não altera esta escolha.</p><div className="form-group"><label>Videoclipe em destaque</label><select value={weeklyClipId} onChange={e => setWeeklyClipId(e.target.value)}><option value="">Selecione um videoclipe</option>{releases.filter(r => r.youtube).map(r => <option key={r.id} value={String(r.id)}>{r.title} — {r.artist}</option>)}</select></div><div className="form-actions"><button className="btn btn-primary" onClick={saveWeeklyClip} disabled={savingWeeklyClip}>{savingWeeklyClip ? "Salvando..." : "Definir Clipe da Semana"}</button></div></div>
         <CollapsibleAdminForm title="Novo lançamento">
           <h3>Novo lançamento</h3>
           <div className="form-group"><label>Título</label><input value={newRelease.title} onChange={e=>setNewRelease({...newRelease,title:e.target.value})} placeholder="Nome do single, EP ou álbum" /></div>
