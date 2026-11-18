@@ -72,7 +72,7 @@ export default function Releases() {
               </div>
               <div className="cdr-release-info">
                 <div className="cdr-release-meta">
-                  <span>{(r.artist || "").replace(/\\s*·\\s*$/, "")}</span>
+                  <span>{(r.artist || "").replace(/\s*·\s*$/, "")}</span>
                   {r.release_date && <span className="cdr-release-date">{new Date(r.release_date + "T00:00:00").toLocaleDateString("pt-BR")}</span>}
                 </div>
                 <h2 className="cdr-release-title">{r.title}</h2>
