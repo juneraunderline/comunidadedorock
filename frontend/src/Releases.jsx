@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import API_URL, { getImageUrl } from "./config/api";
+import Portal from "./Portal";
 
 export default function Releases() {
   const [releases, setReleases] = useState([]);
@@ -18,7 +19,10 @@ export default function Releases() {
   }, []);
 
   return (
-    <main className="page-container cdr-releases-page" style={{ maxWidth: "980px", margin: "0 auto", padding: "104px 20px 60px", minHeight: "55vh", position: "relative", overflow: "visible" }}>
+    <div className="home-with-portal cdr-releases-layout">
+      <Portal />
+      <div className="home-main">
+    <main className="page-container cdr-releases-page" style={{ maxWidth: "980px", width: "100%", margin: "0 auto", padding: "24px 20px 60px", minHeight: "55vh", position: "relative", overflow: "visible", boxSizing: "border-box" }}>
       <style>{`
         .cdr-releases-page .cdr-releases-heading { position:relative; z-index:2; display:flex; align-items:center; justify-content:flex-start; gap:16px; width:100%; min-height:58px; box-sizing:border-box; overflow:visible; margin:0 0 26px; padding:12px 0 18px; border-bottom:1px solid #292930; }
         .cdr-releases-page .cdr-releases-heading h1 { display:block !important; visibility:visible !important; opacity:1 !important; position:relative; width:100%; height:auto; max-height:none; overflow:visible !important; margin:0 !important; padding:0 !important; color:#fff !important; font-size:clamp(22px,3vw,30px) !important; line-height:1.35 !important; font-weight:900 !important; letter-spacing:.3px; white-space:normal; }
@@ -41,7 +45,7 @@ export default function Releases() {
         .cdr-releases-page .cdr-release-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:32px; padding:6px 10px; border:1px solid #35353d; border-radius:5px; background:#202027; color:#e5e5e8; font-size:11px; line-height:1.2; font-weight:700; text-decoration:none; transition:border-color .18s,color .18s,background .18s; }
         .cdr-releases-page .cdr-release-actions a:hover { border-color:#e9b61e; color:#e9b61e; background:#252219; }
         @media(max-width:600px) {
-          .cdr-releases-page { padding:100px 14px 42px !important; }
+          .cdr-releases-page { padding:24px 14px 42px !important; }
           .cdr-releases-page .cdr-releases-heading { min-height:54px; margin-bottom:18px; padding:10px 0 14px; }
           .cdr-releases-page .cdr-release-list { gap:10px; }
           .cdr-releases-page .cdr-release-item { grid-template-columns:92px minmax(0,1fr); gap:12px; padding:9px; border-radius:8px; }
@@ -102,5 +106,7 @@ export default function Releases() {
         </div>
       )}
     </main>
+      </div>
+    </div>
   );
 }
