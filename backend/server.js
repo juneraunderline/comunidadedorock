@@ -1710,13 +1710,29 @@ app.get("/api/posts/archive", async (req, res) => {
   try {
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 8));
     const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
-    const search = req.query.search || null;
+    const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 120) : "";
     const band = typeof req.query.band === "string" ? req.query.band.trim().slice(0, 120) : "";
     const source = req.query.source || null;
-    let query = "SELECT id, title, image, link, source, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 500) AS summary FROM posts WHERE archived_at IS NOT NULL";
-    const params = [];
-    let idx = 1;
-    if (search) { query += " AND (title ILIKE $" + idx + " OR content ILIKE $" + idx + ")"; params.push("%" + search + "%"); idx++; }
+
+    const full = req.query.full === "1";
+    let query = full
+      ? "SELECT * FROM posts WHERE TRUE"
+      : "SELECT id, title, image, link, source, created_at, LEFT(REGEXP_REPLACE(COALESCE(content, ''), '<[^>]+>', ' ', 'g'), 500) AS summary FROM posts WHERE TRUE";
+    let params = [];
+    let paramIdx = 1;
+
+    if (search) {
+      query += " AND (COALESCE(title, '') ILIKE $" + paramIdx + " OR COALESCE(content, '') ILIKE $" + paramIdx + ")";
+      params.push("%" + search + "%");
+      paramIdx++;
+    }
+
+    if (band) {
+      query += " AND archived_at IS NULL AND (COALESCE(title, '') ILIKE $" + paramIdx + " OR COALESCE(content, '') ILIKE $" + paramIdx + ")";
+      params.push("%" + band + "%");
+      paramIdx++;
+    }
+
     if (source) {
       if (source === "__manual__") query += " AND (source IS NULL OR source = '')";
       else { query += " AND source ILIKE $" + idx; params.push("%" + source + "%"); idx++; }
