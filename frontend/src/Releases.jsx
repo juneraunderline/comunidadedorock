@@ -6,6 +6,7 @@ export default function Releases() {
   const [releases, setReleases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -19,8 +20,12 @@ export default function Releases() {
   return (
     <main className="page-container cdr-releases-page" style={{ maxWidth: "980px", margin: "0 auto", padding: "36px 20px 60px", minHeight: "55vh" }}>
       <style>{`
-        .cdr-releases-page .cdr-releases-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:26px; padding-bottom:16px; border-bottom:1px solid #292930; }
-        .cdr-releases-page .cdr-releases-heading h1 { margin:0; color:#fff; font-size:clamp(22px,3vw,30px); line-height:1.15; font-weight:900; letter-spacing:.3px; }
+        .cdr-releases-page .cdr-releases-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0 0 26px; padding:18px 0 16px; border-bottom:1px solid #292930; }
+        .cdr-releases-page .cdr-releases-heading h1 { display:block; visibility:visible; opacity:1; margin:0; color:#fff; font-size:clamp(22px,3vw,30px); line-height:1.2; font-weight:900; letter-spacing:.3px; }
+        .cdr-releases-page .cdr-releases-heading h1 span { color:#e9b61e !important; }
+        .cdr-releases-page .cdr-release-more-wrap { display:flex; justify-content:center; margin-top:20px; }
+        .cdr-releases-page .cdr-release-more { min-width:160px; padding:11px 22px; border:1px solid #e9b61e; border-radius:6px; background:#e9b61e; color:#17130a; font-size:12px; font-weight:900; letter-spacing:.35px; cursor:pointer; transition:background .18s,border-color .18s,transform .18s; }
+        .cdr-releases-page .cdr-release-more:hover { background:#f4c735; border-color:#f4c735; transform:translateY(-1px); }
         .cdr-releases-page .cdr-release-list { display:flex; flex-direction:column; gap:12px; }
         .cdr-releases-page .cdr-release-item { display:grid; grid-template-columns:116px minmax(0,1fr); align-items:center; gap:18px; min-width:0; padding:12px; background:#141419; border:1px solid #292930; border-radius:10px; transition:border-color .18s ease,background .18s ease; }
         .cdr-releases-page .cdr-release-item:hover { border-color:#66531d; background:#18181e; }
@@ -55,7 +60,7 @@ export default function Releases() {
       `}</style>
 
       <div className="cdr-releases-heading">
-        <h1>LANÇAMENTOS <span className="highlight">DA CENA</span></h1>
+        <h1>LANÇAMENTOS <span>DA CENA</span></h1>
       </div>
 
       {loading ? (
@@ -64,7 +69,7 @@ export default function Releases() {
         <p style={{ color:"#aaa", textAlign:"center", padding:"40px" }}>{error}</p>
       ) : releases.length ? (
         <div className="cdr-release-list">
-          {releases.map(r => (
+          {releases.slice(0, showAll ? releases.length : 3).map(r => (
             <article className="cdr-release-item" key={r.id}>
               <div className="cdr-release-art">
                 {r.image ? <img src={getImageUrl(r.image)} alt={r.title} loading="lazy" /> : <div className="cdr-release-placeholder">🎧</div>}
@@ -88,6 +93,13 @@ export default function Releases() {
         </div>
       ) : (
         <p style={{ color:"#888", textAlign:"center", padding:"40px" }}>Nenhum lançamento publicado ainda.</p>
+      )}
+      {!loading && !error && releases.length > 3 && (
+        <div className="cdr-release-more-wrap">
+          <button className="cdr-release-more" type="button" onClick={() => setShowAll(value => !value)}>
+            {showAll ? "MOSTRAR MENOS" : "MOSTRAR MAIS"}
+          </button>
+        </div>
       )}
     </main>
   );
