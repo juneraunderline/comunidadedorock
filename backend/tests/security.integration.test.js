@@ -394,10 +394,12 @@ async function waitForServer() {
       const result = await request(path, { method, ...(body === undefined ? {} : { body }) });
       assert.equal(result.status, 401, method + " " + path + " deve rejeitar usuário anônimo");
     }
+    // Entrevistas são conteúdo editorial público, inclusive na resposta completa.
+    assert.equal((await request("/api/interviews?full=1")).status, 200,
+      "qualquer visitante deve consultar entrevistas completas sem cadastro ou login");
     const anonymousPrivateReads = [
       "/api/posts?full=1",
       "/api/bands?full=1",
-      "/api/interviews?full=1",
       "/api/releases?full=1",
       "/api/events?full=1",
       "/api/pending-bands",
