@@ -915,9 +915,31 @@ export default function Admin({ user: currentUser, onLogout }) {
   };
 
   // ====== LANÇAMENTOS ======
-  const createRelease = () => {
+  const createRelease = async () => {
     if (!newRelease.title.trim() || !newRelease.artist.trim()) return alert("Preencha título e banda/artista");
-    axios.post(API_URL + "/api/releases", newRelease).then(() => { setNewRelease({ title:"", artist:"", type:"Single", release_date:"", image:"", spotify:"", youtube:"", description:"" }); fetchData(); alert("Lançamento publicado!"); }).catch(err => alert(err.response?.data?.error || "Erro ao publicar lançamento"));
+    try {
+      const releaseToSave = { ...newRelease };
+      if (!releaseToSave.image) {
+        const sourceUrl = releaseToSave.type === "Videoclipe"
+          ? (releaseToSave.youtube || releaseToSave.spotify)
+          : (releaseToSave.spotify || releaseToSave.youtube);
+        if (sourceUrl) {
+          try {
+            const preview = await axios.get(API_URL + "/api/releases/preview-image", { params: { url: sourceUrl } });
+            if (preview.data?.image) releaseToSave.image = preview.data.image;
+          } catch {
+            // A imagem continua opcional; o cadastro pode ser concluído manualmente.
+          }
+        }
+      }
+      await axios.post(API_URL + "/api/releases", releaseToSave);
+      setNewRelease({ title:"", artist:"", type:"Single", release_date:"", image:"", spotify:"", youtube:"", description:"" });
+      setReleaseArtworkStatus("");
+      fetchData();
+      alert("Lançamento publicado!");
+    } catch (err) {
+      alert(err.response?.data?.error || "Erro ao publicar lançamento");
+    }
   };
   const saveEditRelease = () => {
     if (!editingRelease.title.trim() || !editingRelease.artist.trim()) return alert("Preencha título e banda/artista");
