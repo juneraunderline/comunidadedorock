@@ -18,10 +18,10 @@ export default function Releases() {
   }, []);
 
   return (
-    <main className="page-container cdr-releases-page" style={{ maxWidth: "980px", margin: "0 auto", padding: "36px 20px 60px", minHeight: "55vh" }}>
+    <main className="page-container cdr-releases-page" style={{ maxWidth: "980px", margin: "0 auto", padding: "76px 20px 60px", minHeight: "55vh", position: "relative", overflow: "visible" }}>
       <style>{`
-        .cdr-releases-page .cdr-releases-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0 0 26px; padding:18px 0 16px; border-bottom:1px solid #292930; }
-        .cdr-releases-page .cdr-releases-heading h1 { display:block; visibility:visible; opacity:1; margin:0; color:#fff; font-size:clamp(22px,3vw,30px); line-height:1.2; font-weight:900; letter-spacing:.3px; }
+        .cdr-releases-page .cdr-releases-heading { position:relative; z-index:2; display:flex; align-items:center; justify-content:flex-start; gap:16px; width:100%; min-height:58px; box-sizing:border-box; overflow:visible; margin:0 0 26px; padding:12px 0 18px; border-bottom:1px solid #292930; }
+        .cdr-releases-page .cdr-releases-heading h1 { display:block !important; visibility:visible !important; opacity:1 !important; position:relative; width:100%; height:auto; max-height:none; overflow:visible !important; margin:0 !important; padding:0 !important; color:#fff !important; font-size:clamp(22px,3vw,30px) !important; line-height:1.35 !important; font-weight:900 !important; letter-spacing:.3px; white-space:normal; }
         .cdr-releases-page .cdr-releases-heading h1 span { color:#e9b61e !important; }
         .cdr-releases-page .cdr-release-more-wrap { display:flex; justify-content:center; margin-top:20px; }
         .cdr-releases-page .cdr-release-more { min-width:160px; padding:11px 22px; border:1px solid #e9b61e; border-radius:6px; background:#e9b61e; color:#17130a; font-size:12px; font-weight:900; letter-spacing:.35px; cursor:pointer; transition:background .18s,border-color .18s,transform .18s; }
@@ -41,8 +41,8 @@ export default function Releases() {
         .cdr-releases-page .cdr-release-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:32px; padding:6px 10px; border:1px solid #35353d; border-radius:5px; background:#202027; color:#e5e5e8; font-size:11px; line-height:1.2; font-weight:700; text-decoration:none; transition:border-color .18s,color .18s,background .18s; }
         .cdr-releases-page .cdr-release-actions a:hover { border-color:#e9b61e; color:#e9b61e; background:#252219; }
         @media(max-width:600px) {
-          .cdr-releases-page { padding:26px 14px 42px !important; }
-          .cdr-releases-page .cdr-releases-heading { margin-bottom:18px; padding-bottom:13px; }
+          .cdr-releases-page { padding:64px 14px 42px !important; }
+          .cdr-releases-page .cdr-releases-heading { min-height:54px; margin-bottom:18px; padding:10px 0 14px; }
           .cdr-releases-page .cdr-release-list { gap:10px; }
           .cdr-releases-page .cdr-release-item { grid-template-columns:92px minmax(0,1fr); gap:12px; padding:9px; border-radius:8px; }
           .cdr-releases-page .cdr-release-art { width:92px; height:92px; }
