@@ -7,6 +7,7 @@ import logo from "./assets/logo.png";
 import NavLink from "./NavLink";
 import Home from "./Home";
 const News = lazy(() => import("./News"));
+const Releases = lazy(() => import("./Releases"));
 const NewsDetail = lazy(() => import("./NewsDetail"));
 const Bandas = lazy(() => import("./Bandas"));
 const BandaDetail = lazy(() => import("./BandaDetail"));
@@ -219,6 +220,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home posts={posts} />} />
           <Route path="/noticias" element={<News />} />
+          <Route path="/lancamentos" element={<Releases />} />
           <Route path="/noticias/:id" element={<NewsDetail />} />
           <Route path="/bandas" element={<Bandas />} />
           <Route path="/bandas/:id" element={<BandaDetail />} />

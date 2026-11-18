@@ -47,6 +47,11 @@ function Home({ posts }) {
   const [releases, setReleases] = useState(() => getHomeCache("cdr_home_releases_v1", []));
   const [weeklyClip, setWeeklyClip] = useState(null);
   const [loadingReleases, setLoadingReleases] = useState(() => !hasHomeCache("cdr_home_releases_v1"));
+  const normalizeReleaseType = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const homeReleases = [
+    releases.find(r => /video|clipe/.test(normalizeReleaseType(r.type))),
+    releases.find(r => normalizeReleaseType(r.type).includes("single"))
+  ].filter(Boolean);
 	  const [loadingBands, setLoadingBands] = useState(() => !hasHomeCache("cdr_home_bands_v1"));
 	  const [loadingInterviews, setLoadingInterviews] = useState(() => !hasHomeCache("cdr_home_interviews_v1"));
 	  const [loadingEvents, setLoadingEvents] = useState(() => !hasHomeCache("cdr_home_events_v1"));
@@ -160,7 +165,7 @@ function Home({ posts }) {
       fetchWithRetry(`${API_URL}/api/featured-release`, data => setWeeklyClip(data || null), () => setWeeklyClip(null));
       // Buscar lançamentos (com retry)
       fetchWithRetry(
-        `${API_URL}/api/releases?limit=4`,
+        `${API_URL}/api/releases?limit=50`,
         (data) => { setReleases(data); saveHomeCache("cdr_home_releases_v1", data); setLoadingReleases(false); },
         () => setLoadingReleases(false)
       );
@@ -423,13 +428,14 @@ function Home({ posts }) {
       <section className="section">
         <div className="section-header"><h2>LANÇAMENTOS <span className="highlight">DA CENA</span></h2></div>
         <div className="grid grid-2">
-          {loadingReleases ? <><SkeletonCard /><SkeletonCard /></> : releases.length ? releases.slice(0,4).map(r => (
+          {loadingReleases ? <><SkeletonCard /><SkeletonCard /></> : homeReleases.length ? homeReleases.map(r => (
             <div className="release-card" key={r.id}>
               <div className="release-image">{r.image ? <img src={getImageUrl(r.image)} alt={r.title} loading="lazy" /> : <div className="release-placeholder">🎧</div>}<span>{r.type || "Single"}</span></div>
               <div className="release-content"><small>{(r.artist || "").replace(/\s*·\s*$/, "")}{r.release_date ? " " + new Date(r.release_date + "T00:00:00").toLocaleDateString("pt-BR") : ""}</small><h3>{r.title}</h3><div className="release-actions">{r.spotify && <a href={r.spotify} target="_blank" rel="noopener noreferrer">🎧 Spotify</a>}{r.youtube && <a href={r.youtube} target="_blank" rel="noopener noreferrer">▶ YouTube</a>}</div></div>
             </div>
           )) : <div style={{gridColumn:"1/-1",textAlign:"center",color:"#888",padding:"30px"}}>Novos lançamentos das bandas independentes aparecerão aqui.</div>}
         </div>
+        <div style={{display:"flex",justifyContent:"center",marginTop:"22px"}}><button className="btn btn-primary" onClick={() => navigate("/lancamentos")}>VER MAIS LANÇAMENTOS →</button></div>
       </section>
 
       {/* Clipe da Semana escolhido manualmente no painel */}
