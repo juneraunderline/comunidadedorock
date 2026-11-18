@@ -1209,6 +1209,7 @@ app.use("/api", async (req, res, next) => {
   // As rotas de fã, logout e sessão aplicam authenticate diretamente em seus
   // handlers. Não autenticar também aqui: isso duplicava consultas a auth_sessions
   // em cada chamada e aumentava a pressão sobre o pool PostgreSQL serverless.
+  if (path.startsWith("/fan/") || path === "/logout" || path === "/session") return next();
 
   const isUserProfile = isPath(path, /^\/user\/\d+$/);
   const isCommentDelete = isPath(path, /^\/comments\/\d+$/) && method === "DELETE";
