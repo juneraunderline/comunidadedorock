@@ -411,6 +411,7 @@ export default function Admin({ user: currentUser, onLogout }) {
   const [releases, setReleases] = useState([]);
   const [newRelease, setNewRelease] = useState({ title: "", artist: "", type: "Single", release_date: "", image: "", spotify: "", youtube: "", description: "" });
   const [editingRelease, setEditingRelease] = useState(null);
+  const [releaseArtworkStatus, setReleaseArtworkStatus] = useState("");
 
   const [rssFeeds, setRssFeeds] = useState([]);
   const [rssStatuses, setRssStatuses] = useState([]);
@@ -457,6 +458,39 @@ export default function Admin({ user: currentUser, onLogout }) {
       newContentRef.current.innerHTML = DOMPurify.sanitize(newPost.content || "", { ADD_ATTR: ["target", "rel"] });
     }
   }, []);
+
+  // Busca automaticamente a arte do lançamento a partir do link informado.
+  useEffect(() => {
+    const spotify = String(newRelease.spotify || "").trim();
+    const youtube = String(newRelease.youtube || "").trim();
+    const sourceUrl = newRelease.type === "Videoclipe" ? (youtube || spotify) : (spotify || youtube);
+    if (!sourceUrl) {
+      setReleaseArtworkStatus("");
+      return;
+    }
+
+    let cancelled = false;
+    setReleaseArtworkStatus("Buscando imagem automaticamente...");
+    const timer = setTimeout(async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/releases/preview-image`, { params: { url: sourceUrl } });
+        if (cancelled) return;
+        if (response.data?.image) {
+          setNewRelease(current => ({ ...current, image: response.data.image }));
+          setReleaseArtworkStatus("Imagem encontrada automaticamente. Você ainda pode substituí-la.");
+        } else {
+          setReleaseArtworkStatus("Não foi possível localizar a imagem. Você pode inserir uma URL ou enviar uma imagem.");
+        }
+      } catch {
+        if (!cancelled) setReleaseArtworkStatus("Não foi possível localizar a imagem. Você pode inserir uma URL ou enviar uma imagem.");
+      }
+    }, 550);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [newRelease.spotify, newRelease.youtube, newRelease.type]);
 
   const isAdmin = currentUser?.role === "admin";
 
@@ -2251,7 +2285,7 @@ export default function Admin({ user: currentUser, onLogout }) {
           <div className="form-group"><label>Banda / Artista</label><input value={newRelease.artist} onChange={e=>setNewRelease({...newRelease,artist:e.target.value})} /></div>
           <div className="form-group"><label>Tipo</label><select value={newRelease.type} onChange={e=>setNewRelease({...newRelease,type:e.target.value})}><option>Single</option><option>EP</option><option>Álbum</option><option>Videoclipe</option></select></div>
           <div className="form-group"><label>Data de lançamento</label><input type="date" value={newRelease.release_date} onChange={e=>setNewRelease({...newRelease,release_date:e.target.value})} /></div>
-          <div className="form-group"><label>Imagem</label><input value={newRelease.image} onChange={e=>setNewRelease({...newRelease,image:e.target.value})} /><input type="file" accept="image/*" onChange={e=>handleImageUpload(e.target.files?.[0], setNewRelease, "image")} /></div>
+          <div className="form-group"><label>Imagem da capa / clipe</label><input value={newRelease.image} onChange={e=>setNewRelease({...newRelease,image:e.target.value})} placeholder="Preenchida automaticamente pelo Spotify ou YouTube" /><input type="file" accept="image/*" onChange={e=>handleImageUpload(e.target.files?.[0], setNewRelease, "image")} />{releaseArtworkStatus && <small style={{display:"block",marginTop:"6px",color:"#e9b61e"}}>{releaseArtworkStatus}</small>}{newRelease.image && <div style={{marginTop:"10px"}}><img src={newRelease.image.startsWith("http") ? newRelease.image : getImageUrl(newRelease.image)} alt="Prévia da capa do lançamento" style={{width:"150px",height:"150px",objectFit:"cover",borderRadius:"8px",border:"1px solid #444"}} /></div>}</div>
           <div className="form-group"><label>Spotify</label><input value={newRelease.spotify} onChange={e=>setNewRelease({...newRelease,spotify:e.target.value})} /></div>
           <div className="form-group"><label>YouTube / Clipe</label><input value={newRelease.youtube} onChange={e=>setNewRelease({...newRelease,youtube:e.target.value})} /></div>
           
