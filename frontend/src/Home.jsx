@@ -47,7 +47,7 @@ function Home({ posts }) {
   const [releases, setReleases] = useState(() => getHomeCache("cdr_home_releases_v1", []));
   const [weeklyClip, setWeeklyClip] = useState(null);
   const [loadingReleases, setLoadingReleases] = useState(() => !hasHomeCache("cdr_home_releases_v1"));
-  const normalizeReleaseType = (value) => String(value || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+  const normalizeReleaseType = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const homeReleases = [
     releases.find(r => /video|clipe/.test(normalizeReleaseType(r.type))),
     releases.find(r => normalizeReleaseType(r.type).includes("single"))
