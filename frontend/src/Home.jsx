@@ -55,7 +55,16 @@ function Home({ posts }) {
 	  const [loadingBands, setLoadingBands] = useState(() => !hasHomeCache("cdr_home_bands_v1"));
 	  const [loadingInterviews, setLoadingInterviews] = useState(() => !hasHomeCache("cdr_home_interviews_v1"));
 	  const [loadingEvents, setLoadingEvents] = useState(() => !hasHomeCache("cdr_home_events_v1"));
-	  const loadingPosts = posts.length === 0;
+	  const latestHomeItems = [
+    ...posts.map(post => ({ ...post, isInterview: false })),
+    ...interviews.map(interview => ({
+      ...interview,
+      isInterview: true,
+      created_at: interview.created_at || interview.date || null,
+      source: "Entrevista: " + (interview.artist || "Banda")
+    }))
+  ].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+  const loadingPosts = latestHomeItems.length === 0 && loadingInterviews;
 
   const [displayCount, setDisplayCount] = useState(6);
   const [, setBrokenImages] = useState(new Set());
@@ -229,13 +238,13 @@ function Home({ posts }) {
 	              <SkeletonCard />
 	              <SkeletonCard />
 	            </>
-	          ) : posts.length > 0 ? (
+	          ) : latestHomeItems.length > 0 ? (
 	            <>
-	              {posts.slice(0, displayCount).map((p, idx) => (
+	              {latestHomeItems.slice(0, displayCount).map((p, idx) => (
                 <div 
-                  key={p.id} 
+                  key={p.isInterview ? `interview-${p.id}` : `post-${p.id}`} 
                   className="card"
-                  onClick={() => navigate(`/noticias/${p.slug || p.id}`)}
+                  onClick={() => navigate(p.isInterview ? `/entrevistas/${p.slug || p.id}` : `/noticias/${p.slug || p.id}`)}
                   style={{ 
                     cursor: "pointer",
                     animation: idx >= 8 ? `fadeInUp 0.5s ease-out ${(idx - 8) * 0.1}s both` : "none"
@@ -258,7 +267,7 @@ function Home({ posts }) {
                         Sem imagem
                       </div>
                     )}
-                    {p.source && <div className="card-source">{p.source}</div>}
+                    {(p.isInterview || p.source) && <div className="card-source">{p.isInterview ? "Entrevista: " + (p.artist || "Banda") : p.source}</div>}
                   </div>
                   <div className="card-content">
                     <small className="card-date" style={{ marginBottom: "6px" }}>{formatDatePT(p.created_at)}</small>
@@ -266,7 +275,7 @@ function Home({ posts }) {
                   </div>
                 </div>
               ))}
-              {(posts.length > displayCount || displayCount >= 12) && (
+              {(latestHomeItems.length > displayCount || displayCount >= 12) && (
                 <div style={{gridColumn: "1/-1", textAlign: "center", padding: "20px"}}>
                   <button 
                     className="btn btn-primary"
