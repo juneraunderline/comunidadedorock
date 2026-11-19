@@ -2599,3 +2599,79 @@ body {
   overflow: visible;
   margin: 0 0 8px !important;
 }
+
+
+/* Bandas pendentes: ações sempre visíveis e bem acomodadas no mobile. */
+.pending-band-item { min-width:0; box-sizing:border-box; }
+.pending-band-item .post-preview, .pending-band-item .post-info { min-width:0; }
+.pending-band-item .post-info { overflow-wrap:anywhere; }
+.pending-band-actions { flex:0 0 auto; align-items:center; justify-content:flex-end; flex-wrap:wrap; }
+.pending-band-actions .btn { box-sizing:border-box; }
+@media (max-width:700px) {
+  .pending-band-item {
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:14px !important;
+    width:100%;
+    min-width:0;
+    padding:14px !important;
+    overflow:hidden;
+  }
+  .pending-band-item .post-preview {
+    display:flex !important;
+    align-items:flex-start !important;
+    gap:12px !important;
+    width:100%;
+    min-width:0;
+  }
+  .pending-band-item .post-preview > img {
+    flex:0 0 88px;
+    width:88px !important;
+    height:110px !important;
+    object-fit:cover;
+  }
+  .pending-band-item .post-info {
+    flex:1 1 0;
+    width:0;
+    min-width:0;
+    text-align:left;
+  }
+  .pending-band-item .post-info h4,
+  .pending-band-item .post-info p,
+  .pending-band-item .post-info small {
+    overflow-wrap:anywhere;
+    word-break:normal;
+    line-height:1.45;
+  }
+  .pending-band-actions {
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:9px !important;
+    width:100%;
+    min-width:0;
+    margin:0 !important;
+  }
+  .pending-band-actions .btn {
+    display:flex !important;
+    align-items:center;
+    justify-content:center;
+    width:100% !important;
+    min-width:0;
+    min-height:44px;
+    padding:10px 8px !important;
+    font-size:13px !important;
+    line-height:1.25;
+    white-space:normal;
+    text-align:center;
+    overflow-wrap:anywhere;
+  }
+}
+@media (max-width:380px) {
+  .pending-band-item .post-preview > img {
+    flex-basis:76px;
+    width:76px !important;
+    height:96px !important;
+  }
+  .pending-band-actions { grid-template-columns:minmax(0,1fr); }
+}
