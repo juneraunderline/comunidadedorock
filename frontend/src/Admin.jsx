@@ -1765,7 +1765,7 @@ export default function Admin({ user: currentUser, onLogout }) {
           <h3>Bandas Pendentes ({pendingBands.length})</h3>
           {pendingBands.length === 0 && <p>Nenhuma banda pendente</p>}
           {pendingBands.map(b => (
-            <div key={b.id} className="post-item">
+            <div key={b.id} className="post-item pending-band-item">
               <div className="post-preview">
                 {b.image && <img src={getImageUrl(b.image)} alt={b.name} />}
                 <div className="post-info">
@@ -1777,7 +1777,7 @@ export default function Admin({ user: currentUser, onLogout }) {
                   {b.contact && <small> · 📧 {b.contact}</small>}
                 </div>
               </div>
-              <div className="post-actions">
+              <div className="post-actions pending-band-actions">
                 <button className="btn btn-primary" onClick={() => approveBand(b.id)}>✅ Aprovar</button>
                 <button className="btn btn-outline" onClick={() => {
                   if (confirm(`Rejeitar a banda ${b.name}?`)) {
